@@ -667,6 +667,17 @@ body {
   font-size: var(--font-size-sm);
 }
 
+/* Public layout (halaman navbar + main + footer) — sticky footer */
+body.public-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+body.public-layout > main {
+  flex: 1;
+}
+
 /* Footer */
 .footer {
   background: var(--gray-900);
