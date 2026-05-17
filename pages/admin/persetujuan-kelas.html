@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Persetujuan Kelas — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita Admin</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="manajemen-siswa.html" class="sidebar-link" data-page="manajemen-siswa">👥 Manajemen Siswa</a>
+        <a href="manajemen-instruktur.html" class="sidebar-link" data-page="manajemen-instruktur">🎓 Manajemen Instruktur</a>
+        <a href="persetujuan-kelas.html" class="sidebar-link" data-page="persetujuan-kelas">✅ Persetujuan Kelas</a>
+        <a href="verifikasi-pembayaran.html" class="sidebar-link" data-page="verifikasi-pembayaran">💳 Verifikasi Pembayaran</a>
+        <a href="verifikasi-penarikan.html" class="sidebar-link" data-page="verifikasi-penarikan">🏦 Verifikasi Penarikan</a>
+        <a href="manajemen-kategori.html" class="sidebar-link" data-page="manajemen-kategori">📁 Kategori</a>
+        <a href="moderasi-ulasan.html" class="sidebar-link" data-page="moderasi-ulasan">⭐ Moderasi Ulasan</a>
+        <a href="pengaturan-banner.html" class="sidebar-link" data-page="pengaturan-banner">🖼️ Banner</a>
+        <a href="manajemen-admin.html" class="sidebar-link" data-page="manajemen-admin">🔐 Manajemen Admin</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Persetujuan Kelas</h1>
+        <p class="text-gray">Review dan setujui kelas baru dari instruktur</p>
+        <p id="filter-instruktur-info" class="text-gray" style="display:none;margin-top:8px;"></p>
+      </div>
+
+      <div class="tab-filter" id="tab-filter">
+        <button type="button" class="tab-btn active" data-status="">Semua</button>
+        <button type="button" class="tab-btn" data-status="pending">Pending</button>
+        <button type="button" class="tab-btn" data-status="published">Published</button>
+        <button type="button" class="tab-btn" data-status="rejected">Rejected</button>
+      </div>
+
+      <div id="table-area"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var adminUser = window.__pageUser;
+      if (!adminUser) return;
+    var activeStatus = '';
+    var filterInstrukturId = new URLSearchParams(window.location.search).get('instruktur') || '';
+
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    if (filterInstrukturId) {
+      var instruktur = getById('users', filterInstrukturId);
+      var infoEl = document.getElementById('filter-instruktur-info');
+      infoEl.style.display = 'block';
+      infoEl.textContent = 'Menampilkan kelas instruktur: ' + (instruktur ? instruktur.nama : filterInstrukturId) +
+        ' — <a href="persetujuan-kelas.html" class="text-link-sm">Tampilkan semua</a>';
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.tab-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        this.classList.add('active');
+        activeStatus = this.getAttribute('data-status');
+        renderTable();
+      });
+    });
+
+    function formatRupiah(angka) {
+      var n = angka || 0;
+      return n === 0 ? 'GRATIS' : 'Rp ' + n.toLocaleString('id-ID');
+    }
+
+    function kelasStatusBadge(status) {
+      var s = status || 'pending';
+      if (s === 'published') {
+        return '<span class="badge badge-success">Published</span>';
+      }
+      if (s === 'rejected') {
+        return '<span class="badge badge-danger">Rejected</span>';
+      }
+      return '<span class="badge badge-warning">Pending</span>';
+    }
+
+    function kirimNotifikasi(userId, pesan) {
+      createItem('notifikasi', {
+        id: generateId('n'),
+        userId: userId,
+        pesan: pesan,
+        dibaca: false,
+        tanggal: new Date().toISOString()
+      });
+    }
+
+    function getFilteredKelas() {
+      return getAll('kelas').filter(function (k) {
+        if (filterInstrukturId && k.instrukturId !== filterInstrukturId) return false;
+        if (activeStatus && (k.status || 'pending') !== activeStatus) return false;
+        return true;
+      });
+    }
+
+    function setujuiKelas(id) {
+      var kelas = getById('kelas', id);
+      if (!kelas) return;
+      updateItem('kelas', id, { status: 'published' });
+      kirimNotifikasi(
+        kelas.instrukturId,
+        'Kelas "' + kelas.judul + '" telah disetujui dan dipublikasikan.'
+      );
+      renderTable();
+    }
+
+    function tolakKelas(id) {
+      var kelas = getById('kelas', id);
+      if (!kelas) return;
+      var alasan = prompt('Masukkan alasan penolakan kelas "' + kelas.judul + '":');
+      if (alasan === null) return;
+      alasan = alasan.trim();
+      if (!alasan) {
+        alert('Alasan penolakan wajib diisi.');
+        return;
+      }
+      updateItem('kelas', id, { status: 'rejected', alasanTolak: alasan });
+      kirimNotifikasi(
+        kelas.instrukturId,
+        'Kelas "' + kelas.judul + '" ditolak. Alasan: ' + alasan
+      );
+      renderTable();
+    }
+
+    function bukaDetailKelas(id) {
+      window.open('../siswa/detail-kelas.html?id=' + encodeURIComponent(id), '_blank');
+    }
+
+    function renderTable() {
+      var area = document.getElementById('table-area');
+      var list = getFilteredKelas();
+
+      if (list.length === 0) {
+        area.innerHTML =
+          '<div class="empty-state card">' +
+            '<p>Tidak ada kelas untuk ditampilkan.</p>' +
+          '</div>';
+        return;
+      }
+
+      var rows = list.map(function (k) {
+        var status = k.status || 'pending';
+        var aksi = '';
+        if (status === 'pending') {
+          aksi =
+            '<button type="button" class="btn btn-primary btn-sm" data-aksi="setujui" data-id="' + k.id + '">Setujui</button> ' +
+            '<button type="button" class="btn btn-danger btn-sm" data-aksi="tolak" data-id="' + k.id + '">Tolak</button>';
+        } else if (status === 'rejected' && k.alasanTolak) {
+          aksi = '<span class="text-gray" style="font-size:var(--font-size-sm);">Alasan: ' + k.alasanTolak + '</span>';
+        } else {
+          aksi = '<span class="text-gray">—</span>';
+        }
+
+        return (
+          '<tr>' +
+            '<td><a href="#" class="link-judul" data-id="' + k.id + '"><strong>' + k.judul + '</strong></a></td>' +
+            '<td>' + (k.instrukturNama || '-') + '</td>' +
+            '<td>' + (k.kategoriNama || '-') + '</td>' +
+            '<td>' + formatRupiah(k.harga) + '</td>' +
+            '<td>' + (k.level || '-') + '</td>' +
+            '<td>' + kelasStatusBadge(status) + '</td>' +
+            '<td class="table-aksi">' + aksi + '</td>' +
+          '</tr>'
+        );
+      }).join('');
+
+      area.innerHTML =
+        '<div class="card table-wrap">' +
+          '<table class="table">' +
+            '<thead>' +
+              '<tr>' +
+                '<th>Judul</th>' +
+                '<th>Instruktur</th>' +
+                '<th>Kategori</th>' +
+                '<th>Harga</th>' +
+                '<th>Level</th>' +
+                '<th>Status</th>' +
+                '<th>Aksi</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>';
+
+      area.querySelectorAll('.link-judul').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          bukaDetailKelas(this.getAttribute('data-id'));
+        });
+      });
+
+      area.querySelectorAll('button[data-aksi]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-id');
+          var aksi = this.getAttribute('data-aksi');
+          if (aksi === 'setujui') setujuiKelas(id);
+          if (aksi === 'tolak') tolakKelas(id);
+        });
+      });
+    }
+
+    renderTable();
+  })();</script>
+</body>
+</html>

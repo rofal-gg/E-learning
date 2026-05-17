@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifikasi — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="katalog.html" class="sidebar-link" data-page="katalog">📚 Katalog Kelas</a>
+        <a href="cart.html" class="sidebar-link" data-page="cart">🛒 Kelas Saya</a>
+        <a href="wishlist.html" class="sidebar-link" data-page="wishlist">❤️ Wishlist</a>
+        <a href="riwayat-transaksi.html" class="sidebar-link" data-page="riwayat-transaksi">🧾 Riwayat Transaksi</a>
+        <a href="sertifikat.html" class="sidebar-link" data-page="sertifikat">🏆 Sertifikat</a>
+        <a href="profil.html" class="sidebar-link" data-page="profil">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header page-header-flex">
+        <div>
+          <h1>Notifikasi</h1>
+          <p class="text-gray">Pembaruan terkait akun dan pembelian kamu</p>
+        </div>
+        <button type="button" id="btn-tandai-semua" class="btn btn-secondary btn-sm">Tandai Semua Dibaca</button>
+      </div>
+
+      <div id="notifikasi-area"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    setActiveSidebar('notifikasi');
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function formatTanggal(iso) {
+      if (!iso) return '-';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function getNotifikasiUser() {
+      return getAll('notifikasi')
+        .filter(function (n) { return sameUserId(n.userId, user.id); })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+    }
+
+    function renderNotifikasi() {
+      var area = document.getElementById('notifikasi-area');
+      var list = getNotifikasiUser();
+
+      if (list.length === 0) {
+        area.innerHTML =
+          '<div class="empty-state">' +
+            '<p>Belum ada notifikasi.</p>' +
+          '</div>';
+        return;
+      }
+
+      area.innerHTML = '<div class="notif-list">' + list.map(function (n) {
+        var unread = !n.dibaca;
+        return (
+          '<div class="notif-item card' + (unread ? ' notif-unread' : '') + '" data-id="' + n.id + '" role="button" tabindex="0">' +
+            '<span class="notif-icon" aria-hidden="true">🔔</span>' +
+            '<div class="notif-body">' +
+              '<p class="notif-pesan">' + n.pesan + '</p>' +
+              '<p class="notif-tanggal text-gray">' + formatTanggal(n.tanggal) + '</p>' +
+            '</div>' +
+            (unread ? '<span class="badge badge-primary notif-badge-baru">Baru</span>' : '') +
+          '</div>'
+        );
+      }).join('') + '</div>';
+
+      document.querySelectorAll('.notif-item').forEach(function (item) {
+        function markRead() {
+          var id = item.getAttribute('data-id');
+          updateItem('notifikasi', id, { dibaca: true });
+          renderNotifikasi();
+        }
+        item.addEventListener('click', markRead);
+        item.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            markRead();
+          }
+        });
+      });
+    }
+
+    document.getElementById('btn-tandai-semua').addEventListener('click', function () {
+      getNotifikasiUser().forEach(function (n) {
+        if (!n.dibaca) {
+          updateItem('notifikasi', n.id, { dibaca: true });
+        }
+      });
+      renderNotifikasi();
+    });
+
+    renderNotifikasi();
+  })();</script>
+</body>
+</html>

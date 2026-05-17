@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Landing Page — Platform E-Learning</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-logo">EduKita</a>
+      <ul class="navbar-menu">
+        <li><a href="pages/siswa/katalog.html">Katalog</a></li>
+        <li><a href="pages/siswa/daftar-instruktur.html">Instruktur</a></li>
+        <li><a href="pages/auth/faq.html">FAQ</a></li>
+      </ul>
+      <div class="navbar-actions">
+        <a href="pages/auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>
+        <a href="pages/auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="hero-banner">
+    <p class="hero-promo" id="hero-promo" style="display:none;"></p>
+    <h1>Belajar Kapan Saja, Di Mana Saja</h1>
+    <p>Platform e-learning terbaik untuk mahasiswa dan profesional. Akses ratusan kelas berkualitas dari instruktur berpengalaman.</p>
+    <div class="hero-actions">
+      <a href="pages/auth/login.html" class="btn btn-primary" id="hero-cta-primary">Mulai Belajar</a>
+      <a href="pages/siswa/katalog.html" class="btn btn-secondary" id="hero-cta-secondary">Lihat Kelas</a>
+    </div>
+  </section>
+
+  <main>
+    <!-- Kategori -->
+    <section class="section">
+      <div class="container">
+        <h2 class="section-title">Jelajahi Kategori</h2>
+        <p class="section-subtitle">Pilih bidang yang ingin kamu kuasai</p>
+        <div id="grid-kategori" class="grid-kategori"></div>
+      </div>
+    </section>
+
+    <!-- Kelas Unggulan -->
+    <section class="section section-alt">
+      <div class="container">
+        <h2 class="section-title">Kelas Unggulan</h2>
+        <p class="section-subtitle">Kelas pilihan dengan rating terbaik</p>
+        <div id="grid-kelas" class="grid-3"></div>
+      </div>
+    </section>
+
+    <!-- Testimoni -->
+    <section class="section">
+      <div class="container">
+        <h2 class="section-title">Apa Kata Mereka?</h2>
+        <p class="section-subtitle">Testimoni dari siswa yang sudah belajar di EduKita</p>
+        <div class="grid-3">
+          <div class="card-testimoni">
+            <div class="stars">★★★★★</div>
+            <p>"Materinya sangat mudah dipahami. Cocok banget buat pemula yang baru mulai belajar web development!"</p>
+            <span class="nama">— Budi Santoso, Mahasiswa IT</span>
+          </div>
+          <div class="card-testimoni">
+            <div class="stars">★★★★☆</div>
+            <p>"Instrukturnya responsif dan sabar menjawab pertanyaan di forum diskusi. Pengalaman belajar yang menyenangkan."</p>
+            <span class="nama">— Rina Wulandari, UI Designer</span>
+          </div>
+          <div class="card-testimoni">
+            <div class="stars">★★★★★</div>
+            <p>"Harganya terjangkau dan sertifikatnya diakui. Sudah 3 kelas saya selesaikan di sini, semuanya worth it!"</p>
+            <span class="nama">— Andi Prasetyo, Freelancer</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-brand">EduKita</p>
+      <div class="footer-links">
+        <a href="pages/auth/syarat-ketentuan.html">Syarat & Ketentuan</a>
+        <a href="pages/auth/faq.html">FAQ</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 EduKita — Platform E-Learning. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="storage.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    document.documentElement.classList.add('auth-ok');
+    initStorage();
+
+    const KATEGORI_EMOJI = {
+      1: '💻',
+      2: '🎨',
+      3: '📊',
+      4: '📱',
+      5: '💼'
+    };
+
+    function formatRupiah(angka) {
+      return angka === 0 ? 'GRATIS' : 'Rp ' + angka.toLocaleString('id-ID');
+    }
+
+    function renderKategori() {
+      const container = document.getElementById('grid-kategori');
+      const kategori = getAll('categories');
+
+      container.innerHTML = kategori.map(k => `
+        <div class="card-kategori">
+          <span class="emoji">${KATEGORI_EMOJI[k.id] || '📚'}</span>
+          <h3>${k.nama}</h3>
+        </div>
+      `).join('');
+    }
+
+    function renderKelasUnggulan() {
+      const container = document.getElementById('grid-kelas');
+      const kelasList = getAll('kelas')
+        .filter(k => k.status === 'published')
+        .slice(0, 3);
+
+      if (kelasList.length === 0) {
+        container.innerHTML =
+          '<div class="empty-state">' +
+            '<p>Belum ada kelas tersedia.</p>' +
+          '</div>';
+        return;
+      }
+
+      container.innerHTML = kelasList.map(k => `
+        <div class="card-kelas">
+          <img src="${k.gambar}" alt="${k.judul}" onerror="this.src='assets/images/placeholder.jpg'">
+          <div class="card-body">
+            <span class="badge badge-primary">${k.kategoriNama}</span>
+            <h3>${k.judul}</h3>
+            <p class="text-gray">${k.instrukturNama}</p>
+            <div class="card-kelas-footer">
+              <strong>${formatRupiah(k.harga)}</strong>
+              <a href="pages/siswa/detail-kelas.html?id=${k.id}" class="btn btn-primary btn-sm">Lihat Kelas</a>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderBanner() {
+      var banner = {};
+      try {
+        banner = JSON.parse(localStorage.getItem('banner')) || {};
+      } catch (e) {
+        banner = {};
+      }
+
+      var promoEl = document.getElementById('hero-promo');
+      var heroEl = document.getElementById('hero-banner');
+
+      if (banner.teks) {
+        promoEl.textContent = banner.teks;
+        promoEl.style.display = 'block';
+      }
+
+      if (banner.warnaBg) {
+        heroEl.style.background = banner.warnaBg;
+      }
+
+      if (banner.link && banner.link !== '#') {
+        var link = banner.link;
+        if (link.indexOf('http') !== 0 && link.indexOf('pages/') !== 0 && link.indexOf('/') !== 0) {
+          link = link;
+        }
+        document.getElementById('hero-cta-primary').href = link;
+        document.getElementById('hero-cta-primary').textContent = 'Lihat Promo';
+      }
+    }
+
+    renderKategori();
+    renderKelasUnggulan();
+    renderBanner();
+  </script>
+</body>
+</html>

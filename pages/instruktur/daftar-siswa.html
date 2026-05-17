@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Siswa — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="daftar-kelas.html" class="sidebar-link" data-page="daftar-kelas">📚 Kelas Saya</a>
+        <a href="buat-kelas.html" class="sidebar-link" data-page="buat-kelas">➕ Buat Kelas</a>
+        <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">💬 Q&amp;A</a>
+        <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">💰 Laporan Pendapatan</a>
+        <a href="tarik-saldo.html" class="sidebar-link" data-page="tarik-saldo">🏦 Tarik Saldo</a>
+        <a href="profil-publik.html" class="sidebar-link" data-page="profil-publik">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header-flex">
+        <div>
+          <h1 id="kelas-judul">Daftar Siswa</h1>
+          <p class="text-gray" id="kelas-info">Siswa terdaftar dan progres belajar</p>
+        </div>
+        <a href="daftar-kelas.html" class="btn btn-secondary">← Kembali</a>
+      </div>
+
+      <div class="card table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Siswa</th>
+              <th>Email</th>
+              <th>Tanggal Beli</th>
+              <th>Progres</th>
+            </tr>
+          </thead>
+          <tbody id="tabel-siswa-body"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    var params = new URLSearchParams(window.location.search);
+    var kelasId = params.get('kelasId') || params.get('id');
+
+    if (!kelasId) {
+      alert('Kelas tidak dipilih.');
+      window.location.href = 'daftar-kelas.html';
+      return;
+    }
+
+    var kelas = getById('kelas', kelasId);
+    if (!kelas || kelas.instrukturId !== user.id) {
+      alert('Kelas tidak ditemukan atau bukan milik Anda.');
+      window.location.href = 'daftar-kelas.html';
+      return;
+    }
+
+    setActiveSidebar('daftar-kelas');
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    document.getElementById('kelas-judul').textContent = 'Daftar Siswa: ' + kelas.judul;
+
+    function formatTanggal(tanggal) {
+      if (!tanggal) return '-';
+      return new Date(tanggal).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
+    function getProgres(userId) {
+      return getAll('progres').find(function (p) {
+        return sameUserId(p.userId, userId) && String(p.kelasId) === String(kelasId);
+      });
+    }
+
+    function getSiswaRows() {
+      var seen = {};
+      var rows = [];
+
+      getAll('transaksi').forEach(function (t) {
+        if ((t.status || 'sukses') !== 'sukses') return;
+        if ((t.items || []).indexOf(kelasId) === -1) return;
+        if (seen[t.userId]) return;
+        seen[t.userId] = true;
+
+        var siswa = getById('users', t.userId);
+        var progres = getProgres(t.userId);
+        var persen = progres ? Math.round(progres.persen || 0) : 0;
+
+        rows.push({
+          nama: siswa ? siswa.nama : 'Pengguna tidak ditemukan',
+          email: siswa ? siswa.email : '-',
+          tanggal: t.tanggal,
+          persen: persen
+        });
+      });
+
+      rows.sort(function (a, b) {
+        return new Date(b.tanggal) - new Date(a.tanggal);
+      });
+
+      return rows;
+    }
+
+    function renderTabel() {
+      var tbody = document.getElementById('tabel-siswa-body');
+      var rows = getSiswaRows();
+
+      document.getElementById('kelas-info').textContent =
+        rows.length + ' siswa terdaftar di kelas ini';
+
+      if (rows.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="5" class="text-center text-gray">Belum ada siswa yang membeli kelas ini.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(function (row, index) {
+        return (
+          '<tr>' +
+            '<td>' + (index + 1) + '</td>' +
+            '<td><strong>' + row.nama + '</strong></td>' +
+            '<td>' + row.email + '</td>' +
+            '<td>' + formatTanggal(row.tanggal) + '</td>' +
+            '<td style="min-width:160px;">' +
+              '<div class="progress-bar"><div class="progress-fill" style="width:' + row.persen + '%"></div></div>' +
+              '<span class="progress-text">' + row.persen + '%</span>' +
+            '</td>' +
+          '</tr>'
+        );
+      }).join('');
+    }
+
+    renderTabel();
+  })();</script>
+</body>
+</html>

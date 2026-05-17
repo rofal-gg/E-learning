@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Kelas — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="daftar-kelas.html" class="sidebar-link" data-page="daftar-kelas">📚 Kelas Saya</a>
+        <a href="buat-kelas.html" class="sidebar-link" data-page="buat-kelas">➕ Buat Kelas</a>
+        <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">💬 Q&amp;A</a>
+        <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">💰 Laporan Pendapatan</a>
+        <a href="tarik-saldo.html" class="sidebar-link" data-page="tarik-saldo">🏦 Tarik Saldo</a>
+        <a href="profil-publik.html" class="sidebar-link" data-page="profil-publik">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header-flex">
+        <div>
+          <h1>Kelas Saya</h1>
+          <p class="text-gray">Kelola semua kelas yang Anda buat</p>
+        </div>
+        <a href="buat-kelas.html" class="btn btn-primary">Buat Kelas Baru</a>
+      </div>
+
+      <div class="filter-bar" style="margin-bottom: 24px;">
+        <label class="form-label" for="filter-status" style="margin: 0;">Filter Status</label>
+        <select id="filter-status" class="form-input" style="max-width: 220px;">
+          <option value="">Semua</option>
+          <option value="pending">Pending</option>
+          <option value="published">Published</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+
+      <div class="card table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Gambar</th>
+              <th>Judul</th>
+              <th>Kategori</th>
+              <th>Harga</th>
+              <th>Status</th>
+              <th>Total Siswa</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabel-kelas-body"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    var filterStatus = '';
+
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    document.getElementById('filter-status').addEventListener('change', function () {
+      filterStatus = this.value;
+      renderTabel();
+    });
+
+    function formatRupiah(angka) {
+      return angka === 0 ? 'GRATIS' : 'Rp ' + angka.toLocaleString('id-ID');
+    }
+
+    function getMyKelas() {
+      return getAll('kelas').filter(function (k) {
+        return k.instrukturId === user.id;
+      });
+    }
+
+    function kelasStatusBadge(status) {
+      if (status === 'published') {
+        return '<span class="badge badge-success">Published</span>';
+      }
+      if (status === 'rejected') {
+        return '<span class="badge badge-danger">Rejected</span>';
+      }
+      return '<span class="badge badge-warning">Pending</span>';
+    }
+
+    function countSiswaPerKelas(kelasId) {
+      var siswaIds = [];
+      getAll('transaksi').forEach(function (t) {
+        if ((t.status || 'sukses') !== 'sukses') return;
+        (t.items || []).forEach(function (itemId) {
+          if (itemId === kelasId && siswaIds.indexOf(t.userId) === -1) {
+            siswaIds.push(t.userId);
+          }
+        });
+      });
+      return siswaIds.length;
+    }
+
+    function hapusKelas(kelasId, judul) {
+      if (!confirm('Yakin ingin menghapus kelas "' + judul + '"? Tindakan ini tidak dapat dibatalkan.')) {
+        return;
+      }
+      deleteItem('kelas', kelasId);
+      renderTabel();
+    }
+
+    function renderTabel() {
+      var tbody = document.getElementById('tabel-kelas-body');
+      var list = getMyKelas();
+
+      if (filterStatus) {
+        list = list.filter(function (k) {
+          return (k.status || 'pending') === filterStatus;
+        });
+      }
+
+      if (list.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="8" class="text-center text-gray">' +
+            (filterStatus ? 'Tidak ada kelas dengan status ini.' : 'Belum ada kelas. Klik "Buat Kelas Baru" untuk memulai.') +
+          '</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(function (k, index) {
+        return (
+          '<tr>' +
+            '<td>' + (index + 1) + '</td>' +
+            '<td><img src="../../' + k.gambar + '" alt="' + k.judul + '" style="width:48px;height:48px;object-fit:cover;border-radius:var(--radius);" onerror="this.src=\'../../assets/images/placeholder.jpg\'"></td>' +
+            '<td><strong>' + k.judul + '</strong></td>' +
+            '<td>' + (k.kategoriNama || '-') + '</td>' +
+            '<td>' + formatRupiah(k.harga) + '</td>' +
+            '<td>' + kelasStatusBadge(k.status) + '</td>' +
+            '<td>' + countSiswaPerKelas(k.id) + '</td>' +
+            '<td style="white-space:nowrap;">' +
+              '<a href="buat-kelas.html?id=' + encodeURIComponent(k.id) + '" class="btn btn-secondary btn-sm">Edit</a> ' +
+              '<a href="kurikulum.html?id=' + encodeURIComponent(k.id) + '" class="btn btn-secondary btn-sm">Kurikulum</a> ' +
+              '<a href="unggah-materi.html?kelasId=' + encodeURIComponent(k.id) + '" class="btn btn-secondary btn-sm">Materi</a> ' +
+              '<a href="daftar-siswa.html?kelasId=' + encodeURIComponent(k.id) + '" class="btn btn-secondary btn-sm">Siswa</a> ' +
+              '<button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="' + k.id + '">Hapus</button>' +
+            '</td>' +
+          '</tr>'
+        );
+      }).join('');
+
+      tbody.querySelectorAll('.btn-hapus').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var kelas = getById('kelas', this.getAttribute('data-id'));
+          if (kelas) hapusKelas(kelas.id, kelas.judul);
+        });
+      });
+    }
+
+    renderTabel();
+  })();</script>
+</body>
+</html>

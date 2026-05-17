@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moderasi Ulasan — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita Admin</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="manajemen-siswa.html" class="sidebar-link" data-page="manajemen-siswa">👥 Manajemen Siswa</a>
+        <a href="manajemen-instruktur.html" class="sidebar-link" data-page="manajemen-instruktur">🎓 Manajemen Instruktur</a>
+        <a href="persetujuan-kelas.html" class="sidebar-link" data-page="persetujuan-kelas">✅ Persetujuan Kelas</a>
+        <a href="verifikasi-pembayaran.html" class="sidebar-link" data-page="verifikasi-pembayaran">💳 Verifikasi Pembayaran</a>
+        <a href="verifikasi-penarikan.html" class="sidebar-link" data-page="verifikasi-penarikan">🏦 Verifikasi Penarikan</a>
+        <a href="manajemen-kategori.html" class="sidebar-link" data-page="manajemen-kategori">📁 Kategori</a>
+        <a href="moderasi-ulasan.html" class="sidebar-link" data-page="moderasi-ulasan">⭐ Moderasi Ulasan</a>
+        <a href="pengaturan-banner.html" class="sidebar-link" data-page="pengaturan-banner">🖼️ Banner</a>
+        <a href="manajemen-admin.html" class="sidebar-link" data-page="manajemen-admin">🔐 Manajemen Admin</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Moderasi Ulasan</h1>
+        <p class="text-gray">Kelola ulasan siswa yang melanggar ketentuan</p>
+      </div>
+
+      <div class="filter-bar" style="flex-wrap:wrap;gap:12px;">
+        <div class="form-group" style="margin-bottom:0;min-width:200px;">
+          <label class="form-label" for="filter-kelas">Filter Kelas</label>
+          <select id="filter-kelas" class="form-input">
+            <option value="">Semua Kelas</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;min-width:160px;">
+          <label class="form-label" for="filter-rating">Filter Rating</label>
+          <select id="filter-rating" class="form-input">
+            <option value="">Semua Rating</option>
+            <option value="5">5 Bintang</option>
+            <option value="4">4 Bintang</option>
+            <option value="3">3 Bintang</option>
+            <option value="2">2 Bintang</option>
+            <option value="1">1 Bintang</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="table-area"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var adminUser = window.__pageUser;
+      if (!adminUser) return;
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function renderStars(rating) {
+      var n = Math.max(0, Math.min(5, parseInt(rating, 10) || 0));
+      var stars = '';
+      for (var i = 0; i < n; i++) stars += '★';
+      for (var j = n; j < 5; j++) stars += '☆';
+      return '<span class="stars">' + stars + '</span>';
+    }
+
+    function getNamaKelas(kelasId) {
+      var kelas = getById('kelas', kelasId);
+      return kelas ? kelas.judul : '-';
+    }
+
+    function formatTanggal(tanggal) {
+      if (!tanggal) return '-';
+      return new Date(tanggal).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
+    function isiFilterKelas() {
+      var select = document.getElementById('filter-kelas');
+      var kelasList = getAll('kelas');
+      kelasList.forEach(function (k) {
+        var opt = document.createElement('option');
+        opt.value = k.id;
+        opt.textContent = k.judul;
+        select.appendChild(opt);
+      });
+    }
+
+    function getFilteredUlasan() {
+      var kelasId = document.getElementById('filter-kelas').value;
+      var rating = document.getElementById('filter-rating').value;
+
+      return getAll('ulasan').filter(function (u) {
+        if (kelasId && u.kelasId !== kelasId) return false;
+        if (rating && String(u.rating) !== rating) return false;
+        return true;
+      });
+    }
+
+    function hapusUlasan(id) {
+      if (!confirm('Hapus ulasan ini? Tindakan tidak dapat dibatalkan.')) return;
+      deleteItem('ulasan', id);
+      renderTable();
+    }
+
+    function renderTable() {
+      var area = document.getElementById('table-area');
+      var list = getFilteredUlasan();
+
+      if (list.length === 0) {
+        area.innerHTML =
+          '<div class="empty-state card">' +
+            '<p>Tidak ada ulasan untuk ditampilkan.</p>' +
+          '</div>';
+        return;
+      }
+
+      var rows = list.map(function (u) {
+        return (
+          '<tr>' +
+            '<td><strong>' + (u.userName || '-') + '</strong></td>' +
+            '<td>' + getNamaKelas(u.kelasId) + '</td>' +
+            '<td>' + renderStars(u.rating) + '</td>' +
+            '<td style="max-width:280px;">' + (u.komentar || '-') + '</td>' +
+            '<td>' + formatTanggal(u.tanggal) + '</td>' +
+            '<td class="table-aksi">' +
+              '<button type="button" class="btn btn-danger btn-sm" data-aksi="hapus" data-id="' + u.id + '">Hapus</button>' +
+            '</td>' +
+          '</tr>'
+        );
+      }).join('');
+
+      area.innerHTML =
+        '<div class="card table-wrap">' +
+          '<table class="table">' +
+            '<thead>' +
+              '<tr>' +
+                '<th>Nama Siswa</th>' +
+                '<th>Nama Kelas</th>' +
+                '<th>Rating</th>' +
+                '<th>Komentar</th>' +
+                '<th>Tanggal</th>' +
+                '<th>Aksi</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>';
+
+      area.querySelectorAll('button[data-aksi="hapus"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          hapusUlasan(this.getAttribute('data-id'));
+        });
+      });
+    }
+
+    document.getElementById('filter-kelas').addEventListener('change', renderTable);
+    document.getElementById('filter-rating').addEventListener('change', renderTable);
+
+    isiFilterKelas();
+    renderTable();
+  })();</script>
+</body>
+</html>

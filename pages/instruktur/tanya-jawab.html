@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tanya Jawab — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="daftar-kelas.html" class="sidebar-link" data-page="daftar-kelas">📚 Kelas Saya</a>
+        <a href="buat-kelas.html" class="sidebar-link" data-page="buat-kelas">➕ Buat Kelas</a>
+        <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">💬 Q&amp;A</a>
+        <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">💰 Laporan Pendapatan</a>
+        <a href="tarik-saldo.html" class="sidebar-link" data-page="tarik-saldo">🏦 Tarik Saldo</a>
+        <a href="profil-publik.html" class="sidebar-link" data-page="profil-publik">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Tanya Jawab Siswa</h1>
+        <p class="text-gray">Balas pertanyaan dari semua kelas Anda</p>
+      </div>
+
+      <div id="diskusi-list" class="diskusi-list"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    setActiveSidebar();
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function formatTanggal(tanggal) {
+      if (!tanggal) return '-';
+      return new Date(tanggal).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+
+    function getInitials(nama) {
+      if (!nama) return '?';
+      return nama.split(' ').map(function (n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
+    }
+
+    function getMyKelasIds() {
+      return getAll('kelas')
+        .filter(function (k) { return k.instrukturId === user.id; })
+        .map(function (k) { return k.id; });
+    }
+
+    function getKelasMap() {
+      var map = {};
+      getAll('kelas').forEach(function (k) {
+        if (k.instrukturId === user.id) map[k.id] = k;
+      });
+      return map;
+    }
+
+    function renderDiskusi() {
+      var container = document.getElementById('diskusi-list');
+      var kelasIds = getMyKelasIds();
+      var kelasMap = getKelasMap();
+
+      var list = getAll('diskusi')
+        .filter(function (d) { return kelasIds.indexOf(d.kelasId) !== -1; })
+        .sort(function (a, b) {
+          return new Date(b.tanggal) - new Date(a.tanggal);
+        });
+
+      if (list.length === 0) {
+        container.innerHTML =
+          '<div class="empty-state">' +
+            '<p>Belum ada pertanyaan dari siswa.</p>' +
+          '</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(function (d) {
+        var kelas = kelasMap[d.kelasId];
+        var namaKelas = kelas ? kelas.judul : 'Kelas';
+
+        var balasanHtml = (d.balasan || []).map(function (b) {
+          return (
+            '<div class="diskusi-balasan">' +
+              '<div class="diskusi-avatar diskusi-avatar-sm">' + getInitials(b.userName) + '</div>' +
+              '<div class="diskusi-balasan-body">' +
+                '<strong>' + b.userName + '</strong>' +
+                '<span class="diskusi-tanggal">' + formatTanggal(b.tanggal) + '</span>' +
+                '<p>' + b.teks + '</p>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join('');
+
+        return (
+          '<article class="card diskusi-item" data-id="' + d.id + '">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">' +
+              '<span class="badge badge-primary">' + namaKelas + '</span>' +
+              '<span class="diskusi-tanggal">' + formatTanggal(d.tanggal) + '</span>' +
+            '</div>' +
+            '<p><strong>' + d.userName + '</strong></p>' +
+            '<p class="diskusi-pertanyaan">' + d.pertanyaan + '</p>' +
+            (balasanHtml
+              ? '<div class="diskusi-balasan-list"><h3>Balasan</h3>' + balasanHtml + '</div>'
+              : '') +
+            '<form class="form-balasan" data-id="' + d.id + '" style="margin-top:16px;">' +
+              '<div class="form-group" style="margin-bottom:12px;">' +
+                '<label class="form-label">Balasan Anda</label>' +
+                '<textarea class="form-input input-balasan" rows="3" placeholder="Tulis balasan untuk siswa…" required></textarea>' +
+              '</div>' +
+              '<button type="submit" class="btn btn-primary btn-sm">Balas</button>' +
+            '</form>' +
+          '</article>'
+        );
+      }).join('');
+
+      container.querySelectorAll('.form-balasan').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var diskusiId = this.getAttribute('data-id');
+          var textarea = this.querySelector('.input-balasan');
+          var teks = textarea.value.trim();
+          if (!teks) return;
+
+          var diskusi = getById('diskusi', diskusiId);
+          if (!diskusi) return;
+
+          var balasan = (diskusi.balasan || []).slice();
+          balasan.push({
+            userId: user.id,
+            userName: user.nama,
+            teks: teks,
+            tanggal: new Date().toISOString()
+          });
+
+          updateItem('diskusi', diskusiId, { balasan: balasan });
+          textarea.value = '';
+          renderDiskusi();
+        });
+      });
+    }
+
+    renderDiskusi();
+  })();</script>
+</body>
+</html>

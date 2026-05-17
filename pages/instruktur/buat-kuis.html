@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buat Kuis — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="daftar-kelas.html" class="sidebar-link" data-page="daftar-kelas">📚 Kelas Saya</a>
+        <a href="buat-kelas.html" class="sidebar-link" data-page="buat-kelas">➕ Buat Kelas</a>
+        <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">💬 Q&amp;A</a>
+        <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">💰 Laporan Pendapatan</a>
+        <a href="tarik-saldo.html" class="sidebar-link" data-page="tarik-saldo">🏦 Tarik Saldo</a>
+        <a href="profil-publik.html" class="sidebar-link" data-page="profil-publik">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header-flex">
+        <div>
+          <h1 id="page-judul">Buat Kuis</h1>
+          <p class="text-gray" id="page-info"></p>
+        </div>
+        <a href="daftar-kelas.html" class="btn btn-secondary">← Kembali</a>
+      </div>
+
+      <section class="content-section">
+        <h2>Soal yang Sudah Ada</h2>
+        <div id="list-soal" class="card">
+          <div class="empty-state"><p>Belum ada soal.</p></div>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <h2>Tambah Soal Baru</h2>
+        <div class="card" style="max-width: 720px;">
+          <form id="form-tambah-soal">
+            <div class="form-group">
+              <label class="form-label" for="pertanyaan">Pertanyaan</label>
+              <input type="text" id="pertanyaan" class="form-input" required placeholder="Tulis pertanyaan kuis…">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="pilihan-a">Pilihan A</label>
+              <input type="text" id="pilihan-a" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="pilihan-b">Pilihan B</label>
+              <input type="text" id="pilihan-b" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="pilihan-c">Pilihan C</label>
+              <input type="text" id="pilihan-c" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="pilihan-d">Pilihan D</label>
+              <input type="text" id="pilihan-d" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="jawaban-benar">Jawaban Benar</label>
+              <select id="jawaban-benar" class="form-input" required>
+                <option value="0">A</option>
+                <option value="1">B</option>
+                <option value="2">C</option>
+                <option value="3">D</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-secondary">Tambah Soal</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <button type="button" id="btn-simpan-kuis" class="btn btn-primary">Simpan Kuis</button>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    var params = new URLSearchParams(window.location.search);
+    var kelasId = params.get('kelasId') || params.get('id');
+    var babKe = parseInt(params.get('babKe') || params.get('bab') || '', 10);
+
+    if (!kelasId || !babKe) {
+      alert('Kelas atau bab tidak dipilih.');
+      window.location.href = 'daftar-kelas.html';
+      return;
+    }
+
+    var kelas = getById('kelas', kelasId);
+    if (!kelas || kelas.instrukturId !== user.id) {
+      alert('Kelas tidak ditemukan atau bukan milik Anda.');
+      window.location.href = 'daftar-kelas.html';
+      return;
+    }
+
+    var bab = (kelas.silabus || []).find(function (b) { return b.babKe === babKe; });
+    if (!bab) {
+      alert('Bab tidak ditemukan di silabus kelas ini.');
+      window.location.href = 'kurikulum.html?id=' + encodeURIComponent(kelasId);
+      return;
+    }
+
+    var kuisExisting = getAll('kuis').find(function (k) {
+      return k.kelasId === kelasId && k.babKe === babKe;
+    });
+
+    var kuisId = kuisExisting ? kuisExisting.id : null;
+    var soalList = kuisExisting ? (kuisExisting.soal || []).slice() : [];
+
+    setActiveSidebar('daftar-kelas');
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    document.getElementById('page-judul').textContent = 'Kuis: ' + kelas.judul;
+    document.getElementById('page-info').textContent =
+      'Bab ' + babKe + ' — ' + bab.judul + ' · ' + soalList.length + ' soal';
+
+    function renderListSoal() {
+      var container = document.getElementById('list-soal');
+      document.getElementById('page-info').textContent =
+        'Bab ' + babKe + ' — ' + bab.judul + ' · ' + soalList.length + ' soal';
+
+      if (soalList.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Belum ada soal.</p></div>';
+        return;
+      }
+
+      var labels = ['A', 'B', 'C', 'D'];
+      container.innerHTML = soalList.map(function (soal, index) {
+        var pilihanHtml = (soal.pilihan || []).map(function (p, i) {
+          var benar = soal.jawaban === i ? ' <span class="badge badge-success">Benar</span>' : '';
+          return '<li>' + labels[i] + '. ' + p + benar + '</li>';
+        }).join('');
+
+        return (
+          '<article class="card" style="margin-bottom:12px;padding:16px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">' +
+              '<div>' +
+                '<p><strong>Soal ' + (index + 1) + '.</strong> ' + soal.pertanyaan + '</p>' +
+                '<ul style="margin:8px 0 0;padding-left:20px;">' + pilihanHtml + '</ul>' +
+              '</div>' +
+              '<button type="button" class="btn btn-danger btn-sm btn-hapus-soal" data-index="' + index + '">Hapus</button>' +
+            '</div>' +
+          '</article>'
+        );
+      }).join('');
+
+      container.querySelectorAll('.btn-hapus-soal').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var idx = parseInt(this.getAttribute('data-index'), 10);
+          if (!confirm('Hapus soal ini?')) return;
+          soalList.splice(idx, 1);
+          renderListSoal();
+        });
+      });
+    }
+
+    document.getElementById('form-tambah-soal').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var pertanyaan = document.getElementById('pertanyaan').value.trim();
+      var pilihan = [
+        document.getElementById('pilihan-a').value.trim(),
+        document.getElementById('pilihan-b').value.trim(),
+        document.getElementById('pilihan-c').value.trim(),
+        document.getElementById('pilihan-d').value.trim()
+      ];
+      var jawaban = parseInt(document.getElementById('jawaban-benar').value, 10);
+
+      if (!pertanyaan || pilihan.some(function (p) { return !p; })) {
+        alert('Mohon lengkapi pertanyaan dan semua pilihan jawaban.');
+        return;
+      }
+
+      soalList.push({ pertanyaan: pertanyaan, pilihan: pilihan, jawaban: jawaban });
+      document.getElementById('form-tambah-soal').reset();
+      renderListSoal();
+    });
+
+    document.getElementById('btn-simpan-kuis').addEventListener('click', function () {
+      if (soalList.length === 0) {
+        alert('Tambahkan minimal satu soal sebelum menyimpan kuis.');
+        return;
+      }
+
+      if (kuisExisting) {
+        updateItem('kuis', kuisId, { soal: soalList });
+      } else {
+        kuisId = generateId('q');
+        createItem('kuis', {
+          id: kuisId,
+          kelasId: kelasId,
+          babKe: babKe,
+          soal: soalList
+        });
+        kuisExisting = getById('kuis', kuisId);
+      }
+
+      alert('Kuis berhasil disimpan.');
+      renderListSoal();
+    });
+
+    renderListSoal();
+  })();</script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tarik Saldo — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="daftar-kelas.html" class="sidebar-link" data-page="daftar-kelas">📚 Kelas Saya</a>
+        <a href="buat-kelas.html" class="sidebar-link" data-page="buat-kelas">➕ Buat Kelas</a>
+        <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">💬 Q&amp;A</a>
+        <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">💰 Laporan Pendapatan</a>
+        <a href="tarik-saldo.html" class="sidebar-link" data-page="tarik-saldo">🏦 Tarik Saldo</a>
+        <a href="riwayat-penarikan.html" class="sidebar-link" data-page="riwayat-penarikan">📋 Riwayat Penarikan</a>
+        <a href="profil-publik.html" class="sidebar-link" data-page="profil-publik">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Tarik Saldo</h1>
+        <p class="text-gray">Ajukan penarikan saldo ke rekening bank Anda</p>
+      </div>
+
+      <div id="alert-tarik" class="alert alert-success" style="display:none;"></div>
+
+      <div class="card" style="margin-bottom: 24px; text-align: center;">
+        <p class="text-gray" style="margin: 0 0 8px;">Saldo Tersedia</p>
+        <p id="saldo-display" style="margin: 0; font-size: var(--font-size-3xl); font-weight: 700; color: var(--primary);">Rp 0</p>
+        <a href="riwayat-penarikan.html" class="text-link-sm" style="display:inline-block;margin-top:12px;">Lihat riwayat penarikan →</a>
+      </div>
+
+      <section class="card" style="max-width: 520px;">
+        <h2 style="margin: 0 0 20px; font-size: var(--font-size-lg);">Form Penarikan</h2>
+        <form id="form-tarik">
+          <div class="form-group">
+            <label class="form-label" for="input-nominal">Nominal Penarikan</label>
+            <input type="number" id="input-nominal" class="form-input" min="50000" placeholder="Minimal Rp 50.000" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="select-bank">Bank</label>
+            <select id="select-bank" class="form-input" required>
+              <option value="BCA">BCA</option>
+              <option value="Mandiri">Mandiri</option>
+              <option value="BNI">BNI</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-norek">Nomor Rekening</label>
+            <input type="text" id="input-norek" class="form-input" placeholder="1234567890" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Tarik Saldo</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    var MIN_TARIK = 50000;
+
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function formatRupiah(angka) {
+      var n = angka || 0;
+      return n === 0 ? 'Rp 0' : 'Rp ' + n.toLocaleString('id-ID');
+    }
+
+    function renderSaldo() {
+      var freshUser = getById('users', user.id) || user;
+      user = freshUser;
+      document.getElementById('saldo-display').textContent = formatRupiah(freshUser.saldo);
+    }
+
+    document.getElementById('form-tarik').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var freshUser = getById('users', user.id) || user;
+      var saldo = freshUser.saldo || 0;
+      var nominal = parseInt(document.getElementById('input-nominal').value, 10);
+      var bank = document.getElementById('select-bank').value;
+      var norek = document.getElementById('input-norek').value.trim();
+
+      if (isNaN(nominal) || nominal < MIN_TARIK) {
+        alert('Nominal minimal Rp 50.000.');
+        return;
+      }
+      if (nominal > saldo) {
+        alert('Nominal melebihi saldo tersedia.');
+        return;
+      }
+      if (!norek) {
+        alert('Nomor rekening wajib diisi.');
+        return;
+      }
+
+      createItem('penarikan', {
+        id: generateId('wd'),
+        instrukturId: user.id,
+        nominal: nominal,
+        bank: bank,
+        norek: norek,
+        status: 'pending',
+        tanggal: new Date().toISOString()
+      });
+
+      updateItem('users', user.id, { saldo: saldo - nominal });
+
+      var updatedUser = getById('users', user.id);
+      sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      user = updatedUser;
+
+      var alertEl = document.getElementById('alert-tarik');
+      alertEl.textContent = 'Permintaan penarikan berhasil diajukan. Status: menunggu verifikasi admin.';
+      alertEl.style.display = 'block';
+
+      this.reset();
+      renderSaldo();
+    });
+
+    renderSaldo();
+  })();</script>
+</body>
+</html>

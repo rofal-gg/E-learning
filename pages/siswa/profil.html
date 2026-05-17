@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil Siswa — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="katalog.html" class="sidebar-link" data-page="katalog">📚 Katalog Kelas</a>
+        <a href="cart.html" class="sidebar-link" data-page="cart">🛒 Kelas Saya</a>
+        <a href="wishlist.html" class="sidebar-link" data-page="wishlist">❤️ Wishlist</a>
+        <a href="riwayat-transaksi.html" class="sidebar-link" data-page="riwayat-transaksi">🧾 Riwayat Transaksi</a>
+        <a href="sertifikat.html" class="sidebar-link" data-page="sertifikat">🏆 Sertifikat</a>
+        <a href="profil.html" class="sidebar-link" data-page="profil">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Profil Saya</h1>
+      </div>
+
+      <div id="alert-profil" class="alert alert-success" style="display:none;"></div>
+
+      <div class="profil-layout">
+        <section class="card profil-preview">
+          <div class="profil-avatar" id="profil-avatar">?</div>
+          <h2 id="profil-nama-display">—</h2>
+          <p class="text-gray" id="profil-email-display">—</p>
+        </section>
+
+        <section class="card profil-form-wrap">
+          <h2>Edit Profil</h2>
+          <form id="form-profil">
+            <div class="form-group">
+              <label class="form-label" for="input-nama">Nama</label>
+              <input type="text" id="input-nama" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-email">Email</label>
+              <input type="email" id="input-email" class="form-input" disabled>
+              <p class="form-hint">Email tidak dapat diubah.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-bio">Bio</label>
+              <textarea id="input-bio" class="form-input" rows="4" placeholder="Ceritakan sedikit tentang diri Anda..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-password">Password Baru</label>
+              <input type="password" id="input-password" class="form-input" placeholder="Kosongkan jika tidak ingin mengubah">
+            </div>
+            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    setActiveSidebar('profil');
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function getInitials(nama) {
+      if (!nama) return '?';
+      return nama.split(' ').map(function (n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
+    }
+
+    function loadProfil() {
+      var data = getById('users', user.id) || user;
+      document.getElementById('profil-avatar').textContent = getInitials(data.nama);
+      document.getElementById('profil-nama-display').textContent = data.nama;
+      document.getElementById('profil-email-display').textContent = data.email;
+      document.getElementById('input-nama').value = data.nama || '';
+      document.getElementById('input-email').value = data.email || '';
+      document.getElementById('input-bio').value = data.bio || '';
+    }
+
+    loadProfil();
+
+    document.getElementById('form-profil').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var nama = document.getElementById('input-nama').value.trim();
+      var bio = document.getElementById('input-bio').value.trim();
+      var passwordBaru = document.getElementById('input-password').value;
+
+      if (!nama) {
+        alert('Nama wajib diisi.');
+        return;
+      }
+
+      var updates = { nama: nama, bio: bio };
+      if (passwordBaru) {
+        updates.password = passwordBaru;
+      }
+
+      updateItem('users', user.id, updates);
+
+      var updatedUser = persistSession(getById('users', user.id) || user);
+      user = updatedUser;
+
+      loadProfil();
+      document.getElementById('input-password').value = '';
+
+      var alertEl = document.getElementById('alert-profil');
+      alertEl.textContent = 'Profil berhasil disimpan.';
+      alertEl.style.display = 'block';
+      setTimeout(function () {
+        alertEl.style.display = 'none';
+      }, 4000);
+    });
+  })();</script>
+</body>
+</html>

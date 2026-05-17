@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Katalog Kelas — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="../../index.html" class="navbar-logo">EduKita</a>
+      <ul class="navbar-menu">
+        <li><a href="katalog.html" class="active">Katalog</a></li>
+        <li><a href="daftar-instruktur.html">Instruktur</a></li>
+        <li><a href="../auth/faq.html">FAQ</a></li>
+        <li id="nav-dashboard-item" style="display: none;"><a href="dashboard.html">Dashboard</a></li>
+      </ul>
+      <div class="navbar-actions" id="navbar-actions"></div>
+    </div>
+  </nav>
+
+  <main class="section catalog-main">
+    <div class="container">
+      <div class="page-header-flex">
+        <h1>Katalog Kelas</h1>
+        <p class="page-meta"><span id="total-kelas">0</span> kelas tersedia</p>
+      </div>
+
+      <div class="filter-bar">
+        <select id="filter-kategori" class="form-input">
+          <option value="">Semua Kategori</option>
+        </select>
+        <select id="filter-level" class="form-input">
+          <option value="">Semua Level</option>
+          <option value="Pemula">Pemula</option>
+          <option value="Menengah">Menengah</option>
+          <option value="Mahir">Mahir</option>
+        </select>
+        <select id="filter-harga" class="form-input">
+          <option value="">Semua Harga</option>
+          <option value="gratis">Gratis</option>
+          <option value="berbayar">Berbayar</option>
+        </select>
+        <input type="text" id="filter-search" class="form-input filter-search" placeholder="Cari judul kelas...">
+      </div>
+
+      <div id="grid-kelas" class="grid-3"></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-brand">EduKita</p>
+      <div class="footer-links">
+        <a href="../auth/syarat-ketentuan.html">Syarat & Ketentuan</a>
+        <a href="../auth/faq.html">FAQ</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 EduKita — Platform E-Learning. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script>
+    initStorage();
+
+    function formatRupiah(angka) {
+      return angka === 0 ? 'GRATIS' : 'Rp ' + angka.toLocaleString('id-ID');
+    }
+
+    function renderNavbar() {
+      var container = document.getElementById('navbar-actions');
+      var user = getCurrentUser();
+
+      if (user && user.role === 'siswa') {
+        document.getElementById('nav-dashboard-item').style.display = 'list-item';
+        container.innerHTML =
+          '<span class="navbar-user">' + user.nama + '</span>' +
+          '<a href="cart.html" class="btn btn-secondary btn-sm">Keranjang</a>' +
+          '<button type="button" class="btn btn-danger btn-sm" id="btn-logout">Logout</button>';
+        document.getElementById('btn-logout').addEventListener('click', logout);
+      } else {
+        container.innerHTML =
+          '<a href="../auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>' +
+          '<a href="../auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>';
+      }
+    }
+
+    function renderKategoriFilter() {
+      var select = document.getElementById('filter-kategori');
+      getAll('categories').forEach(function (cat) {
+        var opt = document.createElement('option');
+        opt.value = cat.id;
+        opt.textContent = cat.nama;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderGrid(kelasList) {
+      var container = document.getElementById('grid-kelas');
+      document.getElementById('total-kelas').textContent = kelasList.length;
+
+      if (kelasList.length === 0) {
+        container.innerHTML =
+          '<div class="empty-state grid-empty-msg">' +
+            '<p>Tidak ada kelas yang cocok dengan filter Anda.</p>' +
+          '</div>';
+        return;
+      }
+
+      container.innerHTML = kelasList.map(function (k) {
+        return (
+          '<div class="card-kelas">' +
+            '<img src="../../' + k.gambar + '" alt="' + k.judul + '" onerror="this.src=\'../../assets/images/placeholder.jpg\'">' +
+            '<div class="card-body">' +
+              '<span class="badge badge-primary">' + k.kategoriNama + '</span>' +
+              '<span class="badge badge-warning badge-gap">' + k.level + '</span>' +
+              '<h3>' + k.judul + '</h3>' +
+              '<p class="text-gray">' + k.instrukturNama + '</p>' +
+              '<div class="card-kelas-footer">' +
+                '<strong>' + formatRupiah(k.harga) + '</strong>' +
+                '<a href="detail-kelas.html?id=' + k.id + '" class="btn btn-primary btn-sm">Lihat Kelas</a>' +
+              '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    }
+
+    function applyFilters() {
+      var kategori = document.getElementById('filter-kategori').value;
+      var level = document.getElementById('filter-level').value;
+      var harga = document.getElementById('filter-harga').value;
+      var search = document.getElementById('filter-search').value.trim().toLowerCase();
+
+      var list = getAll('kelas').filter(function (k) {
+        return k.status === 'published';
+      });
+
+      if (kategori) {
+        list = list.filter(function (k) {
+          return k.kategoriId === parseInt(kategori, 10);
+        });
+      }
+
+      if (level) {
+        list = list.filter(function (k) {
+          return k.level === level;
+        });
+      }
+
+      if (harga === 'gratis') {
+        list = list.filter(function (k) { return k.harga === 0; });
+      } else if (harga === 'berbayar') {
+        list = list.filter(function (k) { return k.harga > 0; });
+      }
+
+      if (search) {
+        list = list.filter(function (k) {
+          return k.judul.toLowerCase().indexOf(search) !== -1;
+        });
+      }
+
+      renderGrid(list);
+    }
+
+    renderNavbar();
+    renderKategoriFilter();
+
+    document.getElementById('filter-kategori').addEventListener('change', applyFilters);
+    document.getElementById('filter-level').addEventListener('change', applyFilters);
+    document.getElementById('filter-harga').addEventListener('change', applyFilters);
+    document.getElementById('filter-search').addEventListener('input', applyFilters);
+
+    applyFilters();
+  </script>
+</body>
+</html>

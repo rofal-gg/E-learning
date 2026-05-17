@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengaturan Banner — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita Admin</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="manajemen-siswa.html" class="sidebar-link" data-page="manajemen-siswa">👥 Manajemen Siswa</a>
+        <a href="manajemen-instruktur.html" class="sidebar-link" data-page="manajemen-instruktur">🎓 Manajemen Instruktur</a>
+        <a href="persetujuan-kelas.html" class="sidebar-link" data-page="persetujuan-kelas">✅ Persetujuan Kelas</a>
+        <a href="verifikasi-pembayaran.html" class="sidebar-link" data-page="verifikasi-pembayaran">💳 Verifikasi Pembayaran</a>
+        <a href="verifikasi-penarikan.html" class="sidebar-link" data-page="verifikasi-penarikan">🏦 Verifikasi Penarikan</a>
+        <a href="manajemen-kategori.html" class="sidebar-link" data-page="manajemen-kategori">📁 Kategori</a>
+        <a href="moderasi-ulasan.html" class="sidebar-link" data-page="moderasi-ulasan">⭐ Moderasi Ulasan</a>
+        <a href="pengaturan-banner.html" class="sidebar-link" data-page="pengaturan-banner">🖼️ Banner</a>
+        <a href="manajemen-admin.html" class="sidebar-link" data-page="manajemen-admin">🔐 Manajemen Admin</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Pengaturan Banner</h1>
+        <p class="text-gray">Atur teks promo banner di halaman utama</p>
+      </div>
+
+      <div class="card" style="margin-bottom:24px;">
+        <h2 style="font-size:var(--font-size-lg);margin-bottom:12px;">Preview Banner</h2>
+        <a id="banner-preview" href="#" class="hero" style="display:block;text-decoration:none;border-radius:var(--radius-lg);padding:32px 24px;">
+          <span id="preview-teks" style="font-size:var(--font-size-xl);font-weight:700;color:#fff;"></span>
+        </a>
+        <p class="text-gray" style="margin-top:8px;font-size:var(--font-size-sm);">Link tujuan: <span id="preview-link-label">#</span></p>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:var(--font-size-lg);margin-bottom:16px;">Edit Banner</h2>
+        <form id="form-banner">
+          <div class="form-group">
+            <label class="form-label" for="input-teks">Teks Banner</label>
+            <input type="text" id="input-teks" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-link">Link Tujuan</label>
+            <input type="text" id="input-link" class="form-input" placeholder="pages/siswa/katalog.html atau #">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-warna">Warna Background</label>
+            <input type="color" id="input-warna" class="form-input" style="height:44px;padding:4px;max-width:120px;">
+          </div>
+          <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+        </form>
+        <p id="save-msg" class="text-gray" style="margin-top:12px;"></p>
+      </div>
+    </main>
+  </div>
+
+
+
+  <script>
+    (function () {
+      var adminUser = window.__pageUser;
+      if (!adminUser) return;
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+
+    function getBanner() {
+      try {
+        return JSON.parse(localStorage.getItem('banner')) || {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function updatePreview() {
+      var teks = document.getElementById('input-teks').value;
+      var link = document.getElementById('input-link').value || '#';
+      var warna = document.getElementById('input-warna').value || '#4F46E5';
+      var preview = document.getElementById('banner-preview');
+      document.getElementById('preview-teks').textContent = teks || 'Teks banner...';
+      preview.href = link;
+      preview.style.background = warna;
+      document.getElementById('preview-link-label').textContent = link;
+    }
+
+    function loadForm() {
+      var b = getBanner();
+      document.getElementById('input-teks').value = b.teks || '';
+      document.getElementById('input-link').value = b.link || '#';
+      document.getElementById('input-warna').value = b.warnaBg || '#4F46E5';
+      updatePreview();
+    }
+
+    ['input-teks', 'input-link', 'input-warna'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', updatePreview);
+    });
+
+    document.getElementById('form-banner').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var data = {
+        teks: document.getElementById('input-teks').value.trim(),
+        link: document.getElementById('input-link').value.trim() || '#',
+        warnaBg: document.getElementById('input-warna').value
+      };
+      localStorage.setItem('banner', JSON.stringify(data));
+      document.getElementById('save-msg').textContent = 'Banner berhasil disimpan.';
+      updatePreview();
+      setTimeout(function () {
+        document.getElementById('save-msg').textContent = '';
+      }, 3000);
+    });
+
+    loadForm();
+
+  })();</script>
+</body>
+</html>

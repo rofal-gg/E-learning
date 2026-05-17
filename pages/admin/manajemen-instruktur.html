@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Instruktur — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita Admin</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="manajemen-siswa.html" class="sidebar-link" data-page="manajemen-siswa">👥 Manajemen Siswa</a>
+        <a href="manajemen-instruktur.html" class="sidebar-link" data-page="manajemen-instruktur">🎓 Manajemen Instruktur</a>
+        <a href="persetujuan-kelas.html" class="sidebar-link" data-page="persetujuan-kelas">✅ Persetujuan Kelas</a>
+        <a href="verifikasi-pembayaran.html" class="sidebar-link" data-page="verifikasi-pembayaran">💳 Verifikasi Pembayaran</a>
+        <a href="verifikasi-penarikan.html" class="sidebar-link" data-page="verifikasi-penarikan">🏦 Verifikasi Penarikan</a>
+        <a href="manajemen-kategori.html" class="sidebar-link" data-page="manajemen-kategori">📁 Kategori</a>
+        <a href="moderasi-ulasan.html" class="sidebar-link" data-page="moderasi-ulasan">⭐ Moderasi Ulasan</a>
+        <a href="pengaturan-banner.html" class="sidebar-link" data-page="pengaturan-banner">🖼️ Banner</a>
+        <a href="manajemen-admin.html" class="sidebar-link" data-page="manajemen-admin">🔐 Manajemen Admin</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Manajemen Instruktur</h1>
+        <p class="text-gray">Kelola akun instruktur dan kelas mereka</p>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="search-input" class="form-input filter-search" placeholder="Cari nama atau email...">
+      </div>
+
+      <div id="table-area"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var adminUser = window.__pageUser;
+      if (!adminUser) return;
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function formatRupiah(angka) {
+      var n = angka || 0;
+      return 'Rp ' + n.toLocaleString('id-ID');
+    }
+
+    function proxyTanggalDaftar(userId) {
+      if (!userId) return '-';
+      var stamp = userId.slice(1, 9);
+      var ms = parseInt(stamp, 36);
+      if (!isNaN(ms) && ms > 946684800000) {
+        return new Date(ms).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+      }
+      return userId.substring(1, 9) || userId;
+    }
+
+    function statusBadge(status) {
+      var s = status || 'aktif';
+      if (s === 'blokir') {
+        return '<span class="badge badge-danger">Blokir</span>';
+      }
+      return '<span class="badge badge-success">Aktif</span>';
+    }
+
+    function hitungKelas(instrukturId) {
+      return getAll('kelas').filter(function (k) {
+        return k.instrukturId === instrukturId;
+      }).length;
+    }
+
+    function getInstrukturList() {
+      var q = document.getElementById('search-input').value.trim().toLowerCase();
+      return getAll('users')
+        .filter(function (u) { return u.role === 'instruktur'; })
+        .filter(function (u) {
+          if (!q) return true;
+          return u.nama.toLowerCase().indexOf(q) !== -1 ||
+            u.email.toLowerCase().indexOf(q) !== -1;
+        });
+    }
+
+    function renderTable() {
+      var area = document.getElementById('table-area');
+      var list = getInstrukturList();
+
+      if (list.length === 0) {
+        area.innerHTML =
+          '<div class="empty-state card">' +
+            '<p>Tidak ada instruktur ditemukan.</p>' +
+          '</div>';
+        return;
+      }
+
+      var rows = list.map(function (u, index) {
+        var status = u.status || 'aktif';
+        var aksiStatus =
+          status === 'blokir'
+            ? '<button type="button" class="btn btn-primary btn-sm" data-aksi="aktifkan" data-id="' + u.id + '">Aktifkan</button>'
+            : '<button type="button" class="btn btn-danger btn-sm" data-aksi="blokir" data-id="' + u.id + '">Blokir</button>';
+
+        return (
+          '<tr>' +
+            '<td>' + (index + 1) + '</td>' +
+            '<td><strong>' + u.nama + '</strong></td>' +
+            '<td>' + u.email + '</td>' +
+            '<td>' + proxyTanggalDaftar(u.id) + '</td>' +
+            '<td>' + (u.keahlian || '-') + '</td>' +
+            '<td>' + formatRupiah(u.saldo) + '</td>' +
+            '<td>' + hitungKelas(u.id) + '</td>' +
+            '<td>' + statusBadge(status) + '</td>' +
+            '<td class="table-aksi">' +
+              aksiStatus +
+              ' <a href="persetujuan-kelas.html?instruktur=' + encodeURIComponent(u.id) + '" class="btn btn-secondary btn-sm">Lihat Kelas</a>' +
+              ' <button type="button" class="btn btn-secondary btn-sm" data-aksi="hapus" data-id="' + u.id + '" data-nama="' + u.nama.replace(/"/g, '&quot;') + '">Hapus</button>' +
+            '</td>' +
+          '</tr>'
+        );
+      }).join('');
+
+      area.innerHTML =
+        '<div class="card table-wrap">' +
+          '<table class="table">' +
+            '<thead>' +
+              '<tr>' +
+                '<th>No</th>' +
+                '<th>Nama</th>' +
+                '<th>Email</th>' +
+                '<th>Tanggal Daftar</th>' +
+                '<th>Keahlian</th>' +
+                '<th>Saldo</th>' +
+                '<th>Jumlah Kelas</th>' +
+                '<th>Status</th>' +
+                '<th>Aksi</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>';
+
+      area.querySelectorAll('button[data-aksi]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-id');
+          var aksi = this.getAttribute('data-aksi');
+
+          if (aksi === 'blokir') {
+            updateItem('users', id, { status: 'blokir' });
+            renderTable();
+            return;
+          }
+
+          if (aksi === 'aktifkan') {
+            updateItem('users', id, { status: 'aktif' });
+            renderTable();
+            return;
+          }
+
+          if (aksi === 'hapus') {
+            var nama = this.getAttribute('data-nama');
+            if (!confirm('Hapus akun instruktur "' + nama + '"? Tindakan ini tidak dapat dibatalkan.')) {
+              return;
+            }
+            deleteItem('users', id);
+            renderTable();
+          }
+        });
+      });
+    }
+
+    document.getElementById('search-input').addEventListener('input', renderTable);
+
+    renderTable();
+  })();</script>
+</body>
+</html>

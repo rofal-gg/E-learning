@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ulasan Masuk — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="daftar-kelas.html" class="sidebar-link" data-page="daftar-kelas">📚 Kelas Saya</a>
+        <a href="buat-kelas.html" class="sidebar-link" data-page="buat-kelas">➕ Buat Kelas</a>
+        <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">💬 Q&amp;A</a>
+        <a href="ulasan-masuk.html" class="sidebar-link" data-page="ulasan-masuk">⭐ Ulasan Masuk</a>
+        <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">💰 Laporan Pendapatan</a>
+        <a href="tarik-saldo.html" class="sidebar-link" data-page="tarik-saldo">🏦 Tarik Saldo</a>
+        <a href="profil-publik.html" class="sidebar-link" data-page="profil-publik">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Ulasan Masuk</h1>
+        <p class="text-gray">Rating dan komentar siswa untuk kelas Anda</p>
+      </div>
+
+      <div class="filter-bar" style="margin-bottom: 24px;">
+        <label class="form-label" for="filter-kelas" style="margin: 0;">Filter Kelas</label>
+        <select id="filter-kelas" class="form-input" style="max-width: 320px;">
+          <option value="">Semua Kelas</option>
+        </select>
+      </div>
+
+      <div id="ulasan-list"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    var filterKelasId = '';
+
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function renderStars(rating) {
+      var n = Math.max(0, Math.min(5, parseInt(rating, 10) || 0));
+      var stars = '';
+      for (var i = 0; i < n; i++) stars += '⭐';
+      for (var j = n; j < 5; j++) stars += '☆';
+      return stars;
+    }
+
+    function formatTanggal(tanggal) {
+      if (!tanggal) return '-';
+      return new Date(tanggal).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+
+    function getMyKelas() {
+      return getAll('kelas').filter(function (k) {
+        return k.instrukturId === user.id;
+      });
+    }
+
+    function getKelasMap() {
+      var map = {};
+      getMyKelas().forEach(function (k) { map[k.id] = k; });
+      return map;
+    }
+
+    function populateFilter() {
+      var select = document.getElementById('filter-kelas');
+      var kelasList = getMyKelas();
+      select.innerHTML =
+        '<option value="">Semua Kelas</option>' +
+        kelasList.map(function (k) {
+          return '<option value="' + k.id + '">' + k.judul + '</option>';
+        }).join('');
+    }
+
+    function renderUlasan() {
+      var container = document.getElementById('ulasan-list');
+      var kelasMap = getKelasMap();
+      var kelasIds = Object.keys(kelasMap);
+
+      var list = getAll('ulasan')
+        .filter(function (u) { return kelasIds.indexOf(u.kelasId) !== -1; })
+        .filter(function (u) {
+          return !filterKelasId || u.kelasId === filterKelasId;
+        })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+
+      if (list.length === 0) {
+        container.innerHTML =
+          '<div class="empty-state">' +
+            '<p>Belum ada ulasan untuk kelas Anda.</p>' +
+          '</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(function (u) {
+        var kelas = kelasMap[u.kelasId];
+        var namaKelas = kelas ? kelas.judul : 'Kelas';
+        return (
+          '<article class="card" style="margin-bottom: 16px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px;">' +
+              '<span class="badge badge-primary">' + namaKelas + '</span>' +
+              '<span class="text-gray" style="font-size:var(--font-size-sm);">' + formatTanggal(u.tanggal) + '</span>' +
+            '</div>' +
+            '<p><strong>' + (u.userName || 'Siswa') + '</strong></p>' +
+            '<p class="stars" style="margin: 8px 0;" aria-label="Rating ' + u.rating + ' dari 5">' + renderStars(u.rating) + '</p>' +
+            '<p style="margin:0;color:var(--gray-700);">' + (u.komentar || '-') + '</p>' +
+          '</article>'
+        );
+      }).join('');
+    }
+
+    document.getElementById('filter-kelas').addEventListener('change', function () {
+      filterKelasId = this.value;
+      renderUlasan();
+    });
+
+    populateFilter();
+    renderUlasan();
+  })();</script>
+</body>
+</html>

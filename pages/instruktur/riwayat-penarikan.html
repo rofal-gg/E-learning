@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riwayat Penarikan — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="daftar-kelas.html" class="sidebar-link" data-page="daftar-kelas">📚 Kelas Saya</a>
+        <a href="buat-kelas.html" class="sidebar-link" data-page="buat-kelas">➕ Buat Kelas</a>
+        <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">💬 Q&amp;A</a>
+        <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">💰 Laporan Pendapatan</a>
+        <a href="tarik-saldo.html" class="sidebar-link" data-page="tarik-saldo">🏦 Tarik Saldo</a>
+        <a href="riwayat-penarikan.html" class="sidebar-link" data-page="riwayat-penarikan">📋 Riwayat Penarikan</a>
+        <a href="profil-publik.html" class="sidebar-link" data-page="profil-publik">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header page-header-flex">
+        <div>
+          <h1>Riwayat Penarikan</h1>
+          <p class="text-gray">Daftar permintaan penarikan saldo Anda</p>
+        </div>
+        <a href="tarik-saldo.html" class="btn btn-primary btn-sm">Tarik Saldo</a>
+      </div>
+
+      <div class="card table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Nominal</th>
+              <th>Bank</th>
+              <th>No. Rekening</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabel-penarikan-body"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function formatRupiah(angka) {
+      var n = angka || 0;
+      return n === 0 ? 'Rp 0' : 'Rp ' + n.toLocaleString('id-ID');
+    }
+
+    function formatTanggal(iso) {
+      if (!iso) return '-';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function statusBadge(status) {
+      if (status === 'approved') {
+        return '<span class="badge badge-success">Approved</span>';
+      }
+      if (status === 'rejected') {
+        return '<span class="badge badge-danger">Rejected</span>';
+      }
+      return '<span class="badge badge-warning">Pending</span>';
+    }
+
+    function renderTabel() {
+      var tbody = document.getElementById('tabel-penarikan-body');
+      var list = getAll('penarikan')
+        .filter(function (p) { return p.instrukturId === user.id; })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+
+      if (list.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="5" class="text-center text-gray">Belum ada riwayat penarikan.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(function (p) {
+        return (
+          '<tr>' +
+            '<td>' + formatTanggal(p.tanggal) + '</td>' +
+            '<td>' + formatRupiah(p.nominal) + '</td>' +
+            '<td>' + p.bank + '</td>' +
+            '<td>' + p.norek + '</td>' +
+            '<td>' + statusBadge(p.status) + '</td>' +
+          '</tr>'
+        );
+      }).join('');
+    }
+
+    renderTabel();
+  })();</script>
+</body>
+</html>

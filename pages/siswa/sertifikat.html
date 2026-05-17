@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sertifikat — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+</head>
+<body class="sertifikat-page">
+
+  <div class="layout-sidebar">
+    <aside class="sidebar no-print">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="katalog.html" class="sidebar-link" data-page="katalog">📚 Katalog Kelas</a>
+        <a href="cart.html" class="sidebar-link" data-page="cart">🛒 Kelas Saya</a>
+        <a href="wishlist.html" class="sidebar-link" data-page="wishlist">❤️ Wishlist</a>
+        <a href="riwayat-transaksi.html" class="sidebar-link" data-page="riwayat-transaksi">🧾 Riwayat Transaksi</a>
+        <a href="sertifikat.html" class="sidebar-link" data-page="sertifikat">🏆 Sertifikat</a>
+        <a href="profil.html" class="sidebar-link" data-page="profil">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div id="sertifikat-area"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    setActiveSidebar('sertifikat');
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function getQueryParam(nama) {
+      return new URLSearchParams(window.location.search).get(nama);
+    }
+
+    function formatTanggal(tanggal) {
+      return new Date(tanggal).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+
+    function getProgres(kelasId) {
+      return getAll('progres').find(function (p) {
+        return sameUserId(p.userId, user.id) && String(p.kelasId) === String(kelasId);
+      });
+    }
+
+    function getKelasIdsDibeli() {
+      var ids = [];
+      getAll('transaksi').filter(function (t) { return sameUserId(t.userId, user.id); }).forEach(function (t) {
+        (t.items || []).forEach(function (kelasId) {
+          if (ids.indexOf(kelasId) === -1) ids.push(kelasId);
+        });
+      });
+      return ids;
+    }
+
+    function renderDaftarSertifikat() {
+      var area = document.getElementById('sertifikat-area');
+      var selesai = getKelasIdsDibeli()
+        .map(function (id) {
+          var kelas = getById('kelas', id);
+          var progres = getProgres(id);
+          return { kelas: kelas, progres: progres };
+        })
+        .filter(function (item) {
+          return item.kelas && item.progres && item.progres.persen >= 100;
+        });
+
+      if (selesai.length === 0) {
+        area.innerHTML =
+          '<div class="page-header"><h1>Sertifikat Kelulusan</h1></div>' +
+          '<div class="empty-state card">' +
+            '<p>Belum ada kelas yang selesai 100%. Selesaikan semua materi untuk mendapatkan sertifikat.</p>' +
+            '<a href="dashboard.html" class="btn btn-primary">Lanjutkan Belajar</a>' +
+          '</div>';
+        return;
+      }
+
+      area.innerHTML =
+        '<div class="page-header"><h1>Sertifikat Kelulusan</h1>' +
+          '<p class="text-gray">Pilih kelas untuk melihat dan mengunduh sertifikat.</p></div>' +
+        '<div class="grid-2">' + selesai.map(function (item) {
+          return (
+            '<div class="card">' +
+              '<h3>' + item.kelas.judul + '</h3>' +
+              '<p class="text-gray">' + item.kelas.instrukturNama + '</p>' +
+              '<a href="sertifikat.html?kelasId=' + encodeURIComponent(item.kelas.id) + '" class="btn btn-primary btn-sm" style="margin-top:12px;">Lihat Sertifikat</a>' +
+            '</div>'
+          );
+        }).join('') + '</div>';
+    }
+
+    function renderSertifikat(kelasId) {
+      var area = document.getElementById('sertifikat-area');
+      var kelas = getById('kelas', kelasId);
+      var progres = getProgres(kelasId);
+
+      if (!kelas) {
+        area.innerHTML =
+          '<div class="empty-state card">' +
+            '<p>Kelas tidak ditemukan.</p>' +
+            '<a href="sertifikat.html" class="btn btn-secondary">Kembali</a>' +
+          '</div>';
+        return;
+      }
+
+      if (!progres || progres.persen < 100) {
+        area.innerHTML =
+          '<div class="page-header">' +
+            '<a href="sertifikat.html" class="text-link-sm">← Daftar Sertifikat</a>' +
+            '<h1>Sertifikat — ' + kelas.judul + '</h1>' +
+          '</div>' +
+          '<div class="alert alert-info card">' +
+            '<p><strong>Selesaikan semua materi dulu</strong></p>' +
+            '<p>Progres Anda saat ini: ' + Math.round(progres ? progres.persen : 0) + '%. Selesaikan semua bab di ruang belajar untuk membuka sertifikat.</p>' +
+            '<a href="ruang-belajar.html?id=' + encodeURIComponent(kelasId) + '" class="btn btn-primary" style="margin-top:12px;">Lanjutkan Belajar</a>' +
+          '</div>';
+        return;
+      }
+
+      var tanggalLulus = formatTanggal(new Date().toISOString());
+
+      area.innerHTML =
+        '<div class="page-header no-print">' +
+          '<a href="sertifikat.html" class="text-link-sm">← Daftar Sertifikat</a>' +
+          '<h1>Sertifikat Kelulusan</h1>' +
+        '</div>' +
+        '<div class="sertifikat-wrapper" id="sertifikat-print">' +
+          '<div class="sertifikat-card">' +
+            '<div class="sertifikat-border-outer">' +
+              '<div class="sertifikat-border-inner">' +
+                '<div class="sertifikat-logo">EduKita</div>' +
+                '<p class="sertifikat-label">Sertifikat Penyelesaian</p>' +
+                '<p class="sertifikat-sub">Diberikan kepada</p>' +
+                '<h2 class="sertifikat-nama">' + user.nama + '</h2>' +
+                '<p class="sertifikat-sub">telah menyelesaikan kelas</p>' +
+                '<h3 class="sertifikat-kelas">' + kelas.judul + '</h3>' +
+                '<div class="sertifikat-meta">' +
+                  '<div><span>Tanggal</span><strong>' + tanggalLulus + '</strong></div>' +
+                  '<div><span>Instruktur</span><strong>' + kelas.instrukturNama + '</strong></div>' +
+                '</div>' +
+                '<p class="sertifikat-footer">Platform E-Learning EduKita</p>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="sertifikat-actions no-print">' +
+          '<button type="button" class="btn btn-primary" id="btn-unduh">Unduh Sertifikat</button>' +
+          '<a href="ruang-belajar.html?id=' + encodeURIComponent(kelasId) + '" class="btn btn-secondary">Kembali ke Kelas</a>' +
+        '</div>';
+
+      document.getElementById('btn-unduh').addEventListener('click', function () {
+        window.print();
+      });
+
+      document.title = 'Sertifikat — ' + kelas.judul;
+    }
+
+    var kelasId = getQueryParam('kelasId') || getQueryParam('id');
+    if (kelasId) {
+      renderSertifikat(kelasId);
+    } else {
+      renderDaftarSertifikat();
+    }
+  })();</script>
+</body>
+</html>

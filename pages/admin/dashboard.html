@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita Admin</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="manajemen-siswa.html" class="sidebar-link" data-page="manajemen-siswa">👥 Manajemen Siswa</a>
+        <a href="manajemen-instruktur.html" class="sidebar-link" data-page="manajemen-instruktur">🎓 Manajemen Instruktur</a>
+        <a href="persetujuan-kelas.html" class="sidebar-link" data-page="persetujuan-kelas">✅ Persetujuan Kelas</a>
+        <a href="verifikasi-pembayaran.html" class="sidebar-link" data-page="verifikasi-pembayaran">💳 Verifikasi Pembayaran</a>
+        <a href="verifikasi-penarikan.html" class="sidebar-link" data-page="verifikasi-penarikan">🏦 Verifikasi Penarikan</a>
+        <a href="manajemen-kategori.html" class="sidebar-link" data-page="manajemen-kategori">📁 Kategori</a>
+        <a href="moderasi-ulasan.html" class="sidebar-link" data-page="moderasi-ulasan">⭐ Moderasi Ulasan</a>
+        <a href="pengaturan-banner.html" class="sidebar-link" data-page="pengaturan-banner">🖼️ Banner</a>
+        <a href="manajemen-admin.html" class="sidebar-link" data-page="manajemen-admin">🔐 Manajemen Admin</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 id="greeting">Dashboard Admin</h1>
+        <p class="text-gray">Ringkasan platform E-Learning</p>
+      </div>
+
+      <div class="grid-4">
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-siswa">0</div>
+          <div class="kpi-label">Total Siswa</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-instruktur">0</div>
+          <div class="kpi-label">Total Instruktur</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-kelas">0</div>
+          <div class="kpi-label">Total Kelas Published</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-transaksi">0</div>
+          <div class="kpi-label">Total Transaksi</div>
+        </div>
+      </div>
+
+      <section class="content-section">
+        <div class="page-header-flex" style="margin-bottom: 16px;">
+          <h2 style="margin: 0;">Transaksi Terbaru</h2>
+          <a href="verifikasi-pembayaran.html" class="btn btn-secondary btn-sm">Lihat Semua</a>
+        </div>
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Nama User</th>
+                <th>Kelas</th>
+                <th>Total</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="transaksi-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <div class="page-header-flex" style="margin-bottom: 16px;">
+          <h2 style="margin: 0;">Kelas Pending Persetujuan</h2>
+          <a href="persetujuan-kelas.html" class="btn btn-secondary btn-sm">Kelola Persetujuan</a>
+        </div>
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Judul</th>
+                <th>Instruktur</th>
+                <th>Kategori</th>
+                <th>Harga</th>
+              </tr>
+            </thead>
+            <tbody id="pending-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '! 👋';
+
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function formatRupiah(angka) {
+      var n = angka || 0;
+      return n === 0 ? 'GRATIS' : 'Rp ' + n.toLocaleString('id-ID');
+    }
+
+    function formatTanggal(iso) {
+      if (!iso) return '-';
+      return new Date(iso).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
+    function statusBadge(status) {
+      var s = (status || 'sukses').toLowerCase();
+      if (s === 'sukses' || s === 'lunas') {
+        return '<span class="badge badge-success">Sukses</span>';
+      }
+      if (s === 'pending' || s === 'menunggu') {
+        return '<span class="badge badge-warning">Menunggu</span>';
+      }
+      if (s === 'gagal' || s === 'ditolak') {
+        return '<span class="badge badge-danger">Gagal</span>';
+      }
+      return '<span class="badge badge-primary">' + status + '</span>';
+    }
+
+    function getNamaKelas(items) {
+      return (items || []).map(function (kelasId) {
+        var kelas = getById('kelas', kelasId);
+        return kelas ? kelas.judul : null;
+      }).filter(Boolean).join(', ') || '-';
+    }
+
+    function renderKPI() {
+      var users = getAll('users');
+      var kelas = getAll('kelas');
+      var transaksi = getAll('transaksi');
+
+      document.getElementById('kpi-siswa').textContent =
+        users.filter(function (u) { return u.role === 'siswa'; }).length;
+      document.getElementById('kpi-instruktur').textContent =
+        users.filter(function (u) { return u.role === 'instruktur'; }).length;
+      document.getElementById('kpi-kelas').textContent =
+        kelas.filter(function (k) { return k.status === 'published'; }).length;
+      document.getElementById('kpi-transaksi').textContent = transaksi.length;
+    }
+
+    function renderTransaksiTerbaru() {
+      var tbody = document.getElementById('transaksi-body');
+      var list = getAll('transaksi')
+        .slice()
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        })
+        .slice(0, 5);
+
+      if (list.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="5"><div class="empty-state" style="box-shadow:none;"><p>Belum ada transaksi.</p></div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(function (t) {
+        var pembeli = getById('users', t.userId);
+        var namaUser = pembeli ? pembeli.nama : 'User tidak ditemukan';
+        return (
+          '<tr>' +
+            '<td>' + formatTanggal(t.tanggal) + '</td>' +
+            '<td>' + namaUser + '</td>' +
+            '<td>' + getNamaKelas(t.items) + '</td>' +
+            '<td>' + formatRupiah(t.total) + '</td>' +
+            '<td>' + statusBadge(t.status) + '</td>' +
+          '</tr>'
+        );
+      }).join('');
+    }
+
+    function renderKelasPending() {
+      var tbody = document.getElementById('pending-body');
+      var list = getAll('kelas')
+        .filter(function (k) { return k.status === 'pending'; })
+        .slice(0, 5);
+
+      if (list.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="4" class="text-center text-gray">Tidak ada kelas yang menunggu persetujuan.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(function (k) {
+        return (
+          '<tr>' +
+            '<td><strong>' + k.judul + '</strong></td>' +
+            '<td>' + (k.instrukturNama || '-') + '</td>' +
+            '<td>' + (k.kategoriNama || '-') + '</td>' +
+            '<td>' + formatRupiah(k.harga) + '</td>' +
+          '</tr>'
+        );
+      }).join('');
+    }
+
+    renderKPI();
+    renderTransaksiTerbaru();
+    renderKelasPending();
+  })();</script>
+</body>
+</html>

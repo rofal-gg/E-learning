@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruang Belajar — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+</head>
+<body class="layout-ruang-belajar">
+
+  <header class="ruang-topbar">
+    <a href="dashboard.html">← Kembali ke Dashboard</a>
+    <h1 class="ruang-topbar-title" id="kelas-judul-top">Ruang Belajar</h1>
+    <div class="ruang-topbar-actions">
+      <span class="navbar-user" id="ruang-user-name"></span>
+      <a href="#" id="btn-logout-top">Logout</a>
+    </div>
+  </header>
+
+  <div class="ruang-body">
+    <div class="ruang-main">
+      <h2 class="ruang-bab-title" id="bab-judul-aktif">Memuat materi…</h2>
+      <div class="video-wrapper">
+        <iframe id="video-frame" title="Video materi" allowfullscreen></iframe>
+      </div>
+      <div class="ruang-actions">
+        <button type="button" class="btn btn-primary" id="btn-selesai">Tandai Selesai</button>
+        <a href="#" class="btn btn-secondary" id="btn-kuis" style="display:none;">Kerjakan Kuis</a>
+        <a href="#" class="btn btn-secondary" id="btn-diskusi">Diskusi Kelas</a>
+        <span class="ruang-progress-text" id="progres-text"></span>
+      </div>
+    </div>
+    <aside class="ruang-sidebar">
+      <div class="bab-sidebar-header">
+        <h2>Daftar Bab</h2>
+      </div>
+      <ul class="bab-list" id="bab-list"></ul>
+    </aside>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    document.getElementById('ruang-user-name').textContent = user.nama;
+
+    function getProgresRecord(kelasId) {
+      return getAll('progres').find(function (p) {
+        return sameUserId(p.userId, user.id) && String(p.kelasId) === String(kelasId);
+      });
+    }
+
+    document.getElementById('btn-logout-top').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    var kelasId = getQueryParam('id') || getQueryParam('kelasId');
+    if (!kelasId) {
+      window.location.href = 'katalog.html';
+    } else if (!userOwnsKelas(user.id, kelasId)) {
+      window.location.href = 'detail-kelas.html?id=' + encodeURIComponent(kelasId);
+    } else {
+      var kelas = getById('kelas', kelasId);
+      if (!kelas) {
+        window.location.href = 'katalog.html';
+      } else {
+        initRuangBelajar(kelas);
+      }
+    }
+
+    function initRuangBelajar(kelas) {
+      var silabus = kelas.silabus || [];
+      var babAktif = 0;
+      var progres = getProgresRecord(kelas.id);
+
+      if (!progres) {
+        progres = {
+          id: generateId('p'),
+          userId: user.id,
+          kelasId: kelas.id,
+          babSelesai: [],
+          persen: 0
+        };
+        createItem('progres', progres);
+      }
+
+      document.title = kelas.judul + ' — Ruang Belajar';
+      document.getElementById('kelas-judul-top').textContent = kelas.judul;
+      document.getElementById('btn-diskusi').href =
+        'diskusi.html?kelasId=' + encodeURIComponent(kelas.id);
+
+      if (silabus.length === 0) {
+        document.getElementById('bab-judul-aktif').textContent = 'Silabus belum tersedia';
+        document.getElementById('btn-selesai').style.display = 'none';
+        document.getElementById('bab-list').innerHTML =
+          '<li class="empty-state"><p>Belum ada bab untuk kelas ini.</p></li>';
+        return;
+      }
+
+      function isBabSelesai(babKe) {
+        return (progres.babSelesai || []).indexOf(babKe) !== -1;
+      }
+
+      function renderBabList() {
+        document.getElementById('bab-list').innerHTML = silabus.map(function (bab, idx) {
+          var selesai = isBabSelesai(bab.babKe);
+          return (
+            '<li class="bab-item' + (idx === babAktif ? ' active' : '') + (selesai ? ' done' : '') + '" data-idx="' + idx + '">' +
+              '<span class="bab-item-check">' + (selesai ? '✓' : '') + '</span>' +
+              '<div class="bab-item-info">' +
+                '<p class="bab-item-title">Bab ' + bab.babKe + ': ' + bab.judul + '</p>' +
+                '<p class="bab-item-durasi">' + bab.durasi + '</p>' +
+              '</div>' +
+            '</li>'
+          );
+        }).join('');
+
+        document.querySelectorAll('.bab-item').forEach(function (item) {
+          item.addEventListener('click', function () {
+            babAktif = parseInt(this.getAttribute('data-idx'), 10);
+            renderBabAktif();
+            renderBabList();
+          });
+        });
+      }
+
+      function updateProgresText() {
+        var total = silabus.length;
+        var selesai = (progres.babSelesai || []).length;
+        var persen = total > 0 ? Math.round((selesai / total) * 100) : 0;
+        document.getElementById('progres-text').textContent = 'Progres: ' + persen + '% (' + selesai + '/' + total + ' bab)';
+      }
+
+      function renderBabAktif() {
+        var bab = silabus[babAktif];
+        document.getElementById('bab-judul-aktif').textContent = 'Bab ' + bab.babKe + ': ' + bab.judul;
+        document.getElementById('video-frame').src = bab.videoUrl;
+
+        var selesai = isBabSelesai(bab.babKe);
+        var btnSelesai = document.getElementById('btn-selesai');
+        var btnKuis = document.getElementById('btn-kuis');
+
+        if (selesai) {
+          btnSelesai.textContent = 'Sudah Selesai';
+          btnSelesai.disabled = true;
+          btnSelesai.classList.remove('btn-primary');
+          btnSelesai.classList.add('btn-secondary');
+          btnKuis.style.display = 'inline-block';
+          btnKuis.href = 'kuis.html?kelasId=' + encodeURIComponent(kelas.id) + '&bab=' + bab.babKe;
+        } else {
+          btnSelesai.textContent = 'Tandai Selesai';
+          btnSelesai.disabled = false;
+          btnSelesai.classList.add('btn-primary');
+          btnSelesai.classList.remove('btn-secondary');
+          btnKuis.style.display = 'none';
+        }
+
+        updateProgresText();
+      }
+
+      document.getElementById('btn-selesai').addEventListener('click', function () {
+        var bab = silabus[babAktif];
+        if (isBabSelesai(bab.babKe)) return;
+
+        var babSelesai = (progres.babSelesai || []).slice();
+        if (babSelesai.indexOf(bab.babKe) === -1) {
+          babSelesai.push(bab.babKe);
+        }
+
+        var totalBab = silabus.length;
+        var persen = totalBab > 0 ? Math.round((babSelesai.length / totalBab) * 100) : 0;
+
+        updateItem('progres', progres.id, {
+          babSelesai: babSelesai,
+          persen: persen
+        });
+
+        progres = getProgresRecord(kelas.id);
+        renderBabAktif();
+        renderBabList();
+      });
+
+      renderBabList();
+      renderBabAktif();
+    }
+  })();</script>
+</body>
+</html>

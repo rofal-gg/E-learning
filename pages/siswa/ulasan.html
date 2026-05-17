@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beri Ulasan — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="katalog.html" class="sidebar-link" data-page="katalog">📚 Katalog Kelas</a>
+        <a href="cart.html" class="sidebar-link" data-page="cart">🛒 Kelas Saya</a>
+        <a href="wishlist.html" class="sidebar-link" data-page="wishlist">❤️ Wishlist</a>
+        <a href="riwayat-transaksi.html" class="sidebar-link" data-page="riwayat-transaksi">🧾 Riwayat Transaksi</a>
+        <a href="sertifikat.html" class="sidebar-link" data-page="sertifikat">🏆 Sertifikat</a>
+        <a href="profil.html" class="sidebar-link" data-page="profil">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Beri Ulasan</h1>
+      </div>
+
+      <div id="alert-box" class="alert-box-wrap"></div>
+      <div id="ulasan-area"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    var selectedRating = 0;
+    var existingUlasan = null;
+
+    setActiveSidebar();
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function getQueryParam(nama) {
+      return new URLSearchParams(window.location.search).get(nama);
+    }
+
+    function showAlert(pesan, tipe) {
+      tipe = tipe || 'success';
+      var el = document.getElementById('alert-box');
+      el.innerHTML = '<div class="alert alert-' + tipe + '">' + pesan + '</div>';
+      setTimeout(function () { el.innerHTML = ''; }, 3000);
+    }
+
+    function renderStarsPicker(rating) {
+      var html = '';
+      for (var i = 1; i <= 5; i++) {
+        var filled = i <= rating;
+        html += '<button type="button" class="star-btn' + (filled ? ' active' : '') + '" data-star="' + i + '" aria-label="' + i + ' bintang">★</button>';
+      }
+      return '<div class="star-picker" id="star-picker">' + html + '</div>';
+    }
+
+    function bindStarPicker() {
+      document.querySelectorAll('#star-picker .star-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selectedRating = parseInt(this.getAttribute('data-star'), 10);
+          document.querySelectorAll('#star-picker .star-btn').forEach(function (b, idx) {
+            b.classList.toggle('active', idx < selectedRating);
+          });
+        });
+      });
+    }
+
+    function renderForm(kelas, ulasanLama) {
+      existingUlasan = ulasanLama || null;
+      selectedRating = ulasanLama ? ulasanLama.rating : 0;
+
+      var oldReviewBlock = ulasanLama
+        ? '<div class="card ulasan-lama">' +
+            '<h3>Ulasan Kamu Saat Ini</h3>' +
+            '<p class="stars">' + '★'.repeat(ulasanLama.rating) + '☆'.repeat(5 - ulasanLama.rating) + '</p>' +
+            '<p>' + ulasanLama.komentar + '</p>' +
+            '<p class="text-gray">Dikirim: ' + (ulasanLama.tanggal || '-') + '</p>' +
+            '<p class="text-gray">Kamu bisa mengedit ulasan di bawah.</p>' +
+          '</div>'
+        : '';
+
+      document.getElementById('ulasan-area').innerHTML =
+        oldReviewBlock +
+        '<div class="card ulasan-form-card">' +
+          '<h2>' + kelas.judul + '</h2>' +
+          '<p class="text-gray">Bagikan pengalaman belajarmu</p>' +
+          '<form id="form-ulasan">' +
+            '<div class="form-group">' +
+              '<label class="form-label">Rating</label>' +
+              renderStarsPicker(selectedRating) +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label class="form-label" for="komentar">Komentar</label>' +
+              '<textarea id="komentar" class="form-input" rows="4" required placeholder="Tulis ulasan kamu...">' + (ulasanLama ? ulasanLama.komentar : '') + '</textarea>' +
+            '</div>' +
+            '<button type="submit" class="btn btn-primary">' + (ulasanLama ? 'Perbarui Ulasan' : 'Kirim Ulasan') + '</button>' +
+            '<a href="detail-kelas.html?id=' + encodeURIComponent(kelas.id) + '" class="btn btn-secondary">Kembali ke Kelas</a>' +
+          '</form>' +
+        '</div>';
+
+      bindStarPicker();
+
+      document.getElementById('form-ulasan').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var komentar = document.getElementById('komentar').value.trim();
+        if (selectedRating < 1) {
+          showAlert('Pilih rating bintang terlebih dahulu.', 'danger');
+          return;
+        }
+        if (!komentar) {
+          showAlert('Komentar tidak boleh kosong.', 'danger');
+          return;
+        }
+
+        if (existingUlasan) {
+          updateItem('ulasan', existingUlasan.id, {
+            rating: selectedRating,
+            komentar: komentar,
+            tanggal: new Date().toISOString().slice(0, 10)
+          });
+          showAlert('Ulasan berhasil diperbarui!', 'success');
+        } else {
+          createItem('ulasan', {
+            id: generateId('ul'),
+            kelasId: kelas.id,
+            userId: user.id,
+            userName: user.nama,
+            rating: selectedRating,
+            komentar: komentar,
+            tanggal: new Date().toISOString().slice(0, 10)
+          });
+          showAlert('Ulasan berhasil dikirim!', 'success');
+        }
+
+        var updated = getAll('ulasan').find(function (u) {
+          return String(u.kelasId) === String(kelas.id) && sameUserId(u.userId, user.id);
+        });
+        renderForm(kelas, updated);
+      });
+    }
+
+    function renderPage() {
+      var area = document.getElementById('ulasan-area');
+      var kelasId = getQueryParam('kelasId') || getQueryParam('id');
+
+      if (!kelasId) {
+        area.innerHTML =
+          '<div class="empty-state">' +
+            '<p>Parameter kelas tidak ditemukan.</p>' +
+            '<a href="katalog.html" class="btn btn-primary">Kembali ke Katalog</a>' +
+          '</div>';
+        return;
+      }
+
+      var kelas = getById('kelas', kelasId);
+      if (!kelas) {
+        area.innerHTML =
+          '<div class="empty-state">' +
+            '<p>Kelas tidak ditemukan.</p>' +
+            '<a href="katalog.html" class="btn btn-primary">Kembali ke Katalog</a>' +
+          '</div>';
+        return;
+      }
+
+      if (!userOwnsKelas(user.id, kelasId)) {
+        area.innerHTML =
+          '<div class="empty-state">' +
+            '<p>Kamu harus membeli kelas ini terlebih dahulu untuk memberi ulasan.</p>' +
+            '<a href="detail-kelas.html?id=' + encodeURIComponent(kelasId) + '" class="btn btn-primary">Lihat Detail Kelas</a>' +
+          '</div>';
+        return;
+      }
+
+      var ulasanLama = getAll('ulasan').find(function (u) {
+        return String(u.kelasId) === String(kelasId) && sameUserId(u.userId, user.id);
+      });
+
+      renderForm(kelas, ulasanLama);
+    }
+
+    renderPage();
+  })();</script>
+</body>
+</html>

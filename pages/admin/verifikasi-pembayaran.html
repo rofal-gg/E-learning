@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Pembayaran — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita Admin</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="manajemen-siswa.html" class="sidebar-link" data-page="manajemen-siswa">👥 Manajemen Siswa</a>
+        <a href="manajemen-instruktur.html" class="sidebar-link" data-page="manajemen-instruktur">🎓 Manajemen Instruktur</a>
+        <a href="persetujuan-kelas.html" class="sidebar-link" data-page="persetujuan-kelas">✅ Persetujuan Kelas</a>
+        <a href="verifikasi-pembayaran.html" class="sidebar-link" data-page="verifikasi-pembayaran">💳 Verifikasi Pembayaran</a>
+        <a href="verifikasi-penarikan.html" class="sidebar-link" data-page="verifikasi-penarikan">🏦 Verifikasi Penarikan</a>
+        <a href="manajemen-kategori.html" class="sidebar-link" data-page="manajemen-kategori">📁 Kategori</a>
+        <a href="moderasi-ulasan.html" class="sidebar-link" data-page="moderasi-ulasan">⭐ Moderasi Ulasan</a>
+        <a href="pengaturan-banner.html" class="sidebar-link" data-page="pengaturan-banner">🖼️ Banner</a>
+        <a href="manajemen-admin.html" class="sidebar-link" data-page="manajemen-admin">🔐 Manajemen Admin</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Verifikasi Pembayaran</h1>
+        <p class="text-gray">Monitor semua transaksi pembelian kelas di platform</p>
+      </div>
+
+      <div class="grid-2" style="margin-bottom: 24px;">
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-hari-ini">0</div>
+          <div class="kpi-label">Transaksi Hari Ini</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-pendapatan-platform">Rp 0</div>
+          <div class="kpi-label">Pendapatan Platform (30%)</div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div>
+          <label class="form-label" for="filter-dari">Dari Tanggal</label>
+          <input type="date" id="filter-dari" class="form-input">
+        </div>
+        <div>
+          <label class="form-label" for="filter-sampai">Sampai Tanggal</label>
+          <input type="date" id="filter-sampai" class="form-input">
+        </div>
+        <div style="align-self:flex-end;">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-filter">Reset</button>
+        </div>
+      </div>
+
+      <div id="table-area"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var adminUser = window.__pageUser;
+      if (!adminUser) return;
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function formatRupiah(angka) {
+      var n = angka || 0;
+      return 'Rp ' + n.toLocaleString('id-ID');
+    }
+
+    function formatTanggal(iso) {
+      if (!iso) return '-';
+      return new Date(iso).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function toDateKey(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+    }
+
+    function isToday(iso) {
+      var today = toDateKey(new Date().toISOString());
+      return toDateKey(iso) === today;
+    }
+
+    function getNamaKelas(items) {
+      return (items || []).map(function (kelasId) {
+        var kelas = getById('kelas', kelasId);
+        return kelas ? kelas.judul : null;
+      }).filter(Boolean).join(', ') || '-';
+    }
+
+    function statusBadge(status) {
+      var s = (status || 'sukses').toLowerCase();
+      if (s === 'sukses' || s === 'lunas') {
+        return '<span class="badge badge-success">Sukses</span>';
+      }
+      if (s === 'pending' || s === 'menunggu') {
+        return '<span class="badge badge-warning">Menunggu</span>';
+      }
+      if (s === 'gagal' || s === 'ditolak') {
+        return '<span class="badge badge-danger">Gagal</span>';
+      }
+      return '<span class="badge badge-primary">' + status + '</span>';
+    }
+
+    function getFilteredTransaksi() {
+      var dari = document.getElementById('filter-dari').value;
+      var sampai = document.getElementById('filter-sampai').value;
+
+      return getAll('transaksi')
+        .filter(function (t) {
+          var key = toDateKey(t.tanggal);
+          if (!key) return true;
+          if (dari && key < dari) return false;
+          if (sampai && key > sampai) return false;
+          return true;
+        })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+    }
+
+    function renderStats() {
+      var all = getAll('transaksi');
+      var hariIni = all.filter(function (t) { return isToday(t.tanggal); }).length;
+      var totalSemua = all.reduce(function (sum, t) { return sum + (t.total || 0); }, 0);
+      var pendapatanPlatform = Math.round(totalSemua * 0.3);
+
+      document.getElementById('kpi-hari-ini').textContent = hariIni;
+      document.getElementById('kpi-pendapatan-platform').textContent = formatRupiah(pendapatanPlatform);
+    }
+
+    function renderTable() {
+      var area = document.getElementById('table-area');
+      var list = getFilteredTransaksi();
+
+      if (list.length === 0) {
+        area.innerHTML =
+          '<div class="empty-state card">' +
+            '<p>Belum ada transaksi untuk filter ini.</p>' +
+          '</div>';
+        return;
+      }
+
+      var rows = list.map(function (t) {
+        var pembeli = getById('users', t.userId);
+        var namaPembeli = pembeli ? pembeli.nama : 'User tidak ditemukan';
+        return (
+          '<tr>' +
+            '<td><code class="transaksi-id">' + t.id + '</code></td>' +
+            '<td>' + formatTanggal(t.tanggal) + '</td>' +
+            '<td>' + namaPembeli + '</td>' +
+            '<td>' + getNamaKelas(t.items) + '</td>' +
+            '<td>' + (t.metode || '-') + '</td>' +
+            '<td>' + formatRupiah(t.total) + '</td>' +
+            '<td>' + statusBadge(t.status) + '</td>' +
+          '</tr>'
+        );
+      }).join('');
+
+      area.innerHTML =
+        '<div class="card table-wrap">' +
+          '<table class="table">' +
+            '<thead>' +
+              '<tr>' +
+                '<th>No. Transaksi</th>' +
+                '<th>Tanggal</th>' +
+                '<th>Nama Pembeli</th>' +
+                '<th>Kelas</th>' +
+                '<th>Metode</th>' +
+                '<th>Total</th>' +
+                '<th>Status</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>';
+    }
+
+    function renderAll() {
+      renderStats();
+      renderTable();
+    }
+
+    document.getElementById('filter-dari').addEventListener('change', renderAll);
+    document.getElementById('filter-sampai').addEventListener('change', renderAll);
+    document.getElementById('btn-reset-filter').addEventListener('click', function () {
+      document.getElementById('filter-dari').value = '';
+      document.getElementById('filter-sampai').value = '';
+      renderAll();
+    });
+
+    renderAll();
+  })();</script>
+</body>
+</html>

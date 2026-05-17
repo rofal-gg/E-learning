@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Kelas — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="../../index.html" class="navbar-logo">EduKita</a>
+      <ul class="navbar-menu">
+        <li><a href="katalog.html">Katalog</a></li>
+        <li><a href="daftar-instruktur.html">Instruktur</a></li>
+        <li><a href="../auth/faq.html">FAQ</a></li>
+        <li id="nav-dashboard-item" style="display: none;"><a href="dashboard.html">Dashboard</a></li>
+      </ul>
+      <div class="navbar-actions" id="navbar-actions"></div>
+    </div>
+  </nav>
+
+  <main class="section catalog-main">
+    <div class="container">
+      <div id="alert-box" class="alert-box-wrap"></div>
+      <div id="detail-content"></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-brand">EduKita</p>
+      <div class="footer-links">
+        <a href="../auth/syarat-ketentuan.html">Syarat & Ketentuan</a>
+        <a href="../auth/faq.html">FAQ</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 EduKita — Platform E-Learning. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    function renderStars(rating) {
+      var full = Math.floor(rating);
+      var half = rating % 1 >= 0.5 ? 1 : 0;
+      var stars = '';
+      for (var i = 0; i < full; i++) stars += '★';
+      if (half) stars += '☆';
+      while (stars.length < 5) stars += '☆';
+      return '<span class="stars">' + stars + '</span> ' + rating;
+    }
+
+    function renderNavbar() {
+      var container = document.getElementById('navbar-actions');
+      var user = getCurrentUser();
+      if (user && user.role === 'siswa') {
+        document.getElementById('nav-dashboard-item').style.display = 'list-item';
+        container.innerHTML =
+          '<span class="navbar-user">' + user.nama + '</span>' +
+          '<a href="cart.html" class="btn btn-secondary btn-sm">Keranjang</a>' +
+          '<button type="button" class="btn btn-danger btn-sm" id="btn-logout">Logout</button>';
+        document.getElementById('btn-logout').addEventListener('click', logout);
+      } else {
+        container.innerHTML =
+          '<a href="../auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>' +
+          '<a href="../auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>';
+      }
+    }
+
+    function renderSilabus(silabus) {
+      if (!silabus || silabus.length === 0) {
+        return '<p class="text-gray">Silabus belum tersedia.</p>';
+      }
+      return '<div class="accordion" id="silabus-accordion">' + silabus.map(function (bab, idx) {
+        return (
+          '<div class="accordion-item">' +
+            '<button type="button" class="accordion-header" data-idx="' + idx + '">' +
+              'Bab ' + bab.babKe + ': ' + bab.judul +
+              '<span class="accordion-icon">+</span>' +
+            '</button>' +
+            '<div class="accordion-body">Durasi: ' + bab.durasi + '</div>' +
+          '</div>'
+        );
+      }).join('') + '</div>';
+    }
+
+    function bindSilabusAccordion() {
+      document.querySelectorAll('#silabus-accordion .accordion-header').forEach(function (header) {
+        header.addEventListener('click', function () {
+          var item = this.parentElement;
+          var isOpen = item.classList.contains('open');
+          document.querySelectorAll('#silabus-accordion .accordion-item').forEach(function (el) {
+            el.classList.remove('open');
+            el.querySelector('.accordion-icon').textContent = '+';
+          });
+          if (!isOpen) {
+            item.classList.add('open');
+            this.querySelector('.accordion-icon').textContent = '−';
+          }
+        });
+      });
+    }
+
+    function bindActions(kelas) {
+      var user = getCurrentUser();
+      var kelasId = kelas.id;
+      var sudahBeli = user && userOwnsKelas(user.id, kelasId);
+
+      if (sudahBeli) return;
+
+      var btnCart = document.getElementById('btn-cart');
+      var btnWishlist = document.getElementById('btn-wishlist');
+
+      if (btnCart) {
+        btnCart.addEventListener('click', function () {
+          var currentUser = getCurrentUser() || autoLoginDemoForRole('siswa');
+          if (!currentUser || currentUser.role !== 'siswa') {
+            window.location.href = buildLoginUrl();
+            return;
+          }
+          var hasil = addToCart(currentUser.id, kelasId);
+          if (hasil.sukses) {
+            showAlert('alert-box', hasil.pesan + ' <a href="cart.html">Lihat keranjang</a>', 'success');
+          } else {
+            showAlert('alert-box', hasil.pesan, 'danger');
+          }
+        });
+      }
+
+      if (btnWishlist) {
+        btnWishlist.addEventListener('click', function () {
+          var currentUser = getCurrentUser() || autoLoginDemoForRole('siswa');
+          if (!currentUser || currentUser.role !== 'siswa') {
+            window.location.href = buildLoginUrl();
+            return;
+          }
+          var hasilWishlist = addToWishlist(currentUser.id, kelasId);
+          showAlert('alert-box', hasilWishlist.pesan, hasilWishlist.sukses ? 'success' : 'danger');
+        });
+      }
+    }
+
+    function renderDetail(kelas) {
+      var user = getCurrentUser();
+      var sudahBeli = user && userOwnsKelas(user.id, kelas.id);
+
+      var panelButtons = sudahBeli
+        ? '<a href="ruang-belajar.html?id=' + kelas.id + '" class="btn btn-primary btn-block">Lanjutkan Belajar</a>' +
+          '<a href="diskusi.html?kelasId=' + kelas.id + '" class="btn btn-secondary btn-block">Forum Diskusi</a>'
+        : '<button type="button" id="btn-cart" class="btn btn-primary btn-block">Tambah ke Keranjang</button>' +
+          '<button type="button" id="btn-wishlist" class="btn btn-secondary btn-block">Simpan ke Wishlist</button>';
+
+      document.getElementById('detail-content').innerHTML =
+        '<div class="detail-layout">' +
+          '<div class="detail-main">' +
+            '<img class="detail-hero-img" src="../../' + kelas.gambar + '" alt="' + kelas.judul + '" onerror="this.src=\'../../assets/images/placeholder.jpg\'">' +
+            '<h1 class="detail-title">' + kelas.judul + '</h1>' +
+            '<div class="detail-meta">' +
+              '<span class="badge badge-primary">' + kelas.kategoriNama + '</span>' +
+              '<span class="badge badge-warning">' + kelas.level + '</span>' +
+              renderStars(kelas.rating) +
+              '<span class="text-gray">· ' + kelas.totalSiswa + ' siswa</span>' +
+            '</div>' +
+            '<p class="detail-instruktur">Instruktur: <strong>' + kelas.instrukturNama + '</strong></p>' +
+            '<p class="detail-desc">' + kelas.deskripsi + '</p>' +
+            '<h2 class="detail-section-title">Silabus Kelas</h2>' +
+            renderSilabus(kelas.silabus) +
+          '</div>' +
+          '<aside class="price-panel card">' +
+            '<h3 class="price-panel-title">Harga Kelas</h3>' +
+            '<p class="price-big">' + formatRupiah(kelas.harga) + '</p>' +
+            panelButtons +
+          '</aside>' +
+        '</div>';
+
+      document.title = kelas.judul + ' — Platform E-Learning';
+      bindSilabusAccordion();
+      bindActions(kelas);
+    }
+
+    renderNavbar();
+
+    var kelasId = getQueryParam('id');
+    if (!kelasId) {
+      document.getElementById('detail-content').innerHTML =
+        '<div class="empty-state"><p>Kelas tidak ditemukan.</p><a href="katalog.html" class="btn btn-primary">Kembali ke Katalog</a></div>';
+    } else {
+      var kelas = getById('kelas', kelasId);
+      if (!kelas) {
+        document.getElementById('detail-content').innerHTML =
+          '<div class="empty-state"><p>Kelas tidak ditemukan.</p><a href="katalog.html" class="btn btn-primary">Kembali ke Katalog</a></div>';
+      } else if (kelas.status !== 'published') {
+        var userPreview = getCurrentUser();
+        var bolehLihat = userPreview && (
+          userPreview.role === 'admin' ||
+          (userPreview.role === 'instruktur' && kelas.instrukturId === userPreview.id)
+        );
+        if (!bolehLihat) {
+          document.getElementById('detail-content').innerHTML =
+            '<div class="empty-state"><p>Kelas ini belum tersedia di katalog.</p><a href="katalog.html" class="btn btn-primary">Kembali ke Katalog</a></div>';
+        } else {
+          renderDetail(kelas);
+        }
+      } else {
+        renderDetail(kelas);
+      }
+    }
+  </script>
+</body>
+</html>

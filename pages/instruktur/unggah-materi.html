@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unggah Materi — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="daftar-kelas.html" class="sidebar-link" data-page="daftar-kelas">📚 Kelas Saya</a>
+        <a href="buat-kelas.html" class="sidebar-link" data-page="buat-kelas">➕ Buat Kelas</a>
+        <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">💬 Q&amp;A</a>
+        <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">💰 Laporan Pendapatan</a>
+        <a href="tarik-saldo.html" class="sidebar-link" data-page="tarik-saldo">🏦 Tarik Saldo</a>
+        <a href="profil-publik.html" class="sidebar-link" data-page="profil-publik">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header-flex">
+        <div>
+          <h1 id="kelas-judul">Unggah Materi</h1>
+          <p class="text-gray" id="kelas-info">Kelola video dan deskripsi per bab</p>
+        </div>
+        <a href="daftar-kelas.html" class="btn btn-secondary">← Kembali</a>
+      </div>
+
+      <div class="grid-2" style="align-items: start;">
+        <section class="content-section">
+          <h2>Daftar Bab</h2>
+          <div class="card" id="list-bab">
+            <p class="text-gray text-center">Memuat bab…</p>
+          </div>
+        </section>
+
+        <section class="content-section">
+          <h2>Edit Materi Bab</h2>
+          <div class="card" id="panel-edit">
+            <p class="text-gray text-center" id="panel-placeholder">Pilih bab di sebelah kiri untuk mengedit materi.</p>
+            <form id="form-edit-bab" style="display: none;">
+              <input type="hidden" id="edit-bab-ke">
+
+              <div class="form-group">
+                <label class="form-label" for="edit-judul">Judul Bab</label>
+                <input type="text" id="edit-judul" class="form-input" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="edit-video">URL Video YouTube</label>
+                <input type="text" id="edit-video" class="form-input" required placeholder="https://www.youtube.com/embed/...">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="edit-durasi">Durasi</label>
+                <input type="text" id="edit-durasi" class="form-input" required placeholder="45 menit">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="edit-deskripsi">Deskripsi Singkat Bab</label>
+                <textarea id="edit-deskripsi" class="form-input" rows="4" placeholder="Ringkasan isi bab ini…"></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Simpan Materi</button>
+            </form>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    var params = new URLSearchParams(window.location.search);
+    var kelasId = params.get('kelasId') || params.get('id');
+    var babAktif = null;
+
+    if (!kelasId) {
+      alert('Kelas tidak dipilih.');
+      window.location.href = 'daftar-kelas.html';
+      return;
+    }
+
+    var kelas = getById('kelas', kelasId);
+    if (!kelas || kelas.instrukturId !== user.id) {
+      alert('Kelas tidak ditemukan atau bukan milik Anda.');
+      window.location.href = 'daftar-kelas.html';
+      return;
+    }
+
+    setActiveSidebar('daftar-kelas');
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    document.getElementById('kelas-judul').textContent = 'Unggah Materi: ' + kelas.judul;
+    document.getElementById('kelas-info').textContent =
+      (kelas.silabus || []).length + ' bab · Klik bab untuk mengedit';
+
+    function getSilabus() {
+      var current = getById('kelas', kelasId);
+      return (current && current.silabus) ? current.silabus.slice() : [];
+    }
+
+    function saveSilabus(silabus) {
+      updateItem('kelas', kelasId, { silabus: silabus });
+      kelas = getById('kelas', kelasId);
+      document.getElementById('kelas-info').textContent =
+        silabus.length + ' bab · Klik bab untuk mengedit';
+    }
+
+    function renderPanelEdit(bab) {
+      var placeholder = document.getElementById('panel-placeholder');
+      var form = document.getElementById('form-edit-bab');
+
+      if (!bab) {
+        placeholder.style.display = 'block';
+        form.style.display = 'none';
+        return;
+      }
+
+      placeholder.style.display = 'none';
+      form.style.display = 'block';
+      document.getElementById('edit-bab-ke').value = bab.babKe;
+      document.getElementById('edit-judul').value = bab.judul || '';
+      document.getElementById('edit-video').value = bab.videoUrl || '';
+      document.getElementById('edit-durasi').value = bab.durasi || '';
+      document.getElementById('edit-deskripsi').value = bab.deskripsi || '';
+    }
+
+    function renderListBab() {
+      var container = document.getElementById('list-bab');
+      var silabus = getSilabus();
+
+      if (silabus.length === 0) {
+        container.innerHTML =
+          '<p class="text-gray text-center">Belum ada bab. Tambahkan bab di halaman <a href="kurikulum.html?id=' +
+          encodeURIComponent(kelasId) + '">Kurikulum</a> terlebih dahulu.</p>';
+        renderPanelEdit(null);
+        return;
+      }
+
+      container.innerHTML =
+        '<ul style="list-style:none;padding:0;margin:0;">' +
+          silabus.map(function (bab) {
+            var active = babAktif === bab.babKe ? ' active' : '';
+            return (
+              '<li class="bab-item' + active + '" data-bab-ke="' + bab.babKe + '" style="cursor:pointer;margin-bottom:8px;">' +
+                '<div class="bab-item-info">' +
+                  '<p class="bab-item-title">Bab ' + bab.babKe + ': ' + bab.judul + '</p>' +
+                  '<p class="bab-item-durasi">' + (bab.durasi || '-') + '</p>' +
+                '</div>' +
+              '</li>'
+            );
+          }).join('') +
+        '</ul>';
+
+      container.querySelectorAll('.bab-item').forEach(function (item) {
+        item.addEventListener('click', function () {
+          var babKe = parseInt(this.getAttribute('data-bab-ke'), 10);
+          babAktif = babKe;
+          var bab = getSilabus().find(function (b) { return b.babKe === babKe; });
+          renderListBab();
+          renderPanelEdit(bab);
+        });
+      });
+
+      if (babAktif !== null) {
+        var selected = silabus.find(function (b) { return b.babKe === babAktif; });
+        if (selected) renderPanelEdit(selected);
+      }
+    }
+
+    document.getElementById('form-edit-bab').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var babKe = parseInt(document.getElementById('edit-bab-ke').value, 10);
+      var judul = document.getElementById('edit-judul').value.trim();
+      var videoUrl = document.getElementById('edit-video').value.trim();
+      var durasi = document.getElementById('edit-durasi').value.trim();
+      var deskripsi = document.getElementById('edit-deskripsi').value.trim();
+
+      if (!judul || !videoUrl || !durasi) {
+        alert('Mohon lengkapi judul, URL video, dan durasi.');
+        return;
+      }
+
+      var silabus = getSilabus().map(function (bab) {
+        if (bab.babKe !== babKe) return bab;
+        return {
+          babKe: bab.babKe,
+          judul: judul,
+          videoUrl: videoUrl,
+          durasi: durasi,
+          deskripsi: deskripsi
+        };
+      });
+
+      saveSilabus(silabus);
+      alert('Materi bab berhasil disimpan.');
+      renderListBab();
+    });
+
+    renderListBab();
+  })();</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Admin — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita Admin</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="manajemen-siswa.html" class="sidebar-link" data-page="manajemen-siswa">👥 Manajemen Siswa</a>
+        <a href="manajemen-instruktur.html" class="sidebar-link" data-page="manajemen-instruktur">🎓 Manajemen Instruktur</a>
+        <a href="persetujuan-kelas.html" class="sidebar-link" data-page="persetujuan-kelas">✅ Persetujuan Kelas</a>
+        <a href="verifikasi-pembayaran.html" class="sidebar-link" data-page="verifikasi-pembayaran">💳 Verifikasi Pembayaran</a>
+        <a href="verifikasi-penarikan.html" class="sidebar-link" data-page="verifikasi-penarikan">🏦 Verifikasi Penarikan</a>
+        <a href="manajemen-kategori.html" class="sidebar-link" data-page="manajemen-kategori">📁 Kategori</a>
+        <a href="moderasi-ulasan.html" class="sidebar-link" data-page="moderasi-ulasan">⭐ Moderasi Ulasan</a>
+        <a href="pengaturan-banner.html" class="sidebar-link" data-page="pengaturan-banner">🖼️ Banner</a>
+        <a href="manajemen-admin.html" class="sidebar-link" data-page="manajemen-admin">🔐 Manajemen Admin</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Manajemen Admin</h1>
+        <p class="text-gray">Kelola akun administrator platform</p>
+      </div>
+
+      <div class="card" style="margin-bottom:24px;">
+        <h2 style="font-size:var(--font-size-lg);margin-bottom:16px;">Tambah Admin Baru</h2>
+        <form id="form-tambah-admin">
+          <div class="form-group">
+            <label class="form-label" for="admin-nama">Nama</label>
+            <input type="text" id="admin-nama" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="admin-email">Email</label>
+            <input type="email" id="admin-email" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="admin-password">Password</label>
+            <input type="password" id="admin-password" class="form-input" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-primary">Tambah Admin</button>
+        </form>
+      </div>
+
+      <div id="table-area"></div>
+    </main>
+  </div>
+
+
+
+  <script>
+    (function () {
+      var adminUser = window.__pageUser;
+      if (!adminUser) return;
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+
+    function renderTable() {
+      var area = document.getElementById('table-area');
+      var list = getAll('users').filter(function (u) { return u.role === 'admin'; });
+
+      if (list.length === 0) {
+        area.innerHTML = '<div class="empty-state card"><p>Belum ada admin terdaftar.</p></div>';
+        return;
+      }
+
+      var rows = list.map(function (u, index) {
+        var isSelf = u.id === adminUser.id;
+        var hapusBtn = isSelf
+          ? '<span class="text-gray" style="font-size:var(--font-size-sm);">Akun aktif</span>'
+          : '<button type="button" class="btn btn-danger btn-sm" data-aksi="hapus" data-id="' + u.id + '" data-nama="' + u.nama.replace(/"/g, '&quot;') + '">Hapus</button>';
+        return (
+          '<tr>' +
+            '<td>' + (index + 1) + '</td>' +
+            '<td><strong>' + u.nama + '</strong></td>' +
+            '<td>' + u.email + '</td>' +
+            '<td class="table-aksi">' + hapusBtn + '</td>' +
+          '</tr>'
+        );
+      }).join('');
+
+      area.innerHTML =
+        '<div class="card table-wrap">' +
+          '<table class="table">' +
+            '<thead><tr><th>No</th><th>Nama</th><th>Email</th><th>Aksi</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>';
+
+      area.querySelectorAll('button[data-aksi="hapus"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-id');
+          if (id === adminUser.id) {
+            alert('Tidak bisa hapus akun sendiri');
+            return;
+          }
+          var nama = this.getAttribute('data-nama');
+          if (!confirm('Hapus admin "' + nama + '"?')) return;
+          deleteItem('users', id);
+          renderTable();
+        });
+      });
+    }
+
+    document.getElementById('form-tambah-admin').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var nama = document.getElementById('admin-nama').value.trim();
+      var email = document.getElementById('admin-email').value.trim();
+      var password = document.getElementById('admin-password').value;
+
+      if (getAll('users').some(function (u) { return u.email === email; })) {
+        alert('Email sudah terdaftar.');
+        return;
+      }
+
+      createItem('users', {
+        id: generateId('a'),
+        nama: nama,
+        email: email,
+        password: password,
+        role: 'admin',
+        foto: '',
+        bio: ''
+      });
+
+      document.getElementById('form-tambah-admin').reset();
+      renderTable();
+    });
+
+    renderTable();
+
+  })();</script>
+</body>
+</html>

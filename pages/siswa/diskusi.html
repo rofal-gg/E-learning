@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diskusi — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="katalog.html" class="sidebar-link" data-page="katalog">📚 Katalog Kelas</a>
+        <a href="cart.html" class="sidebar-link" data-page="cart">🛒 Kelas Saya</a>
+        <a href="wishlist.html" class="sidebar-link" data-page="wishlist">❤️ Wishlist</a>
+        <a href="riwayat-transaksi.html" class="sidebar-link" data-page="riwayat-transaksi">🧾 Riwayat Transaksi</a>
+        <a href="sertifikat.html" class="sidebar-link" data-page="sertifikat">🏆 Sertifikat</a>
+        <a href="profil.html" class="sidebar-link" data-page="profil">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <a href="#" id="link-kembali" class="text-link-sm">← Kembali ke Ruang Belajar</a>
+          <h1 id="page-title">Diskusi Kelas</h1>
+          <p class="text-gray" id="kelas-subtitle"></p>
+        </div>
+      </div>
+
+      <div id="diskusi-list" class="diskusi-list"></div>
+
+      <section class="card diskusi-form-card">
+        <h2>Kirim Pertanyaan</h2>
+        <form id="form-diskusi">
+          <div class="form-group">
+            <label class="form-label" for="input-pertanyaan">Pertanyaan Anda</label>
+            <textarea id="input-pertanyaan" class="form-input" rows="4" placeholder="Tulis pertanyaan tentang materi kelas ini..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Kirim Pertanyaan</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    setActiveSidebar();
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function getQueryParam(nama) {
+      return new URLSearchParams(window.location.search).get(nama);
+    }
+
+    function formatTanggal(tanggal) {
+      if (!tanggal) return '-';
+      return new Date(tanggal).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+
+    function getInitials(nama) {
+      if (!nama) return '?';
+      return nama.split(' ').map(function (n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
+    }
+
+    var kelasId = getQueryParam('kelasId') || getQueryParam('id');
+    if (!kelasId) {
+      window.location.href = 'dashboard.html';
+    } else {
+      var kelas = getById('kelas', kelasId);
+      if (!kelas) {
+        window.location.href = 'dashboard.html';
+      } else {
+        document.title = 'Diskusi — ' + kelas.judul;
+        document.getElementById('page-title').textContent = 'Diskusi: ' + kelas.judul;
+        document.getElementById('kelas-subtitle').textContent = 'Instruktur: ' + kelas.instrukturNama;
+        document.getElementById('link-kembali').href =
+          'ruang-belajar.html?id=' + encodeURIComponent(kelasId);
+
+        renderDiskusi();
+
+        document.getElementById('form-diskusi').addEventListener('submit', function (e) {
+          e.preventDefault();
+          var pertanyaan = document.getElementById('input-pertanyaan').value.trim();
+          if (!pertanyaan) return;
+
+          createItem('diskusi', {
+            id: generateId('d'),
+            kelasId: kelasId,
+            userId: user.id,
+            userName: user.nama,
+            pertanyaan: pertanyaan,
+            balasan: [],
+            tanggal: new Date().toISOString()
+          });
+
+          document.getElementById('input-pertanyaan').value = '';
+          renderDiskusi();
+        });
+      }
+    }
+
+    function renderDiskusi() {
+      var container = document.getElementById('diskusi-list');
+      var list = getAll('diskusi')
+        .filter(function (d) { return String(d.kelasId) === String(kelasId); })
+        .sort(function (a, b) {
+          return new Date(b.tanggal) - new Date(a.tanggal);
+        });
+
+      if (list.length === 0) {
+        container.innerHTML =
+          '<div class="empty-state">' +
+            '<p>Belum ada diskusi. Jadilah yang pertama bertanya!</p>' +
+          '</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(function (d) {
+        var balasanHtml = (d.balasan || []).map(function (b) {
+          return (
+            '<div class="diskusi-balasan">' +
+              '<div class="diskusi-avatar diskusi-avatar-sm">' + getInitials(b.userName) + '</div>' +
+              '<div class="diskusi-balasan-body">' +
+                '<strong>' + b.userName + '</strong>' +
+                '<span class="diskusi-tanggal">' + formatTanggal(b.tanggal) + '</span>' +
+                '<p>' + b.teks + '</p>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join('');
+
+        return (
+          '<article class="card diskusi-item">' +
+            '<div class="diskusi-item-header">' +
+              '<div class="diskusi-avatar">' + getInitials(d.userName) + '</div>' +
+              '<div class="diskusi-item-meta">' +
+                '<strong>' + d.userName + '</strong>' +
+                '<span class="diskusi-tanggal">' + formatTanggal(d.tanggal) + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<p class="diskusi-pertanyaan">' + d.pertanyaan + '</p>' +
+            (balasanHtml
+              ? '<div class="diskusi-balasan-list"><h3>Balasan</h3>' + balasanHtml + '</div>'
+              : '') +
+          '</article>'
+        );
+      }).join('');
+    }
+  })();</script>
+</body>
+</html>

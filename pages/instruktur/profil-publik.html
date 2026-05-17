@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil Publik — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="daftar-kelas.html" class="sidebar-link" data-page="daftar-kelas">📚 Kelas Saya</a>
+        <a href="buat-kelas.html" class="sidebar-link" data-page="buat-kelas">➕ Buat Kelas</a>
+        <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">💬 Q&amp;A</a>
+        <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">💰 Laporan Pendapatan</a>
+        <a href="tarik-saldo.html" class="sidebar-link" data-page="tarik-saldo">🏦 Tarik Saldo</a>
+        <a href="profil-publik.html" class="sidebar-link" data-page="profil-publik">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Profil Publik</h1>
+        <p class="text-gray">Tampilan profil yang dilihat siswa di katalog instruktur</p>
+      </div>
+
+      <div id="alert-profil" class="alert alert-success" style="display:none;"></div>
+
+      <div class="profil-layout">
+        <section class="card profil-preview">
+          <div id="profil-foto-wrap">
+            <img id="profil-foto" class="instruktur-avatar" src="../../assets/images/placeholder.jpg" alt="Foto profil" style="display:none;" onerror="this.style.display='none';document.getElementById('profil-avatar-fallback').style.display='flex';">
+            <div id="profil-avatar-fallback" class="profil-avatar">?</div>
+          </div>
+          <h2 id="preview-nama">—</h2>
+          <p class="text-gray" id="preview-keahlian">—</p>
+          <p id="preview-bio" style="margin-top:12px;font-size:var(--font-size-sm);color:var(--gray-700);">—</p>
+        </section>
+
+        <section class="card profil-form-wrap">
+          <h2>Edit Profil</h2>
+          <form id="form-profil">
+            <div class="form-group">
+              <label class="form-label" for="input-nama">Nama</label>
+              <input type="text" id="input-nama" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-bio">Bio</label>
+              <textarea id="input-bio" class="form-input" rows="4" placeholder="Ceritakan pengalaman mengajar Anda…"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-keahlian">Keahlian</label>
+              <input type="text" id="input-keahlian" class="form-input" placeholder="HTML, CSS, JavaScript">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-foto">URL Foto</label>
+              <input type="text" id="input-foto" class="form-input" placeholder="assets/images/avatar-2.jpg">
+              <p class="form-hint">Path relatif dari root project, misalnya assets/images/avatar-2.jpg</p>
+            </div>
+            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function getInitials(nama) {
+      if (!nama) return '?';
+      return nama.split(' ').map(function (n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
+    }
+
+    function updatePreview(data) {
+      var fotoEl = document.getElementById('profil-foto');
+      var fallback = document.getElementById('profil-avatar-fallback');
+
+      document.getElementById('preview-nama').textContent = data.nama || '—';
+      document.getElementById('preview-keahlian').textContent = data.keahlian || 'Belum diisi';
+      document.getElementById('preview-bio').textContent = data.bio || 'Belum ada bio.';
+
+      fallback.textContent = getInitials(data.nama);
+
+      if (data.foto) {
+        fotoEl.src = '../../' + data.foto.replace(/^\//, '');
+        fotoEl.style.display = 'block';
+        fallback.style.display = 'none';
+      } else {
+        fotoEl.style.display = 'none';
+        fallback.style.display = 'flex';
+      }
+    }
+
+    function loadProfil() {
+      var data = getById('users', user.id) || user;
+      document.getElementById('input-nama').value = data.nama || '';
+      document.getElementById('input-bio').value = data.bio || '';
+      document.getElementById('input-keahlian').value = data.keahlian || '';
+      document.getElementById('input-foto').value = data.foto || '';
+      updatePreview(data);
+    }
+
+    document.getElementById('input-nama').addEventListener('input', function () {
+      updatePreview({
+        nama: this.value,
+        bio: document.getElementById('input-bio').value,
+        keahlian: document.getElementById('input-keahlian').value,
+        foto: document.getElementById('input-foto').value
+      });
+    });
+    document.getElementById('input-bio').addEventListener('input', function () {
+      updatePreview({
+        nama: document.getElementById('input-nama').value,
+        bio: this.value,
+        keahlian: document.getElementById('input-keahlian').value,
+        foto: document.getElementById('input-foto').value
+      });
+    });
+    document.getElementById('input-keahlian').addEventListener('input', function () {
+      updatePreview({
+        nama: document.getElementById('input-nama').value,
+        bio: document.getElementById('input-bio').value,
+        keahlian: this.value,
+        foto: document.getElementById('input-foto').value
+      });
+    });
+    document.getElementById('input-foto').addEventListener('input', function () {
+      updatePreview({
+        nama: document.getElementById('input-nama').value,
+        bio: document.getElementById('input-bio').value,
+        keahlian: document.getElementById('input-keahlian').value,
+        foto: this.value
+      });
+    });
+
+    document.getElementById('form-profil').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var nama = document.getElementById('input-nama').value.trim();
+      var bio = document.getElementById('input-bio').value.trim();
+      var keahlian = document.getElementById('input-keahlian').value.trim();
+      var foto = document.getElementById('input-foto').value.trim();
+
+      if (!nama) {
+        alert('Nama wajib diisi.');
+        return;
+      }
+
+      updateItem('users', user.id, { nama: nama, bio: bio, keahlian: keahlian, foto: foto });
+
+      var updatedUser = getById('users', user.id);
+      sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      user = updatedUser;
+
+      var alertEl = document.getElementById('alert-profil');
+      alertEl.textContent = 'Profil berhasil disimpan.';
+      alertEl.style.display = 'block';
+      setTimeout(function () { alertEl.style.display = 'none'; }, 3000);
+
+      loadProfil();
+    });
+
+    loadProfil();
+  })();</script>
+</body>
+</html>

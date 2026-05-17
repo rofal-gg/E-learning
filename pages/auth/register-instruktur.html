@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Instruktur — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body class="auth-page">
+
+  <div class="auth-card auth-card-wide">
+    <p class="auth-logo">EduKita</p>
+    <h1 class="auth-title">Daftar Akun Instruktur</h1>
+
+    <div id="alert-box"></div>
+
+    <form id="form-register">
+      <div class="form-group">
+        <label class="form-label" for="nama">Nama Lengkap</label>
+        <input type="text" id="nama" class="form-input" placeholder="Nama lengkap kamu" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email</label>
+        <input type="email" id="email" class="form-input" placeholder="nama@email.com" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="keahlian">Keahlian</label>
+        <input type="text" id="keahlian" class="form-input" placeholder="Contoh: HTML, CSS, JavaScript" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="password-field">
+          <input type="password" id="password" class="form-input" placeholder="Minimal 6 karakter" required>
+          <button type="button" class="password-toggle" data-target="password">Lihat</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="konfirmasi">Konfirmasi Password</label>
+        <div class="password-field">
+          <input type="password" id="konfirmasi" class="form-input" placeholder="Ulangi password" required>
+          <button type="button" class="password-toggle" data-target="konfirmasi">Lihat</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Daftar</button>
+    </form>
+
+    <div class="auth-links">
+      <p>Sudah punya akun? <a href="login.html">Masuk di sini</a></p>
+    </div>
+  </div>
+
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script>
+    initStorage();
+
+    function showAlert(containerId, pesan, tipe) {
+      tipe = tipe || 'success';
+      var el = document.getElementById(containerId);
+      el.innerHTML = '<div class="alert alert-' + tipe + '">' + pesan + '</div>';
+      setTimeout(function () { el.innerHTML = ''; }, 3000);
+    }
+
+    function validasiForm(password, konfirmasi) {
+      if (!password || password.length < 6) {
+        return 'Password minimal 6 karakter.';
+      }
+      if (password !== konfirmasi) {
+        return 'Konfirmasi password tidak sama.';
+      }
+      return null;
+    }
+
+    document.querySelectorAll('.password-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = document.getElementById(this.getAttribute('data-target'));
+        var isHidden = input.type === 'password';
+        input.type = isHidden ? 'text' : 'password';
+        this.textContent = isHidden ? 'Sembunyi' : 'Lihat';
+      });
+    });
+
+    document.getElementById('form-register').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var nama = document.getElementById('nama').value.trim();
+      var email = document.getElementById('email').value.trim();
+      var keahlian = document.getElementById('keahlian').value.trim();
+      var password = document.getElementById('password').value;
+      var konfirmasi = document.getElementById('konfirmasi').value;
+
+      if (!nama || !email || !keahlian || !password || !konfirmasi) {
+        showAlert('alert-box', 'Semua field wajib diisi.', 'danger');
+        return;
+      }
+
+      var errorValidasi = validasiForm(password, konfirmasi);
+      if (errorValidasi) {
+        showAlert('alert-box', errorValidasi, 'danger');
+        return;
+      }
+
+      var hasil = register({
+        nama: nama,
+        email: email,
+        password: password,
+        role: 'instruktur',
+        keahlian: keahlian,
+        saldo: 0
+      });
+
+      if (hasil.sukses) {
+        persistSession(hasil.user);
+        redirectByRole('instruktur');
+      } else {
+        showAlert('alert-box', hasil.pesan, 'danger');
+      }
+    });
+  </script>
+</body>
+</html>

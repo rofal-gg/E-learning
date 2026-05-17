@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buat Kelas — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <aside class="sidebar">
+      <a href="dashboard.html" class="sidebar-brand">EduKita</a>
+      <nav>
+        <a href="dashboard.html" class="sidebar-link" data-page="dashboard">📊 Dashboard</a>
+        <a href="daftar-kelas.html" class="sidebar-link" data-page="daftar-kelas">📚 Kelas Saya</a>
+        <a href="buat-kelas.html" class="sidebar-link" data-page="buat-kelas">➕ Buat Kelas</a>
+        <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">💬 Q&amp;A</a>
+        <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">💰 Laporan Pendapatan</a>
+        <a href="tarik-saldo.html" class="sidebar-link" data-page="tarik-saldo">🏦 Tarik Saldo</a>
+        <a href="profil-publik.html" class="sidebar-link" data-page="profil-publik">👤 Profil</a>
+        <a href="notifikasi.html" class="sidebar-link" data-page="notifikasi">🔔 Notifikasi</a>
+        <a href="#" class="sidebar-link logout" id="btn-logout">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header-flex">
+        <div>
+          <h1 id="page-title">Buat Kelas Baru</h1>
+          <p class="text-gray" id="page-subtitle">Isi detail kelas yang ingin Anda ajarkan</p>
+        </div>
+        <a href="daftar-kelas.html" class="btn btn-secondary">← Kembali</a>
+      </div>
+
+      <div class="card" style="max-width: 640px;">
+        <form id="form-kelas">
+          <div class="form-group">
+            <label class="form-label" for="judul">Judul Kelas</label>
+            <input type="text" id="judul" class="form-input" required placeholder="Contoh: Belajar HTML &amp; CSS dari Nol">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="deskripsi">Deskripsi</label>
+            <textarea id="deskripsi" class="form-input" rows="4" required placeholder="Jelaskan apa yang akan dipelajari siswa..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="kategori">Kategori</label>
+            <select id="kategori" class="form-input" required>
+              <option value="">— Pilih Kategori —</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="level">Level</label>
+            <select id="level" class="form-input" required>
+              <option value="Pemula">Pemula</option>
+              <option value="Menengah">Menengah</option>
+              <option value="Mahir">Mahir</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="harga">Harga (Rp)</label>
+            <input type="number" id="harga" class="form-input" min="0" step="1000" value="0" required>
+            <small class="text-gray">Isi 0 jika kelas gratis</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="gambar">URL Gambar Kelas</label>
+            <input type="text" id="gambar" class="form-input" placeholder="assets/images/kelas-1.jpg atau https://...">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-simpan">Simpan Kelas</button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var user = window.__pageUser;
+      if (!user) return;
+    var params = new URLSearchParams(window.location.search);
+    var editId = params.get('id');
+    var isEditMode = !!editId;
+    var kelasEdit = null;
+
+    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
+      if (window.location.href.includes(link.getAttribute('data-page'))) {
+        link.classList.add('active');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    function populateKategoriDropdown() {
+      var select = document.getElementById('kategori');
+      var categories = getAll('categories');
+      if (categories.length === 0) categories = SEED_CATEGORIES;
+
+      categories.forEach(function (cat) {
+        var opt = document.createElement('option');
+        opt.value = String(cat.id);
+        opt.textContent = cat.nama;
+        select.appendChild(opt);
+      });
+    }
+
+    function prefillForm(kelas) {
+      document.getElementById('judul').value = kelas.judul || '';
+      document.getElementById('deskripsi').value = kelas.deskripsi || '';
+      document.getElementById('kategori').value = String(kelas.kategoriId || '');
+      document.getElementById('level').value = kelas.level || 'Pemula';
+      document.getElementById('harga').value = kelas.harga !== undefined ? kelas.harga : 0;
+      document.getElementById('gambar').value = kelas.gambar || '';
+    }
+
+    function getFormData() {
+      var kategoriSelect = document.getElementById('kategori');
+      var kategoriId = parseInt(kategoriSelect.value, 10);
+      var kategoriNama = kategoriSelect.options[kategoriSelect.selectedIndex].text;
+
+      return {
+        judul: document.getElementById('judul').value.trim(),
+        deskripsi: document.getElementById('deskripsi').value.trim(),
+        kategoriId: kategoriId,
+        kategoriNama: kategoriNama,
+        level: document.getElementById('level').value,
+        harga: parseInt(document.getElementById('harga').value, 10) || 0,
+        gambar: document.getElementById('gambar').value.trim() || 'assets/images/placeholder.jpg'
+      };
+    }
+
+    if (isEditMode) {
+      kelasEdit = getById('kelas', editId);
+      if (!kelasEdit || kelasEdit.instrukturId !== user.id) {
+        alert('Kelas tidak ditemukan atau bukan milik Anda.');
+        window.location.href = 'daftar-kelas.html';
+        return;
+      }
+
+      document.getElementById('page-title').textContent = 'Edit Kelas';
+      document.getElementById('page-subtitle').textContent = 'Perbarui detail kelas: ' + kelasEdit.judul;
+      document.getElementById('btn-simpan').textContent = 'Simpan Perubahan';
+      document.title = 'Edit Kelas — Platform E-Learning';
+    }
+
+    populateKategoriDropdown();
+
+    if (isEditMode && kelasEdit) {
+      prefillForm(kelasEdit);
+    }
+
+    document.getElementById('form-kelas').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var form = getFormData();
+      if (!form.judul || !form.deskripsi || !form.kategoriId) {
+        alert('Mohon lengkapi semua field wajib.');
+        return;
+      }
+
+      if (isEditMode) {
+        updateItem('kelas', editId, form);
+        window.location.href = 'daftar-kelas.html';
+      } else {
+        var newKelasId = generateId('k');
+        createItem('kelas', {
+          id: newKelasId,
+          judul: form.judul,
+          deskripsi: form.deskripsi,
+          kategoriId: form.kategoriId,
+          kategoriNama: form.kategoriNama,
+          level: form.level,
+          harga: form.harga,
+          gambar: form.gambar,
+          instrukturId: user.id,
+          instrukturNama: user.nama,
+          status: 'pending',
+          rating: 0,
+          totalSiswa: 0,
+          silabus: []
+        });
+        window.location.href = 'kurikulum.html?id=' + encodeURIComponent(newKelasId);
+      }
+    });
+  })();</script>
+</body>
+</html>
