@@ -102,7 +102,7 @@
     (function () {
       var user = window.__pageUser;
       if (!user) return;
-    document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '! 👋';
+    document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '!';
 
     document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
       if (window.location.href.includes(link.getAttribute('data-page'))) {
