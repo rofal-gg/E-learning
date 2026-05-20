@@ -38,7 +38,7 @@ const SEED_KELAS = [
     rating: 4.5, totalSiswa: 120,
     status: "published",
     silabus: [
-      { babKe: 1, judul: "Pengenalan HTML", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", durasi: "45 menit" },
+      { babKe: 1, judul: "Pengenalan HTML", videoUrl: "https://www.youtube.com/watch?v=NBZ9Ro6UKV8&list=PLFIM0718LjIVuONHysfOK0ZtiqUWvrx4F", durasi: "45 menit" },
       { babKe: 2, judul: "Tag-tag Dasar HTML", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", durasi: "60 menit" },
       { babKe: 3, judul: "Pengenalan CSS", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", durasi: "50 menit" },
       { babKe: 4, judul: "Flexbox & Grid", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", durasi: "75 menit" },
