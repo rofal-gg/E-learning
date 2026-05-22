@@ -30,7 +30,7 @@
 
     <main class="main-content">
       <div class="page-header">
-        <h1 id="greeting">Halo, Siswa! 👋</h1>
+        <h1 id="greeting">Halo, Siswa!</h1>
       </div>
 
       <div class="grid-4" id="kpi-grid">
@@ -68,7 +68,7 @@
     (function () {
       var user = window.__pageUser;
       if (!user) return;
-    document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '! 👋';
+    document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '!';
 
     document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
       if (window.location.href.includes(link.getAttribute('data-page'))) {
@@ -147,7 +147,7 @@
       if (belumSelesai.length === 0) {
         container.innerHTML =
           '<div class="empty-state">' +
-            '<p>Semua kelas yang kamu beli sudah selesai. Kerja bagus! 🎉</p>' +
+            '<p>Semua kelas yang kamu beli sudah selesai. Kerja bagus!</p>' +
             '<a href="katalog.html" class="btn btn-secondary">Lihat Katalog Lainnya</a>' +
           '</div>';
         return;
