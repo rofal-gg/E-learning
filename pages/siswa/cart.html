@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Keranjang — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -40,94 +41,100 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
+    var user = window.__pageUser;
+    var appliedKupon = null;
 
-      var appliedKupon = null;
-      setActiveSidebar('cart');
+    setActiveSidebar('cart');
+
+    document.getElementById('btn-logout').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    // ambil item keranjang user saat ini
+    function ambilItemCart() {
+      var currentUser = getCurrentUser();
+      if (!currentUser) {
+        logout();
+        return [];
+      }
+      return getCartItemsForUser(currentUser.id);
+    }
+
+    // tampilkan isi keranjang dan ringkasan harga
+    function tampilkanKeranjang() {
+      var area = document.getElementById('cart-area');
+      var currentUser = getCurrentUser();
+      var items = ambilItemCart();
 
       document.getElementById('cart-subtitle').textContent =
-        'Halo, ' + user.nama + ' — ' + getCartItemsForUser(user.id).length + ' kelas di keranjang';
+        'Halo, ' + currentUser.nama + ' — ' + items.length + ' kelas di keranjang';
 
-      document.getElementById('btn-logout').addEventListener('click', function (e) {
-        e.preventDefault();
-        logout();
-      });
+      if (items.length === 0) {
+        appliedKupon = null;
+        sessionStorage.removeItem('appliedKupon');
+        area.innerHTML = `
+          <div class="empty-state">
+            <p>Keranjang kamu masih kosong.</p>
+            <p class="text-gray">Buka katalog, pilih kelas, lalu klik <strong>Tambah ke Keranjang</strong>.</p>
+            <a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>
+            <a href="detail-kelas.html?id=k001" class="btn btn-secondary" style="margin-left:8px;">Contoh: HTML &amp; CSS</a>
+          </div>
+        `;
+        return;
+      }
 
-      function renderCart() {
-        var area = document.getElementById('cart-area');
-        var currentUser = getCurrentUser();
-        if (!currentUser) {
-          logout();
-          return;
-        }
+      var subtotal = items.reduce(function (sum, item) {
+        return sum + item.kelas.harga;
+      }, 0);
+      var diskon = hitungDiskonKupon(subtotal, items, appliedKupon);
+      var total = Math.max(0, subtotal - diskon);
 
-        var items = getCartItemsForUser(currentUser.id);
-        document.getElementById('cart-subtitle').textContent =
-          'Halo, ' + currentUser.nama + ' — ' + items.length + ' kelas di keranjang';
+      var barisDiskon = diskon > 0 && appliedKupon
+        ? `<div class="summary-row summary-discount"><span>Diskon (${appliedKupon.diskon}%)</span><span>- ${formatRupiah(diskon)}</span></div>`
+        : '';
 
-        if (items.length === 0) {
-          appliedKupon = null;
-          sessionStorage.removeItem('appliedKupon');
-          area.innerHTML =
-            '<div class="empty-state">' +
-              '<p>Keranjang kamu masih kosong.</p>' +
-              '<p class="text-gray">Buka katalog, pilih kelas, lalu klik <strong>Tambah ke Keranjang</strong>.</p>' +
-              '<a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>' +
-              '<a href="detail-kelas.html?id=k001" class="btn btn-secondary" style="margin-left:8px;">Contoh: HTML &amp; CSS</a>' +
-            '</div>';
-          return;
-        }
+      var tableRows = items.map(function (item) {
+        return `
+          <tr>
+            <td><img class="table-img" src="../../${item.kelas.gambar}" alt="" onerror="this.src='../../assets/images/placeholder.jpg'"></td>
+            <td><strong>${item.kelas.judul}</strong><br><span class="text-gray">${item.kelas.instrukturNama}</span></td>
+            <td>${formatRupiah(item.kelas.harga)}</td>
+            <td><button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="${item.cart.id}">Hapus</button></td>
+          </tr>
+        `;
+      }).join('');
 
-        var subtotal = items.reduce(function (sum, item) {
-          return sum + item.kelas.harga;
-        }, 0);
-        var diskon = hitungDiskonKupon(subtotal, items, appliedKupon);
-        var total = Math.max(0, subtotal - diskon);
-
-        var tableRows = items.map(function (item) {
-          return (
-            '<tr>' +
-              '<td><img class="table-img" src="../../' + item.kelas.gambar + '" alt="" onerror="this.src=\'../../assets/images/placeholder.jpg\'"></td>' +
-              '<td><strong>' + item.kelas.judul + '</strong><br><span class="text-gray">' + item.kelas.instrukturNama + '</span></td>' +
-              '<td>' + formatRupiah(item.kelas.harga) + '</td>' +
-              '<td><button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="' + item.cart.id + '">Hapus</button></td>' +
-            '</tr>'
-          );
-        }).join('');
-
-        area.innerHTML =
-          '<div class="cart-layout">' +
-            '<div class="card table-wrap">' +
-              '<table class="table">' +
-                '<thead><tr><th></th><th>Kelas</th><th>Harga</th><th>Aksi</th></tr></thead>' +
-                '<tbody>' + tableRows + '</tbody>' +
-              '</table>' +
-            '</div>' +
-            '<aside class="card cart-summary">' +
-              '<h3 class="cart-summary-title">Ringkasan</h3>' +
-              '<div class="summary-row"><span>Subtotal</span><span>' + formatRupiah(subtotal) + '</span></div>' +
-              (diskon > 0 && appliedKupon
-                ? '<div class="summary-row summary-discount"><span>Diskon (' + appliedKupon.diskon + '%)</span><span>- ' + formatRupiah(diskon) + '</span></div>'
-                : '') +
-              '<div class="summary-row total"><span>Total</span><span id="total-harga">' + formatRupiah(total) + '</span></div>' +
-              '<div class="form-group kupon-form-group">' +
-                '<label class="form-label" for="input-kupon">Kode Kupon</label>' +
-                '<div class="kupon-input-row">' +
-                  '<input type="text" id="input-kupon" class="form-input" placeholder="Coba: EDUKITA10">' +
-                  '<button type="button" id="btn-kupon" class="btn btn-secondary btn-sm">Pakai</button>' +
-                '</div>' +
-              '</div>' +
-              '<a href="checkout.html" class="btn btn-primary btn-block checkout-link">Lanjut ke Checkout</a>' +
-            '</aside>' +
-          '</div>';
+      area.innerHTML = `
+        <div class="cart-layout">
+          <div class="card table-wrap">
+            <table class="table">
+              <thead><tr><th></th><th>Kelas</th><th>Harga</th><th>Aksi</th></tr></thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>
+          <aside class="card cart-summary">
+            <h3 class="cart-summary-title">Ringkasan</h3>
+            <div class="summary-row"><span>Subtotal</span><span>${formatRupiah(subtotal)}</span></div>
+            ${barisDiskon}
+            <div class="summary-row total"><span>Total</span><span id="total-harga">${formatRupiah(total)}</span></div>
+            <div class="form-group kupon-form-group">
+              <label class="form-label" for="input-kupon">Kode Kupon</label>
+              <div class="kupon-input-row">
+                <input type="text" id="input-kupon" class="form-input" placeholder="Coba: EDUKITA10">
+                <button type="button" id="btn-kupon" class="btn btn-secondary btn-sm">Pakai</button>
+              </div>
+            </div>
+            <a href="checkout.html" class="btn btn-primary btn-block checkout-link">Lanjut ke Checkout</a>
+          </aside>
+        </div>
+      `;
 
         document.querySelectorAll('.btn-hapus').forEach(function (btn) {
           btn.addEventListener('click', function () {
             if (confirm('Hapus kelas dari keranjang?')) {
               deleteItem('cart', this.getAttribute('data-id'));
-              renderCart();
+              tampilkanKeranjang();
             }
           });
         });
@@ -145,34 +152,33 @@
             appliedKupon = null;
             sessionStorage.removeItem('appliedKupon');
             showAlert('alert-box', 'Kode kupon tidak valid.', 'danger');
-            renderCart();
+            tampilkanKeranjang();
             return;
           }
           if (kupon.expired && new Date(kupon.expired) < new Date()) {
             appliedKupon = null;
             sessionStorage.removeItem('appliedKupon');
             showAlert('alert-box', 'Kupon sudah kadaluarsa.', 'danger');
-            renderCart();
+            tampilkanKeranjang();
             return;
           }
           appliedKupon = kupon;
           sessionStorage.setItem('appliedKupon', JSON.stringify(kupon));
           showAlert('alert-box', 'Kupon berhasil diterapkan! Diskon ' + kupon.diskon + '%', 'success');
-          renderCart();
+          tampilkanKeranjang();
         });
 
         if (appliedKupon) {
           document.getElementById('input-kupon').value = appliedKupon.kode;
         }
-      }
+    }
 
-      var savedKupon = sessionStorage.getItem('appliedKupon');
-      if (savedKupon) {
-        try { appliedKupon = JSON.parse(savedKupon); } catch (e) { appliedKupon = null; }
-      }
+    var savedKupon = sessionStorage.getItem('appliedKupon');
+    if (savedKupon) {
+      try { appliedKupon = JSON.parse(savedKupon); } catch (e) { appliedKupon = null; }
+    }
 
-      renderCart();
-    })();
+    tampilkanKeranjang();
   </script>
 </body>
 </html>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kuis — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -27,23 +28,14 @@
   </main>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    function getQueryParam(nama) {
-      return new URLSearchParams(window.location.search).get(nama);
-    }
-
+    var user = window.__pageUser;
     var kelasId = getQueryParam('kelasId');
-    var babParam = getQueryParam('bab');
-    var babKe = babParam ? parseInt(babParam, 10) : NaN;
-
+    var babKe = parseInt(getQueryParam('bab'), 10);
     var kelas = kelasId ? getById('kelas', kelasId) : null;
-    var kuis = kelasId && !isNaN(babKe)
-      ? getAll('kuis').find(function (q) {
-          return String(q.kelasId) === String(kelasId) && q.babKe === babKe;
-        })
-      : null;
+    var kuis = null;
+    var soalList = [];
+    var indeksSoal = 0;
+    var jawabanUser = [];
 
     var contentEl = document.getElementById('kuis-content');
     var btnNav = document.getElementById('btn-nav');
@@ -55,58 +47,92 @@
       linkKembali.href = 'dashboard.html';
     }
 
+    // ambil data kuis sesuai kelas dan bab
+    function ambilSoal() {
+      if (!kelasId || isNaN(babKe) || !kelas) return null;
+      return getAll('kuis').find(function (q) {
+        return String(q.kelasId) === String(kelasId) && q.babKe === babKe;
+      }) || null;
+    }
+
+    // tampilkan satu soal ke layar
+    function tampilkanSoal(nomor) {
+      var soal = soalList[nomor];
+      var pilihanHtml = soal.pilihan.map(function (pilihan, idx) {
+        var checked = jawabanUser[nomor] === idx ? ' checked' : '';
+        return `
+          <label>
+            <input type="radio" name="jawaban" value="${idx}"${checked}>
+            <span>${pilihan}</span>
+          </label>
+        `;
+      }).join('');
+
+      contentEl.innerHTML = `
+        <p class="kuis-soal-nomor">Soal ${nomor + 1} dari ${soalList.length}</p>
+        <p class="kuis-pertanyaan">${soal.pertanyaan}</p>
+        <div class="kuis-pilihan">${pilihanHtml}</div>
+      `;
+
+      document.querySelectorAll('input[name="jawaban"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+          simpanJawaban(nomor, parseInt(this.value, 10));
+        });
+      });
+
+      btnNav.textContent = nomor === soalList.length - 1 ? 'Selesai' : 'Selanjutnya';
+    }
+
+    // simpan jawaban user untuk satu soal
+    function simpanJawaban(nomor, pilihan) {
+      jawabanUser[nomor] = pilihan;
+    }
+
+    // hitung skor dan redirect ke hasil
+    function selesaiKuis() {
+      sessionStorage.setItem('hasilKuisData', JSON.stringify({
+        kelasId: kelasId,
+        babKe: babKe,
+        judulKelas: kelas.judul,
+        soal: soalList,
+        jawabanUser: jawabanUser
+      }));
+      window.location.href = 'hasil-kuis.html';
+    }
+
+    // tampilkan pesan jika kuis tidak ada
+    function tampilkanKosong(pesan, sembunyikanNav) {
+      contentEl.innerHTML = `
+        <div class="empty-state">
+          <p>${pesan}</p>
+          <a href="${linkKembali.href}" class="btn btn-primary btn-sm">Ke Dashboard</a>
+        </div>
+      `;
+      if (sembunyikanNav) btnNav.style.display = 'none';
+    }
+
+    kuis = ambilSoal();
+
     if (!kelasId || isNaN(babKe) || !kelas) {
-      contentEl.innerHTML =
-        '<div class="empty-state">' +
-          '<p>Kuis tidak ditemukan.</p>' +
-          '<a href="dashboard.html" class="btn btn-primary btn-sm">Ke Dashboard</a>' +
-        '</div>';
-      btnNav.style.display = 'none';
+      tampilkanKosong('Kuis tidak ditemukan.', true);
     } else if (!kuis || !kuis.soal || kuis.soal.length === 0) {
       document.getElementById('kuis-judul').textContent = 'Kuis Bab ' + babKe;
       document.getElementById('kuis-meta').textContent = kelas.judul;
-      contentEl.innerHTML =
-        '<div class="empty-state">' +
-          '<p>Soal kuis untuk bab ini belum tersedia.</p>' +
-          '<a href="' + linkKembali.href + '" class="btn btn-secondary btn-sm">Kembali ke Ruang Belajar</a>' +
-        '</div>';
+      contentEl.innerHTML = `
+        <div class="empty-state">
+          <p>Soal kuis untuk bab ini belum tersedia.</p>
+          <a href="${linkKembali.href}" class="btn btn-secondary btn-sm">Kembali ke Ruang Belajar</a>
+        </div>
+      `;
       btnNav.style.display = 'none';
     } else {
       document.getElementById('kuis-judul').textContent = 'Kuis Bab ' + babKe;
       document.getElementById('kuis-meta').textContent = kelas.judul;
       document.title = 'Kuis Bab ' + babKe + ' — ' + kelas.judul;
 
-      var soalList = kuis.soal;
-      var indeksSoal = 0;
-      var jawabanUser = new Array(soalList.length).fill(null);
-
-      function renderSoal() {
-        var soal = soalList[indeksSoal];
-        var html =
-          '<p class="kuis-soal-nomor">Soal ' + (indeksSoal + 1) + ' dari ' + soalList.length + '</p>' +
-          '<p class="kuis-pertanyaan">' + soal.pertanyaan + '</p>' +
-          '<div class="kuis-pilihan">';
-
-        soal.pilihan.forEach(function (pilihan, idx) {
-          var checked = jawabanUser[indeksSoal] === idx ? ' checked' : '';
-          html +=
-            '<label>' +
-              '<input type="radio" name="jawaban" value="' + idx + '"' + checked + '>' +
-              '<span>' + pilihan + '</span>' +
-            '</label>';
-        });
-
-        html += '</div>';
-        contentEl.innerHTML = html;
-
-        document.querySelectorAll('input[name="jawaban"]').forEach(function (radio) {
-          radio.addEventListener('change', function () {
-            jawabanUser[indeksSoal] = parseInt(this.value, 10);
-          });
-        });
-
-        btnNav.textContent = indeksSoal === soalList.length - 1 ? 'Selesai' : 'Selanjutnya';
-      }
+      soalList = kuis.soal;
+      jawabanUser = new Array(soalList.length);
+      for (var i = 0; i < jawabanUser.length; i++) jawabanUser[i] = null;
 
       btnNav.addEventListener('click', function () {
         var selected = document.querySelector('input[name="jawaban"]:checked');
@@ -114,29 +140,18 @@
           alert('Pilih jawaban terlebih dahulu.');
           return;
         }
-        if (selected) {
-          jawabanUser[indeksSoal] = parseInt(selected.value, 10);
-        }
+        if (selected) simpanJawaban(indeksSoal, parseInt(selected.value, 10));
 
         if (indeksSoal < soalList.length - 1) {
           indeksSoal++;
-          renderSoal();
+          tampilkanSoal(indeksSoal);
           return;
         }
-
-        sessionStorage.setItem('hasilKuisData', JSON.stringify({
-          kelasId: kelasId,
-          babKe: babKe,
-          judulKelas: kelas.judul,
-          soal: soalList,
-          jawabanUser: jawabanUser
-        }));
-
-        window.location.href = 'hasil-kuis.html';
+        selesaiKuis();
       });
 
-      renderSoal();
+      tampilkanSoal(0);
     }
-  })();</script>
+  </script>
 </body>
 </html>

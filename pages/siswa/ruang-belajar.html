@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ruang Belajar — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -43,52 +44,136 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    document.getElementById('ruang-user-name').textContent = user.nama;
+    var user = window.__pageUser;
+    var kelas = null;
+    var progres = null;
+    var silabus = [];
+    var babAktif = 0;
 
-    function getProgresRecord(kelasId) {
-      return getAll('progres').find(function (p) {
-        return sameUserId(p.userId, user.id) && String(p.kelasId) === String(kelasId);
-      });
-    }
+    document.getElementById('ruang-user-name').textContent = user.nama;
 
     document.getElementById('btn-logout-top').addEventListener('click', function (e) {
       e.preventDefault();
       logout();
     });
 
-    var kelasId = getQueryParam('id') || getQueryParam('kelasId');
-    if (!kelasId) {
-      window.location.href = 'katalog.html';
-    } else if (!userOwnsKelas(user.id, kelasId)) {
-      window.location.href = 'detail-kelas.html?id=' + encodeURIComponent(kelasId);
-    } else {
-      var kelas = getById('kelas', kelasId);
-      if (!kelas) {
-        window.location.href = 'katalog.html';
-      } else {
-        initRuangBelajar(kelas);
-      }
-    }
+    // ambil kelas dan progres dari query id
+    function ambilDataKelas() {
+      var kelasId = getQueryParam('id') || getQueryParam('kelasId');
+      if (!kelasId) return null;
+      if (!userOwnsKelas(user.id, kelasId)) return null;
+      var dataKelas = getById('kelas', kelasId);
+      if (!dataKelas) return null;
 
-    function initRuangBelajar(kelas) {
-      var silabus = kelas.silabus || [];
-      var babAktif = 0;
-      var progres = getProgresRecord(kelas.id);
+      var dataProgres = getAll('progres').find(function (p) {
+        return sameUserId(p.userId, user.id) && String(p.kelasId) === String(kelasId);
+      });
 
-      if (!progres) {
-        progres = {
+      if (!dataProgres) {
+        dataProgres = {
           id: generateId('p'),
           userId: user.id,
-          kelasId: kelas.id,
+          kelasId: dataKelas.id,
           babSelesai: [],
           persen: 0
         };
-        createItem('progres', progres);
+        createItem('progres', dataProgres);
       }
 
+      return { kelas: dataKelas, progres: dataProgres };
+    }
+
+    // cek apakah satu bab sudah selesai
+    function babSudahSelesai(babKe) {
+      return (progres.babSelesai || []).indexOf(babKe) !== -1;
+    }
+
+    // update teks progres di bawah video
+    function updateTeksProgres() {
+      var total = silabus.length;
+      var selesai = (progres.babSelesai || []).length;
+      var persen = total > 0 ? Math.round((selesai / total) * 100) : 0;
+      document.getElementById('progres-text').textContent =
+        'Progres: ' + persen + '% (' + selesai + '/' + total + ' bab)';
+    }
+
+    // render daftar bab di panel kanan
+    function renderDaftarBab() {
+      document.getElementById('bab-list').innerHTML = silabus.map(function (bab, idx) {
+        var selesai = babSudahSelesai(bab.babKe);
+        var kelasAktif = idx === babAktif ? ' active' : '';
+        var kelasDone = selesai ? ' done' : '';
+        return `
+          <li class="bab-item${kelasAktif}${kelasDone}" data-idx="${idx}">
+            <span class="bab-item-check">${selesai ? '✓' : ''}</span>
+            <div class="bab-item-info">
+              <p class="bab-item-title">Bab ${bab.babKe}: ${bab.judul}</p>
+              <p class="bab-item-durasi">${bab.durasi}</p>
+            </div>
+          </li>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.bab-item').forEach(function (item) {
+        item.addEventListener('click', function () {
+          gantiBab(parseInt(this.getAttribute('data-idx'), 10));
+        });
+      });
+    }
+
+    // ganti bab aktif: video + highlight
+    function gantiBab(idx) {
+      babAktif = idx;
+      var bab = silabus[babAktif];
+      document.getElementById('bab-judul-aktif').textContent = 'Bab ' + bab.babKe + ': ' + bab.judul;
+      document.getElementById('video-frame').src = bab.videoUrl;
+
+      var selesai = babSudahSelesai(bab.babKe);
+      var btnSelesai = document.getElementById('btn-selesai');
+      var btnKuis = document.getElementById('btn-kuis');
+
+      if (selesai) {
+        btnSelesai.textContent = 'Sudah Selesai';
+        btnSelesai.disabled = true;
+        btnSelesai.classList.remove('btn-primary');
+        btnSelesai.classList.add('btn-secondary');
+        btnKuis.style.display = 'inline-block';
+        btnKuis.href = 'kuis.html?kelasId=' + encodeURIComponent(kelas.id) + '&bab=' + bab.babKe;
+      } else {
+        btnSelesai.textContent = 'Tandai Selesai';
+        btnSelesai.disabled = false;
+        btnSelesai.classList.add('btn-primary');
+        btnSelesai.classList.remove('btn-secondary');
+        btnKuis.style.display = 'none';
+      }
+
+      updateTeksProgres();
+      renderDaftarBab();
+    }
+
+    // tandai bab selesai dan simpan progres
+    function tandaiSelesai(babKe) {
+      if (babSudahSelesai(babKe)) return;
+
+      var babSelesai = (progres.babSelesai || []).slice();
+      if (babSelesai.indexOf(babKe) === -1) babSelesai.push(babKe);
+
+      var persen = silabus.length > 0
+        ? Math.round((babSelesai.length / silabus.length) * 100)
+        : 0;
+
+      updateItem('progres', progres.id, { babSelesai: babSelesai, persen: persen });
+      progres = getAll('progres').find(function (p) {
+        return p.id === progres.id;
+      }) || progres;
+      progres.babSelesai = babSelesai;
+      progres.persen = persen;
+
+      gantiBab(babAktif);
+    }
+
+    // inisialisasi halaman ruang belajar
+    function mulaiRuangBelajar() {
       document.title = kelas.judul + ' — Ruang Belajar';
       document.getElementById('kelas-judul-top').textContent = kelas.judul;
       document.getElementById('btn-diskusi').href =
@@ -102,92 +187,27 @@
         return;
       }
 
-      function isBabSelesai(babKe) {
-        return (progres.babSelesai || []).indexOf(babKe) !== -1;
-      }
-
-      function renderBabList() {
-        document.getElementById('bab-list').innerHTML = silabus.map(function (bab, idx) {
-          var selesai = isBabSelesai(bab.babKe);
-          return (
-            '<li class="bab-item' + (idx === babAktif ? ' active' : '') + (selesai ? ' done' : '') + '" data-idx="' + idx + '">' +
-              '<span class="bab-item-check">' + (selesai ? '✓' : '') + '</span>' +
-              '<div class="bab-item-info">' +
-                '<p class="bab-item-title">Bab ' + bab.babKe + ': ' + bab.judul + '</p>' +
-                '<p class="bab-item-durasi">' + bab.durasi + '</p>' +
-              '</div>' +
-            '</li>'
-          );
-        }).join('');
-
-        document.querySelectorAll('.bab-item').forEach(function (item) {
-          item.addEventListener('click', function () {
-            babAktif = parseInt(this.getAttribute('data-idx'), 10);
-            renderBabAktif();
-            renderBabList();
-          });
-        });
-      }
-
-      function updateProgresText() {
-        var total = silabus.length;
-        var selesai = (progres.babSelesai || []).length;
-        var persen = total > 0 ? Math.round((selesai / total) * 100) : 0;
-        document.getElementById('progres-text').textContent = 'Progres: ' + persen + '% (' + selesai + '/' + total + ' bab)';
-      }
-
-      function renderBabAktif() {
-        var bab = silabus[babAktif];
-        document.getElementById('bab-judul-aktif').textContent = 'Bab ' + bab.babKe + ': ' + bab.judul;
-        document.getElementById('video-frame').src = bab.videoUrl;
-
-        var selesai = isBabSelesai(bab.babKe);
-        var btnSelesai = document.getElementById('btn-selesai');
-        var btnKuis = document.getElementById('btn-kuis');
-
-        if (selesai) {
-          btnSelesai.textContent = 'Sudah Selesai';
-          btnSelesai.disabled = true;
-          btnSelesai.classList.remove('btn-primary');
-          btnSelesai.classList.add('btn-secondary');
-          btnKuis.style.display = 'inline-block';
-          btnKuis.href = 'kuis.html?kelasId=' + encodeURIComponent(kelas.id) + '&bab=' + bab.babKe;
-        } else {
-          btnSelesai.textContent = 'Tandai Selesai';
-          btnSelesai.disabled = false;
-          btnSelesai.classList.add('btn-primary');
-          btnSelesai.classList.remove('btn-secondary');
-          btnKuis.style.display = 'none';
-        }
-
-        updateProgresText();
-      }
-
       document.getElementById('btn-selesai').addEventListener('click', function () {
-        var bab = silabus[babAktif];
-        if (isBabSelesai(bab.babKe)) return;
-
-        var babSelesai = (progres.babSelesai || []).slice();
-        if (babSelesai.indexOf(bab.babKe) === -1) {
-          babSelesai.push(bab.babKe);
-        }
-
-        var totalBab = silabus.length;
-        var persen = totalBab > 0 ? Math.round((babSelesai.length / totalBab) * 100) : 0;
-
-        updateItem('progres', progres.id, {
-          babSelesai: babSelesai,
-          persen: persen
-        });
-
-        progres = getProgresRecord(kelas.id);
-        renderBabAktif();
-        renderBabList();
+        tandaiSelesai(silabus[babAktif].babKe);
       });
 
-      renderBabList();
-      renderBabAktif();
+      gantiBab(0);
     }
-  })();</script>
+
+    var data = ambilDataKelas();
+    if (!data) {
+      var idParam = getQueryParam('id') || getQueryParam('kelasId');
+      if (idParam) {
+        window.location.href = 'detail-kelas.html?id=' + encodeURIComponent(idParam);
+      } else {
+        window.location.href = 'katalog.html';
+      }
+    } else {
+      kelas = data.kelas;
+      progres = data.progres;
+      silabus = kelas.silabus || [];
+      mulaiRuangBelajar();
+    }
+  </script>
 </body>
 </html>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profil Siswa — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -70,9 +71,8 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
+    var user = window.__pageUser;
+
     setActiveSidebar('profil');
 
     document.getElementById('btn-logout').addEventListener('click', function (e) {
@@ -80,14 +80,16 @@
       logout();
     });
 
-    function getInitials(nama) {
+    // ambil inisial nama untuk avatar
+    function ambilInisial(nama) {
       if (!nama) return '?';
       return nama.split(' ').map(function (n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
     }
 
-    function loadProfil() {
+    // isi form dan preview profil
+    function muatProfil() {
       var data = getById('users', user.id) || user;
-      document.getElementById('profil-avatar').textContent = getInitials(data.nama);
+      document.getElementById('profil-avatar').textContent = ambilInisial(data.nama);
       document.getElementById('profil-nama-display').textContent = data.nama;
       document.getElementById('profil-email-display').textContent = data.email;
       document.getElementById('input-nama').value = data.nama || '';
@@ -95,7 +97,7 @@
       document.getElementById('input-bio').value = data.bio || '';
     }
 
-    loadProfil();
+    muatProfil();
 
     document.getElementById('form-profil').addEventListener('submit', function (e) {
       e.preventDefault();
@@ -119,7 +121,7 @@
       var updatedUser = persistSession(getById('users', user.id) || user);
       user = updatedUser;
 
-      loadProfil();
+      muatProfil();
       document.getElementById('input-password').value = '';
 
       var alertEl = document.getElementById('alert-profil');
@@ -129,6 +131,6 @@
         alertEl.style.display = 'none';
       }, 4000);
     });
-  })();</script>
+  </script>
 </body>
 </html>

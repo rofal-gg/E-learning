@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detail Kelas — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -44,7 +46,10 @@
   </footer>
 
   <script>
-    function renderStars(rating) {
+    initStorage();
+
+    // buat HTML bintang rating
+    function buatBintang(rating) {
       var full = Math.floor(rating);
       var half = rating % 1 >= 0.5 ? 1 : 0;
       var stars = '';
@@ -54,41 +59,46 @@
       return '<span class="stars">' + stars + '</span> ' + rating;
     }
 
-    function renderNavbar() {
+    // tampilkan tombol navbar
+    function tampilkanNavbar() {
       var container = document.getElementById('navbar-actions');
       var user = getCurrentUser();
       if (user && user.role === 'siswa') {
         document.getElementById('nav-dashboard-item').style.display = 'list-item';
-        container.innerHTML =
-          '<span class="navbar-user">' + user.nama + '</span>' +
-          '<a href="cart.html" class="btn btn-secondary btn-sm">Keranjang</a>' +
-          '<button type="button" class="btn btn-danger btn-sm" id="btn-logout">Logout</button>';
+        container.innerHTML = `
+          <span class="navbar-user">${user.nama}</span>
+          <a href="cart.html" class="btn btn-secondary btn-sm">Keranjang</a>
+          <button type="button" class="btn btn-danger btn-sm" id="btn-logout">Logout</button>
+        `;
         document.getElementById('btn-logout').addEventListener('click', logout);
       } else {
-        container.innerHTML =
-          '<a href="../auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>' +
-          '<a href="../auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>';
+        container.innerHTML = `
+          <a href="../auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>
+          <a href="../auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>
+        `;
       }
     }
 
-    function renderSilabus(silabus) {
+    // buat HTML accordion silabus
+    function buatHtmlSilabus(silabus) {
       if (!silabus || silabus.length === 0) {
         return '<p class="text-gray">Silabus belum tersedia.</p>';
       }
-      return '<div class="accordion" id="silabus-accordion">' + silabus.map(function (bab, idx) {
-        return (
-          '<div class="accordion-item">' +
-            '<button type="button" class="accordion-header" data-idx="' + idx + '">' +
-              'Bab ' + bab.babKe + ': ' + bab.judul +
-              '<span class="accordion-icon">+</span>' +
-            '</button>' +
-            '<div class="accordion-body">Durasi: ' + bab.durasi + '</div>' +
-          '</div>'
-        );
-      }).join('') + '</div>';
+      return `<div class="accordion" id="silabus-accordion">${silabus.map(function (bab, idx) {
+        return `
+          <div class="accordion-item">
+            <button type="button" class="accordion-header" data-idx="${idx}">
+              Bab ${bab.babKe}: ${bab.judul}
+              <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">Durasi: ${bab.durasi}</div>
+          </div>
+        `;
+      }).join('')}</div>`;
     }
 
-    function bindSilabusAccordion() {
+    // pasang klik buka-tutup silabus
+    function pasangAccordionSilabus() {
       document.querySelectorAll('#silabus-accordion .accordion-header').forEach(function (header) {
         header.addEventListener('click', function () {
           var item = this.parentElement;
@@ -105,7 +115,8 @@
       });
     }
 
-    function bindActions(kelas) {
+    // pasang tombol cart dan wishlist
+    function pasangTombolAksi(kelas) {
       var user = getCurrentUser();
       var kelasId = kelas.id;
       var sudahBeli = user && userOwnsKelas(user.id, kelasId);
@@ -144,45 +155,47 @@
       }
     }
 
-    function renderDetail(kelas) {
+    // tampilkan halaman detail kelas
+    function tampilkanDetail(kelas) {
       var user = getCurrentUser();
       var sudahBeli = user && userOwnsKelas(user.id, kelas.id);
 
       var panelButtons = sudahBeli
-        ? '<a href="ruang-belajar.html?id=' + kelas.id + '" class="btn btn-primary btn-block">Lanjutkan Belajar</a>' +
-          '<a href="diskusi.html?kelasId=' + kelas.id + '" class="btn btn-secondary btn-block">Forum Diskusi</a>'
-        : '<button type="button" id="btn-cart" class="btn btn-primary btn-block">Tambah ke Keranjang</button>' +
-          '<button type="button" id="btn-wishlist" class="btn btn-secondary btn-block">Simpan ke Wishlist</button>';
+        ? `<a href="ruang-belajar.html?id=${kelas.id}" class="btn btn-primary btn-block">Lanjutkan Belajar</a>
+           <a href="diskusi.html?kelasId=${kelas.id}" class="btn btn-secondary btn-block">Forum Diskusi</a>`
+        : `<button type="button" id="btn-cart" class="btn btn-primary btn-block">Tambah ke Keranjang</button>
+           <button type="button" id="btn-wishlist" class="btn btn-secondary btn-block">Simpan ke Wishlist</button>`;
 
-      document.getElementById('detail-content').innerHTML =
-        '<div class="detail-layout">' +
-          '<div class="detail-main">' +
-            '<img class="detail-hero-img" src="../../' + kelas.gambar + '" alt="' + kelas.judul + '" onerror="this.src=\'../../assets/images/placeholder.jpg\'">' +
-            '<h1 class="detail-title">' + kelas.judul + '</h1>' +
-            '<div class="detail-meta">' +
-              '<span class="badge badge-primary">' + kelas.kategoriNama + '</span>' +
-              '<span class="badge badge-warning">' + kelas.level + '</span>' +
-              renderStars(kelas.rating) +
-              '<span class="text-gray">· ' + kelas.totalSiswa + ' siswa</span>' +
-            '</div>' +
-            '<p class="detail-instruktur">Instruktur: <strong>' + kelas.instrukturNama + '</strong></p>' +
-            '<p class="detail-desc">' + kelas.deskripsi + '</p>' +
-            '<h2 class="detail-section-title">Silabus Kelas</h2>' +
-            renderSilabus(kelas.silabus) +
-          '</div>' +
-          '<aside class="price-panel card">' +
-            '<h3 class="price-panel-title">Harga Kelas</h3>' +
-            '<p class="price-big">' + formatRupiah(kelas.harga) + '</p>' +
-            panelButtons +
-          '</aside>' +
-        '</div>';
+      document.getElementById('detail-content').innerHTML = `
+        <div class="detail-layout">
+          <div class="detail-main">
+            <img class="detail-hero-img" src="../../${kelas.gambar}" alt="${kelas.judul}" onerror="this.src='../../assets/images/placeholder.jpg'">
+            <h1 class="detail-title">${kelas.judul}</h1>
+            <div class="detail-meta">
+              <span class="badge badge-primary">${kelas.kategoriNama}</span>
+              <span class="badge badge-warning">${kelas.level}</span>
+              ${buatBintang(kelas.rating)}
+              <span class="text-gray">· ${kelas.totalSiswa} siswa</span>
+            </div>
+            <p class="detail-instruktur">Instruktur: <strong>${kelas.instrukturNama}</strong></p>
+            <p class="detail-desc">${kelas.deskripsi}</p>
+            <h2 class="detail-section-title">Silabus Kelas</h2>
+            ${buatHtmlSilabus(kelas.silabus)}
+          </div>
+          <aside class="price-panel card">
+            <h3 class="price-panel-title">Harga Kelas</h3>
+            <p class="price-big">${formatRupiah(kelas.harga)}</p>
+            ${panelButtons}
+          </aside>
+        </div>
+      `;
 
       document.title = kelas.judul + ' — Platform E-Learning';
-      bindSilabusAccordion();
-      bindActions(kelas);
+      pasangAccordionSilabus();
+      pasangTombolAksi(kelas);
     }
 
-    renderNavbar();
+    tampilkanNavbar();
 
     var kelasId = getQueryParam('id');
     if (!kelasId) {
@@ -203,10 +216,10 @@
           document.getElementById('detail-content').innerHTML =
             '<div class="empty-state"><p>Kelas ini belum tersedia di katalog.</p><a href="katalog.html" class="btn btn-primary">Kembali ke Katalog</a></div>';
         } else {
-          renderDetail(kelas);
+          tampilkanDetail(kelas);
         }
       } else {
-        renderDetail(kelas);
+        tampilkanDetail(kelas);
       }
     }
   </script>

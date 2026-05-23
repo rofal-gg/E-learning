@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sertifikat — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -34,9 +35,8 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
+    var user = window.__pageUser;
+
     setActiveSidebar('sertifikat');
 
     document.getElementById('btn-logout').addEventListener('click', function (e) {
@@ -44,11 +44,8 @@
       logout();
     });
 
-    function getQueryParam(nama) {
-      return new URLSearchParams(window.location.search).get(nama);
-    }
-
-    function formatTanggal(tanggal) {
+    // format tanggal sertifikat
+    function formatTanggalSertifikat(tanggal) {
       return new Date(tanggal).toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'long',
@@ -56,13 +53,15 @@
       });
     }
 
-    function getProgres(kelasId) {
+    // ambil progres user untuk satu kelas
+    function ambilProgres(kelasId) {
       return getAll('progres').find(function (p) {
         return sameUserId(p.userId, user.id) && String(p.kelasId) === String(kelasId);
       });
     }
 
-    function getKelasIdsDibeli() {
+    // ambil id kelas yang sudah dibeli
+    function ambilKelasIdsDibeli() {
       var ids = [];
       getAll('transaksi').filter(function (t) { return sameUserId(t.userId, user.id); }).forEach(function (t) {
         (t.items || []).forEach(function (kelasId) {
@@ -72,12 +71,13 @@
       return ids;
     }
 
-    function renderDaftarSertifikat() {
+    // tampilkan daftar kelas yang layak sertifikat
+    function tampilkanDaftarSertifikat() {
       var area = document.getElementById('sertifikat-area');
-      var selesai = getKelasIdsDibeli()
+      var selesai = ambilKelasIdsDibeli()
         .map(function (id) {
           var kelas = getById('kelas', id);
-          var progres = getProgres(id);
+          var progres = ambilProgres(id);
           return { kelas: kelas, progres: progres };
         })
         .filter(function (item) {
@@ -94,24 +94,26 @@
         return;
       }
 
-      area.innerHTML =
-        '<div class="page-header"><h1>Sertifikat Kelulusan</h1>' +
-          '<p class="text-gray">Pilih kelas untuk melihat dan mengunduh sertifikat.</p></div>' +
-        '<div class="grid-2">' + selesai.map(function (item) {
-          return (
-            '<div class="card">' +
-              '<h3>' + item.kelas.judul + '</h3>' +
-              '<p class="text-gray">' + item.kelas.instrukturNama + '</p>' +
-              '<a href="sertifikat.html?kelasId=' + encodeURIComponent(item.kelas.id) + '" class="btn btn-primary btn-sm" style="margin-top:12px;">Lihat Sertifikat</a>' +
-            '</div>'
-          );
-        }).join('') + '</div>';
+      area.innerHTML = `
+        <div class="page-header"><h1>Sertifikat Kelulusan</h1>
+          <p class="text-gray">Pilih kelas untuk melihat dan mengunduh sertifikat.</p></div>
+        <div class="grid-2">${selesai.map(function (item) {
+          return `
+            <div class="card">
+              <h3>${item.kelas.judul}</h3>
+              <p class="text-gray">${item.kelas.instrukturNama}</p>
+              <a href="sertifikat.html?kelasId=${encodeURIComponent(item.kelas.id)}" class="btn btn-primary btn-sm" style="margin-top:12px;">Lihat Sertifikat</a>
+            </div>
+          `;
+        }).join('')}</div>
+      `;
     }
 
-    function renderSertifikat(kelasId) {
+    // tampilkan satu sertifikat kelas
+    function tampilkanSertifikat(kelasId) {
       var area = document.getElementById('sertifikat-area');
       var kelas = getById('kelas', kelasId);
-      var progres = getProgres(kelasId);
+      var progres = ambilProgres(kelasId);
 
       if (!kelas) {
         area.innerHTML =
@@ -136,36 +138,37 @@
         return;
       }
 
-      var tanggalLulus = formatTanggal(new Date().toISOString());
+      var tanggalLulus = formatTanggalSertifikat(new Date().toISOString());
 
-      area.innerHTML =
-        '<div class="page-header no-print">' +
-          '<a href="sertifikat.html" class="text-link-sm">← Daftar Sertifikat</a>' +
-          '<h1>Sertifikat Kelulusan</h1>' +
-        '</div>' +
-        '<div class="sertifikat-wrapper" id="sertifikat-print">' +
-          '<div class="sertifikat-card">' +
-            '<div class="sertifikat-border-outer">' +
-              '<div class="sertifikat-border-inner">' +
-                '<div class="sertifikat-logo">EduKita</div>' +
-                '<p class="sertifikat-label">Sertifikat Penyelesaian</p>' +
-                '<p class="sertifikat-sub">Diberikan kepada</p>' +
-                '<h2 class="sertifikat-nama">' + user.nama + '</h2>' +
-                '<p class="sertifikat-sub">telah menyelesaikan kelas</p>' +
-                '<h3 class="sertifikat-kelas">' + kelas.judul + '</h3>' +
-                '<div class="sertifikat-meta">' +
-                  '<div><span>Tanggal</span><strong>' + tanggalLulus + '</strong></div>' +
-                  '<div><span>Instruktur</span><strong>' + kelas.instrukturNama + '</strong></div>' +
-                '</div>' +
-                '<p class="sertifikat-footer">Platform E-Learning EduKita</p>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="sertifikat-actions no-print">' +
-          '<button type="button" class="btn btn-primary" id="btn-unduh">Unduh Sertifikat</button>' +
-          '<a href="ruang-belajar.html?id=' + encodeURIComponent(kelasId) + '" class="btn btn-secondary">Kembali ke Kelas</a>' +
-        '</div>';
+      area.innerHTML = `
+        <div class="page-header no-print">
+          <a href="sertifikat.html" class="text-link-sm">← Daftar Sertifikat</a>
+          <h1>Sertifikat Kelulusan</h1>
+        </div>
+        <div class="sertifikat-wrapper" id="sertifikat-print">
+          <div class="sertifikat-card">
+            <div class="sertifikat-border-outer">
+              <div class="sertifikat-border-inner">
+                <div class="sertifikat-logo">EduKita</div>
+                <p class="sertifikat-label">Sertifikat Penyelesaian</p>
+                <p class="sertifikat-sub">Diberikan kepada</p>
+                <h2 class="sertifikat-nama">${user.nama}</h2>
+                <p class="sertifikat-sub">telah menyelesaikan kelas</p>
+                <h3 class="sertifikat-kelas">${kelas.judul}</h3>
+                <div class="sertifikat-meta">
+                  <div><span>Tanggal</span><strong>${tanggalLulus}</strong></div>
+                  <div><span>Instruktur</span><strong>${kelas.instrukturNama}</strong></div>
+                </div>
+                <p class="sertifikat-footer">Platform E-Learning EduKita</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sertifikat-actions no-print">
+          <button type="button" class="btn btn-primary" id="btn-unduh">Unduh Sertifikat</button>
+          <a href="ruang-belajar.html?id=${encodeURIComponent(kelasId)}" class="btn btn-secondary">Kembali ke Kelas</a>
+        </div>
+      `;
 
       document.getElementById('btn-unduh').addEventListener('click', function () {
         window.print();
@@ -176,10 +179,10 @@
 
     var kelasId = getQueryParam('kelasId') || getQueryParam('id');
     if (kelasId) {
-      renderSertifikat(kelasId);
+      tampilkanSertifikat(kelasId);
     } else {
-      renderDaftarSertifikat();
+      tampilkanDaftarSertifikat();
     }
-  })();</script>
+  </script>
 </body>
 </html>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hasil Kuis — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -23,29 +24,44 @@
   </main>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
+    var user = window.__pageUser;
     var raw = sessionStorage.getItem('hasilKuisData');
     var container = document.getElementById('hasil-content');
 
-    if (!raw) {
-      container.innerHTML =
-        '<div class="empty-state card">' +
-          '<p>Data hasil kuis tidak ditemukan. Kerjakan kuis terlebih dahulu.</p>' +
-          '<a href="dashboard.html" class="btn btn-primary">Ke Dashboard</a>' +
-        '</div>';
-      document.getElementById('hasil-meta').textContent = '';
-    } else {
-      var data = JSON.parse(raw);
-      var soalList = data.soal || [];
-      var jawabanUser = data.jawabanUser || [];
+    // hitung jumlah jawaban benar
+    function hitungSkor(soalList, jawabanUser) {
       var benar = 0;
-
       soalList.forEach(function (soal, idx) {
         if (jawabanUser[idx] === soal.jawaban) benar++;
       });
+      return benar;
+    }
 
+    // buat HTML pembahasan tiap soal
+    function buatPembahasan(soalList, jawabanUser) {
+      return soalList.map(function (soal, idx) {
+        var idxUser = jawabanUser[idx];
+        var teksUser = idxUser !== null && idxUser !== undefined
+          ? soal.pilihan[idxUser]
+          : '(tidak dijawab)';
+        var teksBenar = soal.pilihan[soal.jawaban];
+        var isBenar = idxUser === soal.jawaban;
+        return `
+          <div class="card pembahasan-item ${isBenar ? 'benar' : 'salah'}">
+            <h3>Soal ${idx + 1}: ${soal.pertanyaan}</h3>
+            <p class="pembahasan-row">Jawaban Anda: <strong>${teksUser}</strong></p>
+            <p class="pembahasan-row">Jawaban Benar: <strong>${teksBenar}</strong></p>
+            <p class="pembahasan-status ${isBenar ? 'benar' : 'salah'}">${isBenar ? '✓ Benar' : '✗ Salah'}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // tampilkan skor dan pembahasan
+    function tampilkanHasil(data) {
+      var soalList = data.soal || [];
+      var jawabanUser = data.jawabanUser || [];
+      var benar = hitungSkor(soalList, jawabanUser);
       var total = soalList.length;
       var persen = total > 0 ? Math.round((benar / total) * 100) : 0;
       var lulus = persen >= 70;
@@ -54,52 +70,42 @@
         (data.judulKelas || 'Kelas') + ' — Bab ' + (data.babKe || '-');
       document.title = 'Hasil Kuis — ' + (data.judulKelas || 'Platform E-Learning');
 
-      var pembahasanHtml = soalList.map(function (soal, idx) {
-        var idxUser = jawabanUser[idx];
-        var idxBenar = soal.jawaban;
-        var teksUser = idxUser !== null && idxUser !== undefined
-          ? soal.pilihan[idxUser]
-          : '(tidak dijawab)';
-        var teksBenar = soal.pilihan[idxBenar];
-        var isBenar = idxUser === idxBenar;
-
-        return (
-          '<div class="card pembahasan-item ' + (isBenar ? 'benar' : 'salah') + '">' +
-            '<h3>Soal ' + (idx + 1) + ': ' + soal.pertanyaan + '</h3>' +
-            '<p class="pembahasan-row">Jawaban Anda: <strong>' + teksUser + '</strong></p>' +
-            '<p class="pembahasan-row">Jawaban Benar: <strong>' + teksBenar + '</strong></p>' +
-            '<p class="pembahasan-status ' + (isBenar ? 'benar' : 'salah') + '">' +
-              (isBenar ? '✓ Benar' : '✗ Salah') +
-            '</p>' +
-          '</div>'
-        );
-      }).join('');
-
       var progres = getAll('progres').find(function (p) {
         return sameUserId(p.userId, user.id) && String(p.kelasId) === String(data.kelasId);
       });
       var sertifikatBtn = progres && progres.persen >= 100
-        ? '<a href="sertifikat.html?kelasId=' + encodeURIComponent(data.kelasId) + '" class="btn btn-primary">Lihat Sertifikat</a> '
+        ? `<a href="sertifikat.html?kelasId=${encodeURIComponent(data.kelasId)}" class="btn btn-primary">Lihat Sertifikat</a> `
         : '';
 
-      container.innerHTML =
-        '<div class="card hasil-skor-box">' +
-          '<p class="hasil-skor-angka">' + benar + ' / ' + total + '</p>' +
-          '<p class="hasil-skor-label">Jawaban benar (' + persen + '%)</p>' +
-          '<div class="hasil-badge-wrap">' +
-            '<span class="badge ' + (lulus ? 'badge-success' : 'badge-danger') + '">' +
-              (lulus ? 'Lulus' : 'Tidak Lulus') +
-            '</span>' +
-          '</div>' +
-        '</div>' +
-        '<h2 style="margin:24px 0 16px;font-size:var(--font-size-lg);color:var(--gray-900);">Pembahasan</h2>' +
-        '<div class="pembahasan-list">' + pembahasanHtml + '</div>' +
-        '<div class="hasil-actions">' +
-          sertifikatBtn +
-          '<a href="ruang-belajar.html?id=' + encodeURIComponent(data.kelasId) + '" class="btn btn-secondary">Kembali ke Kelas</a>' +
-          '<a href="kuis.html?kelasId=' + encodeURIComponent(data.kelasId) + '&bab=' + data.babKe + '" class="btn btn-secondary">Coba Lagi</a>' +
-        '</div>';
+      container.innerHTML = `
+        <div class="card hasil-skor-box">
+          <p class="hasil-skor-angka">${benar} / ${total}</p>
+          <p class="hasil-skor-label">Jawaban benar (${persen}%)</p>
+          <div class="hasil-badge-wrap">
+            <span class="badge ${lulus ? 'badge-success' : 'badge-danger'}">${lulus ? 'Lulus' : 'Tidak Lulus'}</span>
+          </div>
+        </div>
+        <h2 style="margin:24px 0 16px;font-size:var(--font-size-lg);color:var(--gray-900);">Pembahasan</h2>
+        <div class="pembahasan-list">${buatPembahasan(soalList, jawabanUser)}</div>
+        <div class="hasil-actions">
+          ${sertifikatBtn}
+          <a href="ruang-belajar.html?id=${encodeURIComponent(data.kelasId)}" class="btn btn-secondary">Kembali ke Kelas</a>
+          <a href="kuis.html?kelasId=${encodeURIComponent(data.kelasId)}&bab=${data.babKe}" class="btn btn-secondary">Coba Lagi</a>
+        </div>
+      `;
     }
-  })();</script>
+
+    if (!raw) {
+      container.innerHTML = `
+        <div class="empty-state card">
+          <p>Data hasil kuis tidak ditemukan. Kerjakan kuis terlebih dahulu.</p>
+          <a href="dashboard.html" class="btn btn-primary">Ke Dashboard</a>
+        </div>
+      `;
+      document.getElementById('hasil-meta').textContent = '';
+    } else {
+      tampilkanHasil(JSON.parse(raw));
+    }
+  </script>
 </body>
 </html>
