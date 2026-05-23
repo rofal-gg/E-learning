@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manajemen Kategori — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota5.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -36,10 +37,10 @@
         <p class="text-gray">Kelola kategori kelas di platform</p>
       </div>
 
-      <div class="card" style="margin-bottom:24px;">
-        <h2 style="font-size:var(--font-size-lg);margin-bottom:16px;">Tambah Kategori</h2>
-        <form id="form-tambah" class="filter-bar" style="align-items:flex-end;gap:12px;">
-          <div class="form-group" style="flex:1;margin-bottom:0;">
+      <div class="card admin-form-card">
+        <h2>Tambah Kategori</h2>
+        <form id="form-tambah" class="kategori-form">
+          <div class="form-group">
             <label class="form-label" for="nama-kategori">Nama Kategori</label>
             <input type="text" id="nama-kategori" class="form-input" placeholder="Contoh: Machine Learning" required>
           </div>
@@ -52,21 +53,41 @@
   </div>
 
   <script>
-    (function () {
-      var adminUser = window.__pageUser;
-      if (!adminUser) return;
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('manajemen-kategori');
 
-    function countKelasKategori(cat) {
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+
+      document.getElementById('form-tambah').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var nama = document.getElementById('nama-kategori').value.trim();
+        if (!nama) {
+          alert('Nama kategori wajib diisi.');
+          return;
+        }
+
+        var duplikat = getAll('categories').some(function (c) {
+          return c.nama.toLowerCase() === nama.toLowerCase();
+        });
+        if (duplikat) {
+          alert('Kategori dengan nama tersebut sudah ada.');
+          return;
+        }
+
+        createItem('categories', { id: generateId('cat'), nama: nama });
+        document.getElementById('nama-kategori').value = '';
+        renderTabelKategori(getAll('categories'));
+      });
+
+      renderTabelKategori(getAll('categories'));
+    }
+
+    function hitungKelasKategori(cat) {
       return getAll('kelas').filter(function (k) {
         return k.kategoriId == cat.id || k.kategoriNama === cat.nama;
       }).length;
@@ -78,8 +99,8 @@
       var input = document.createElement('input');
       input.type = 'text';
       input.className = 'form-input';
+      cell.className = 'kategori-inline-edit';
       input.value = cat.nama;
-      input.style.maxWidth = '280px';
 
       cell.innerHTML = '';
       cell.appendChild(input);
@@ -90,17 +111,16 @@
         var baru = input.value.trim();
         if (!baru) {
           alert('Nama kategori tidak boleh kosong.');
-          renderTable();
+          renderTabelKategori(getAll('categories'));
           return;
         }
         updateItem('categories', cat.id, { nama: baru });
-        var kelasList = getAll('kelas').filter(function (k) {
+        getAll('kelas').filter(function (k) {
           return k.kategoriId == cat.id;
-        });
-        kelasList.forEach(function (k) {
+        }).forEach(function (k) {
           updateItem('kelas', k.id, { kategoriNama: baru });
         });
-        renderTable();
+        renderTabelKategori(getAll('categories'));
       }
 
       input.addEventListener('blur', simpan);
@@ -110,7 +130,7 @@
           input.blur();
         }
         if (e.key === 'Escape') {
-          renderTable();
+          renderTabelKategori(getAll('categories'));
         }
       });
     }
@@ -119,56 +139,58 @@
       var cat = getById('categories', id);
       if (!cat) return;
 
-      if (countKelasKategori(cat) > 0) {
+      if (hitungKelasKategori(cat) > 0) {
         alert('Tidak bisa hapus, masih ada kelas');
         return;
       }
 
-      if (!confirm('Hapus kategori "' + cat.nama + '"?')) return;
+      if (!confirm(`Hapus kategori "${cat.nama}"?`)) return;
       deleteItem('categories', id);
-      renderTable();
+      renderTabelKategori(getAll('categories'));
     }
 
-    function renderTable() {
+    function renderTabelKategori(list) {
       var area = document.getElementById('table-area');
-      var list = getAll('categories');
 
       if (list.length === 0) {
-        area.innerHTML =
-          '<div class="empty-state card">' +
-            '<p>Belum ada kategori. Tambahkan kategori pertama di atas.</p>' +
-          '</div>';
+        area.innerHTML = `
+          <div class="empty-state card">
+            <p>Belum ada kategori. Tambahkan kategori pertama di atas.</p>
+          </div>`;
         return;
       }
 
       var rows = list.map(function (cat, index) {
-        var jumlah = countKelasKategori(cat);
-        return (
-          '<tr>' +
-            '<td>' + (index + 1) + '</td>' +
-            '<td><button type="button" class="btn-link-nama" data-id="' + cat.id + '" style="background:none;border:none;padding:0;font:inherit;color:var(--primary);cursor:pointer;text-align:left;"><strong>' + cat.nama + '</strong></button></td>' +
-            '<td>' + jumlah + ' kelas</td>' +
-            '<td class="table-aksi">' +
-              '<button type="button" class="btn btn-danger btn-sm" data-aksi="hapus" data-id="' + cat.id + '">Hapus</button>' +
-            '</td>' +
-          '</tr>'
-        );
+        var jumlah = hitungKelasKategori(cat);
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>
+              <button type="button" class="btn-link-nama" data-id="${cat.id}">
+                <strong>${cat.nama}</strong>
+              </button>
+            </td>
+            <td>${jumlah} kelas</td>
+            <td class="table-aksi">
+              <button type="button" class="btn btn-danger btn-sm" data-aksi="hapus" data-id="${cat.id}">Hapus</button>
+            </td>
+          </tr>`;
       }).join('');
 
-      area.innerHTML =
-        '<div class="card table-wrap">' +
-          '<table class="table">' +
-            '<thead>' +
-              '<tr>' +
-                '<th>No</th>' +
-                '<th>Nama</th>' +
-                '<th>Jumlah Kelas</th>' +
-                '<th>Aksi</th>' +
-              '</tr>' +
-            '</thead>' +
-            '<tbody>' + rows + '</tbody>' +
-          '</table>' +
-        '</div>';
+      area.innerHTML = `
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Jumlah Kelas</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
 
       area.querySelectorAll('.btn-link-nama').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -185,29 +207,6 @@
         });
       });
     }
-
-    document.getElementById('form-tambah').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var nama = document.getElementById('nama-kategori').value.trim();
-      if (!nama) {
-        alert('Nama kategori wajib diisi.');
-        return;
-      }
-
-      var duplikat = getAll('categories').some(function (c) {
-        return c.nama.toLowerCase() === nama.toLowerCase();
-      });
-      if (duplikat) {
-        alert('Kategori dengan nama tersebut sudah ada.');
-        return;
-      }
-
-      createItem('categories', { id: generateId('cat'), nama: nama });
-      document.getElementById('nama-kategori').value = '';
-      renderTable();
-    });
-
-    renderTable();
-  })();</script>
+  </script>
 </body>
 </html>

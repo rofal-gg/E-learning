@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tanya Jawab — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -34,53 +35,82 @@
         <p class="text-gray">Balas pertanyaan dari semua kelas Anda</p>
       </div>
 
-      <div id="diskusi-list" class="diskusi-list"></div>
+      <div id="tanya-jawab-list" class="tanya-jawab-list"></div>
     </main>
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    setActiveSidebar();
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('tanya-jawab');
 
-    function formatTanggal(tanggal) {
-      if (!tanggal) return '-';
-      return new Date(tanggal).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
       });
+
+      renderDaftarTanya();
     }
 
-    function getInitials(nama) {
+    // inisial nama untuk avatar
+    function inisialNama(nama) {
       if (!nama) return '?';
       return nama.split(' ').map(function (n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
     }
 
-    function getMyKelasIds() {
+    // id kelas milik instruktur
+    function ambilIdKelasSaya() {
       return getAll('kelas')
-        .filter(function (k) { return k.instrukturId === user.id; })
+        .filter(function (k) { return sameUserId(k.instrukturId, user.id); })
         .map(function (k) { return k.id; });
     }
 
-    function getKelasMap() {
+    // map kelas untuk label judul
+    function ambilMapKelas() {
       var map = {};
       getAll('kelas').forEach(function (k) {
-        if (k.instrukturId === user.id) map[k.id] = k;
+        if (sameUserId(k.instrukturId, user.id)) map[k.id] = k;
       });
       return map;
     }
 
-    function renderDiskusi() {
-      var container = document.getElementById('diskusi-list');
-      var kelasIds = getMyKelasIds();
-      var kelasMap = getKelasMap();
+    // HTML satu balasan
+    function buatHtmlBalasan(b) {
+      return `
+        <div class="tanya-balasan">
+          <div class="tanya-avatar">${inisialNama(b.userName)}</div>
+          <div class="tanya-balasan-body">
+            <strong>${b.userName}</strong>
+            <span class="tanya-tanggal">${formatTanggal(b.tanggal)}</span>
+            <p>${b.teks}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    // simpan balasan instruktur
+    function kirimBalasan(diskusiId, teks) {
+      var diskusi = getById('diskusi', diskusiId);
+      if (!diskusi) return;
+
+      var balasan = (diskusi.balasan || []).slice();
+      balasan.push({
+        userId: user.id,
+        userName: user.nama,
+        teks: teks,
+        tanggal: new Date().toISOString()
+      });
+
+      updateItem('diskusi', diskusiId, { balasan: balasan });
+      renderDaftarTanya();
+    }
+
+    // render daftar pertanyaan siswa
+    function renderDaftarTanya() {
+      var container = document.getElementById('tanya-jawab-list');
+      var kelasIds = ambilIdKelasSaya();
+      var kelasMap = ambilMapKelas();
 
       var list = getAll('diskusi')
         .filter(function (d) { return kelasIds.indexOf(d.kelasId) !== -1; })
@@ -89,79 +119,51 @@
         });
 
       if (list.length === 0) {
-        container.innerHTML =
-          '<div class="empty-state">' +
-            '<p>Belum ada pertanyaan dari siswa.</p>' +
-          '</div>';
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Belum ada pertanyaan dari siswa.</p>
+          </div>
+        `;
         return;
       }
 
       container.innerHTML = list.map(function (d) {
         var kelas = kelasMap[d.kelasId];
         var namaKelas = kelas ? kelas.judul : 'Kelas';
+        var balasanHtml = (d.balasan || []).map(buatHtmlBalasan).join('');
+        var balasanSection = balasanHtml
+          ? `<div class="balasan-list"><h3>Balasan</h3>${balasanHtml}</div>`
+          : '';
 
-        var balasanHtml = (d.balasan || []).map(function (b) {
-          return (
-            '<div class="diskusi-balasan">' +
-              '<div class="diskusi-avatar diskusi-avatar-sm">' + getInitials(b.userName) + '</div>' +
-              '<div class="diskusi-balasan-body">' +
-                '<strong>' + b.userName + '</strong>' +
-                '<span class="diskusi-tanggal">' + formatTanggal(b.tanggal) + '</span>' +
-                '<p>' + b.teks + '</p>' +
-              '</div>' +
-            '</div>'
-          );
-        }).join('');
-
-        return (
-          '<article class="card diskusi-item" data-id="' + d.id + '">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">' +
-              '<span class="badge badge-primary">' + namaKelas + '</span>' +
-              '<span class="diskusi-tanggal">' + formatTanggal(d.tanggal) + '</span>' +
-            '</div>' +
-            '<p><strong>' + d.userName + '</strong></p>' +
-            '<p class="diskusi-pertanyaan">' + d.pertanyaan + '</p>' +
-            (balasanHtml
-              ? '<div class="diskusi-balasan-list"><h3>Balasan</h3>' + balasanHtml + '</div>'
-              : '') +
-            '<form class="form-balasan" data-id="' + d.id + '" style="margin-top:16px;">' +
-              '<div class="form-group" style="margin-bottom:12px;">' +
-                '<label class="form-label">Balasan Anda</label>' +
-                '<textarea class="form-input input-balasan" rows="3" placeholder="Tulis balasan untuk siswa…" required></textarea>' +
-              '</div>' +
-              '<button type="submit" class="btn btn-primary btn-sm">Balas</button>' +
-            '</form>' +
-          '</article>'
-        );
+        return `
+          <article class="card tanya-item" data-id="${d.id}">
+            <div class="tanya-item-header">
+              <span class="badge badge-primary">${namaKelas}</span>
+              <span class="tanya-tanggal">${formatTanggal(d.tanggal)}</span>
+            </div>
+            <p><strong>${d.userName}</strong></p>
+            <p class="tanya-pertanyaan">${d.pertanyaan}</p>
+            ${balasanSection}
+            <form class="form-balas" data-id="${d.id}">
+              <div class="form-group">
+                <label class="form-label">Balasan Anda</label>
+                <textarea class="form-input input-balasan" rows="3" placeholder="Tulis balasan untuk siswa…" required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">Balas</button>
+            </form>
+          </article>
+        `;
       }).join('');
 
-      container.querySelectorAll('.form-balasan').forEach(function (form) {
+      container.querySelectorAll('.form-balas').forEach(function (form) {
         form.addEventListener('submit', function (e) {
           e.preventDefault();
-          var diskusiId = this.getAttribute('data-id');
-          var textarea = this.querySelector('.input-balasan');
-          var teks = textarea.value.trim();
+          var teks = this.querySelector('.input-balasan').value.trim();
           if (!teks) return;
-
-          var diskusi = getById('diskusi', diskusiId);
-          if (!diskusi) return;
-
-          var balasan = (diskusi.balasan || []).slice();
-          balasan.push({
-            userId: user.id,
-            userName: user.nama,
-            teks: teks,
-            tanggal: new Date().toISOString()
-          });
-
-          updateItem('diskusi', diskusiId, { balasan: balasan });
-          textarea.value = '';
-          renderDiskusi();
+          kirimBalasan(this.getAttribute('data-id'), teks);
         });
       });
     }
-
-    renderDiskusi();
-  })();</script>
+  </script>
 </body>
 </html>

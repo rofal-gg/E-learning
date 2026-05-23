@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Diskon & Kupon — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -35,10 +36,12 @@
         <p class="text-gray">Buat dan kelola kode kupon untuk kelas Anda</p>
       </div>
 
-      <section class="card" style="margin-bottom: 24px;">
-        <h2 style="margin: 0 0 20px; font-size: var(--font-size-lg);">Buat Kupon Baru</h2>
+      <div id="alert-box" class="alert-box-wrap"></div>
+
+      <section class="card kupon-form">
+        <h2>Buat Kupon Baru</h2>
         <form id="form-kupon">
-          <div class="grid-2" style="gap: 16px;">
+          <div class="grid-2 kupon-form-grid">
             <div class="form-group">
               <label class="form-label" for="input-kode">Kode Kupon</label>
               <input type="text" id="input-kode" class="form-input" placeholder="CONTOH10" required>
@@ -56,11 +59,11 @@
               <input type="date" id="input-expired" class="form-input" required>
             </div>
           </div>
-          <button type="submit" class="btn btn-primary" style="margin-top: 8px;">Buat Kupon</button>
+          <button type="submit" class="btn btn-primary kupon-form-submit">Buat Kupon</button>
         </form>
       </section>
 
-      <div class="card table-wrap">
+      <div class="card table-wrap kupon-table">
         <table class="table">
           <thead>
             <tr>
@@ -79,62 +82,58 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('diskon-kupon');
 
-    document.getElementById('input-kode').addEventListener('input', function () {
-      this.value = this.value.toUpperCase();
-    });
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
 
-    function getMyKelas() {
+      document.getElementById('input-kode').addEventListener('input', function () {
+        this.value = this.value.toUpperCase();
+      });
+
+      document.getElementById('form-kupon').addEventListener('submit', function (e) {
+        e.preventDefault();
+        buatKupon();
+      });
+
+      isiSelectKelas();
+      renderTabelKupon();
+    }
+
+    function ambilKelasSaya() {
       return getAll('kelas').filter(function (k) {
-        return k.instrukturId === user.id;
+        return sameUserId(k.instrukturId, user.id);
       });
     }
 
-    function getKelasMap() {
+    function ambilMapKelas() {
       var map = {};
-      getMyKelas().forEach(function (k) { map[k.id] = k; });
+      ambilKelasSaya().forEach(function (k) { map[k.id] = k; });
       return map;
     }
 
-    function isExpired(expired) {
+    function kuponKadaluarsa(expired) {
       if (!expired) return false;
       var d = new Date(expired);
       d.setHours(23, 59, 59, 999);
       return d < new Date();
     }
 
-    function formatTanggal(tanggal) {
-      if (!tanggal) return '-';
-      return new Date(tanggal).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      });
-    }
-
-    function statusBadge(expired) {
-      if (isExpired(expired)) {
+    function badgeStatusKupon(expired) {
+      if (kuponKadaluarsa(expired)) {
         return '<span class="badge badge-danger">Kadaluarsa</span>';
       }
       return '<span class="badge badge-success">Aktif</span>';
     }
 
-    function populateKelasSelect() {
+    function isiSelectKelas() {
       var select = document.getElementById('select-kelas');
-      var kelasList = getMyKelas();
+      var kelasList = ambilKelasSaya();
       if (kelasList.length === 0) {
         select.innerHTML = '<option value="">Belum ada kelas</option>';
         select.disabled = true;
@@ -142,15 +141,15 @@
       }
       select.disabled = false;
       select.innerHTML = kelasList.map(function (k) {
-        return '<option value="' + k.id + '">' + k.judul + '</option>';
+        return `<option value="${k.id}">${k.judul}</option>`;
       }).join('');
     }
 
-    function renderTabel() {
+    function renderTabelKupon() {
       var tbody = document.getElementById('tabel-kupon-body');
-      var kelasMap = getKelasMap();
+      var kelasMap = ambilMapKelas();
       var list = getAll('kupon')
-        .filter(function (k) { return k.instrukturId === user.id; })
+        .filter(function (k) { return sameUserId(k.instrukturId, user.id); })
         .sort(function (a, b) {
           return new Date(b.expired || 0) - new Date(a.expired || 0);
         });
@@ -164,41 +163,39 @@
       tbody.innerHTML = list.map(function (k) {
         var kelas = kelasMap[k.kelasId];
         var namaKelas = kelas ? kelas.judul : k.kelasId;
-        return (
-          '<tr>' +
-            '<td><strong>' + k.kode + '</strong></td>' +
-            '<td>' + k.diskon + '%</td>' +
-            '<td>' + namaKelas + '</td>' +
-            '<td>' + formatTanggal(k.expired) + '</td>' +
-            '<td>' + statusBadge(k.expired) + '</td>' +
-            '<td><button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="' + k.id + '">Hapus</button></td>' +
-          '</tr>'
-        );
+        return `
+          <tr>
+            <td><span class="kupon-kode-display">${k.kode}</span></td>
+            <td>${k.diskon}%</td>
+            <td>${namaKelas}</td>
+            <td>${formatTanggal(k.expired)}</td>
+            <td>${badgeStatusKupon(k.expired)}</td>
+            <td><button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="${k.id}">Hapus</button></td>
+          </tr>
+        `;
       }).join('');
 
       tbody.querySelectorAll('.btn-hapus').forEach(function (btn) {
         btn.addEventListener('click', function () {
           if (!confirm('Hapus kupon ini?')) return;
           deleteItem('kupon', btn.getAttribute('data-id'));
-          renderTabel();
+          renderTabelKupon();
         });
       });
     }
 
-    document.getElementById('form-kupon').addEventListener('submit', function (e) {
-      e.preventDefault();
-
+    function buatKupon() {
       var kode = document.getElementById('input-kode').value.trim().toUpperCase();
       var diskon = parseInt(document.getElementById('input-diskon').value, 10);
       var kelasId = document.getElementById('select-kelas').value;
       var expired = document.getElementById('input-expired').value;
 
       if (!kode || !kelasId || !expired) {
-        alert('Lengkapi semua field.');
+        showAlert('alert-box', 'Lengkapi semua field.', 'danger');
         return;
       }
       if (isNaN(diskon) || diskon < 1 || diskon > 100) {
-        alert('Diskon harus antara 1–100%.');
+        showAlert('alert-box', 'Diskon harus antara 1–100%.', 'danger');
         return;
       }
 
@@ -206,7 +203,7 @@
         return k.kode.toUpperCase() === kode;
       });
       if (duplikat) {
-        alert('Kode kupon sudah digunakan.');
+        showAlert('alert-box', 'Kode kupon sudah digunakan.', 'danger');
         return;
       }
 
@@ -219,13 +216,10 @@
         expired: expired
       });
 
-      this.reset();
-      populateKelasSelect();
-      renderTabel();
-    });
-
-    populateKelasSelect();
-    renderTabel();
-  })();</script>
+      document.getElementById('form-kupon').reset();
+      isiSelectKelas();
+      renderTabelKupon();
+    }
+  </script>
 </body>
 </html>

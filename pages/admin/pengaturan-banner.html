@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pengaturan Banner — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota5.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -30,23 +31,22 @@
       </nav>
     </aside>
 
-
     <main class="main-content">
       <div class="page-header">
         <h1>Pengaturan Banner</h1>
         <p class="text-gray">Atur teks promo banner di halaman utama</p>
       </div>
 
-      <div class="card" style="margin-bottom:24px;">
-        <h2 style="font-size:var(--font-size-lg);margin-bottom:12px;">Preview Banner</h2>
-        <a id="banner-preview" href="#" class="hero" style="display:block;text-decoration:none;border-radius:var(--radius-lg);padding:32px 24px;">
-          <span id="preview-teks" style="font-size:var(--font-size-xl);font-weight:700;color:#fff;"></span>
+      <div class="card banner-preview-box">
+        <h2>Preview Banner</h2>
+        <a id="banner-preview" href="#" class="hero banner-preview">
+          <span id="preview-teks" class="banner-preview-text"></span>
         </a>
-        <p class="text-gray" style="margin-top:8px;font-size:var(--font-size-sm);">Link tujuan: <span id="preview-link-label">#</span></p>
+        <p class="text-gray banner-preview-meta">Link tujuan: <span id="preview-link-label">#</span></p>
       </div>
 
-      <div class="card">
-        <h2 style="font-size:var(--font-size-lg);margin-bottom:16px;">Edit Banner</h2>
+      <div class="card banner-form">
+        <h2>Edit Banner</h2>
         <form id="form-banner">
           <div class="form-group">
             <label class="form-label" for="input-teks">Teks Banner</label>
@@ -58,34 +58,49 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="input-warna">Warna Background</label>
-            <input type="color" id="input-warna" class="form-input" style="height:44px;padding:4px;max-width:120px;">
+            <input type="color" id="input-warna" class="form-input">
           </div>
           <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
         </form>
-        <p id="save-msg" class="text-gray" style="margin-top:12px;"></p>
+        <p id="save-msg" class="text-gray banner-save-msg"></p>
       </div>
     </main>
   </div>
 
-
-
   <script>
-    (function () {
-      var adminUser = window.__pageUser;
-      if (!adminUser) return;
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('pengaturan-banner');
 
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
 
-    function getBanner() {
+      ['input-teks', 'input-link', 'input-warna'].forEach(function (id) {
+        document.getElementById(id).addEventListener('input', function () {
+          tampilkanPreview({
+            teks: document.getElementById('input-teks').value,
+            link: document.getElementById('input-link').value || '#',
+            warnaBg: document.getElementById('input-warna').value || '#4F46E5'
+          });
+        });
+      });
+
+      document.getElementById('form-banner').addEventListener('submit', function (e) {
+        e.preventDefault();
+        simpanBanner();
+      });
+
+      var bannerAwal = ambilBanner();
+      document.getElementById('input-teks').value = bannerAwal.teks || '';
+      document.getElementById('input-link').value = bannerAwal.link || '#';
+      document.getElementById('input-warna').value = bannerAwal.warnaBg || '#4F46E5';
+      tampilkanPreview(bannerAwal);
+    }
+
+    function ambilBanner() {
       try {
         return JSON.parse(localStorage.getItem('banner')) || {};
       } catch (e) {
@@ -93,46 +108,27 @@
       }
     }
 
-    function updatePreview() {
-      var teks = document.getElementById('input-teks').value;
-      var link = document.getElementById('input-link').value || '#';
-      var warna = document.getElementById('input-warna').value || '#4F46E5';
+    function tampilkanPreview(banner) {
       var preview = document.getElementById('banner-preview');
-      document.getElementById('preview-teks').textContent = teks || 'Teks banner...';
-      preview.href = link;
-      preview.style.background = warna;
-      document.getElementById('preview-link-label').textContent = link;
+      document.getElementById('preview-teks').textContent = banner.teks || 'Teks banner...';
+      preview.href = banner.link || '#';
+      preview.style.background = banner.warnaBg || '#4F46E5';
+      document.getElementById('preview-link-label').textContent = banner.link || '#';
     }
 
-    function loadForm() {
-      var b = getBanner();
-      document.getElementById('input-teks').value = b.teks || '';
-      document.getElementById('input-link').value = b.link || '#';
-      document.getElementById('input-warna').value = b.warnaBg || '#4F46E5';
-      updatePreview();
-    }
-
-    ['input-teks', 'input-link', 'input-warna'].forEach(function (id) {
-      document.getElementById(id).addEventListener('input', updatePreview);
-    });
-
-    document.getElementById('form-banner').addEventListener('submit', function (e) {
-      e.preventDefault();
+    function simpanBanner() {
       var data = {
         teks: document.getElementById('input-teks').value.trim(),
         link: document.getElementById('input-link').value.trim() || '#',
         warnaBg: document.getElementById('input-warna').value
       };
-      localStorage.setItem('banner', JSON.stringify(data));
+      save('banner', data);
       document.getElementById('save-msg').textContent = 'Banner berhasil disimpan.';
-      updatePreview();
+      tampilkanPreview(data);
       setTimeout(function () {
         document.getElementById('save-msg').textContent = '';
       }, 3000);
-    });
-
-    loadForm();
-
-  })();</script>
+    }
+  </script>
 </body>
 </html>

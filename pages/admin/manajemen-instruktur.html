@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manajemen Instruktur — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota5.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -45,26 +46,24 @@
   </div>
 
   <script>
-    (function () {
-      var adminUser = window.__pageUser;
-      if (!adminUser) return;
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('manajemen-instruktur');
 
-    function formatRupiah(angka) {
-      var n = angka || 0;
-      return 'Rp ' + n.toLocaleString('id-ID');
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+
+      document.getElementById('search-input').addEventListener('input', function () {
+        renderTabelInstruktur(ambilInstruktur(this.value.trim()));
+      });
+
+      renderTabelInstruktur(ambilInstruktur(''));
     }
 
-    function proxyTanggalDaftar(userId) {
+    function tanggalDaftarDariId(userId) {
       if (!userId) return '-';
       var stamp = userId.slice(1, 9);
       var ms = parseInt(stamp, 36);
@@ -78,7 +77,7 @@
       return userId.substring(1, 9) || userId;
     }
 
-    function statusBadge(status) {
+    function badgeStatus(status) {
       var s = status || 'aktif';
       if (s === 'blokir') {
         return '<span class="badge badge-danger">Blokir</span>';
@@ -86,14 +85,14 @@
       return '<span class="badge badge-success">Aktif</span>';
     }
 
-    function hitungKelas(instrukturId) {
+    function hitungKelasInstruktur(instrukturId) {
       return getAll('kelas').filter(function (k) {
         return k.instrukturId === instrukturId;
       }).length;
     }
 
-    function getInstrukturList() {
-      var q = document.getElementById('search-input').value.trim().toLowerCase();
+    function ambilInstruktur(query) {
+      var q = (query || '').toLowerCase();
       return getAll('users')
         .filter(function (u) { return u.role === 'instruktur'; })
         .filter(function (u) {
@@ -103,63 +102,79 @@
         });
     }
 
-    function renderTable() {
+    function blokirUser(id) {
+      updateItem('users', id, { status: 'blokir' });
+      renderTabelInstruktur(ambilInstruktur(document.getElementById('search-input').value.trim()));
+    }
+
+    function aktifkanUser(id) {
+      updateItem('users', id, { status: 'aktif' });
+      renderTabelInstruktur(ambilInstruktur(document.getElementById('search-input').value.trim()));
+    }
+
+    function hapusUser(id, nama) {
+      if (!confirm(`Hapus akun instruktur "${nama}"? Tindakan ini tidak dapat dibatalkan.`)) {
+        return;
+      }
+      deleteItem('users', id);
+      renderTabelInstruktur(ambilInstruktur(document.getElementById('search-input').value.trim()));
+    }
+
+    function renderTabelInstruktur(list) {
       var area = document.getElementById('table-area');
-      var list = getInstrukturList();
 
       if (list.length === 0) {
-        area.innerHTML =
-          '<div class="empty-state card">' +
-            '<p>Tidak ada instruktur ditemukan.</p>' +
-          '</div>';
+        area.innerHTML = `
+          <div class="empty-state card">
+            <p>Tidak ada instruktur ditemukan.</p>
+          </div>`;
         return;
       }
 
       var rows = list.map(function (u, index) {
         var status = u.status || 'aktif';
-        var aksiStatus =
-          status === 'blokir'
-            ? '<button type="button" class="btn btn-primary btn-sm" data-aksi="aktifkan" data-id="' + u.id + '">Aktifkan</button>'
-            : '<button type="button" class="btn btn-danger btn-sm" data-aksi="blokir" data-id="' + u.id + '">Blokir</button>';
+        var tombolStatus = status === 'blokir'
+          ? `<button type="button" class="btn btn-primary btn-sm btn-aktifkan" data-aksi="aktifkan" data-id="${u.id}">Aktifkan</button>`
+          : `<button type="button" class="btn btn-danger btn-sm btn-blokir" data-aksi="blokir" data-id="${u.id}">Blokir</button>`;
+        var namaEsc = u.nama.replace(/"/g, '&quot;');
 
-        return (
-          '<tr>' +
-            '<td>' + (index + 1) + '</td>' +
-            '<td><strong>' + u.nama + '</strong></td>' +
-            '<td>' + u.email + '</td>' +
-            '<td>' + proxyTanggalDaftar(u.id) + '</td>' +
-            '<td>' + (u.keahlian || '-') + '</td>' +
-            '<td>' + formatRupiah(u.saldo) + '</td>' +
-            '<td>' + hitungKelas(u.id) + '</td>' +
-            '<td>' + statusBadge(status) + '</td>' +
-            '<td class="table-aksi">' +
-              aksiStatus +
-              ' <a href="persetujuan-kelas.html?instruktur=' + encodeURIComponent(u.id) + '" class="btn btn-secondary btn-sm">Lihat Kelas</a>' +
-              ' <button type="button" class="btn btn-secondary btn-sm" data-aksi="hapus" data-id="' + u.id + '" data-nama="' + u.nama.replace(/"/g, '&quot;') + '">Hapus</button>' +
-            '</td>' +
-          '</tr>'
-        );
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td><strong>${u.nama}</strong></td>
+            <td>${u.email}</td>
+            <td>${tanggalDaftarDariId(u.id)}</td>
+            <td>${u.keahlian || '-'}</td>
+            <td>Rp ${Number(u.saldo || 0).toLocaleString('id-ID')}</td>
+            <td>${hitungKelasInstruktur(u.id)}</td>
+            <td>${badgeStatus(status)}</td>
+            <td class="table-aksi action-cell">
+              ${tombolStatus}
+              <a href="persetujuan-kelas.html?instruktur=${encodeURIComponent(u.id)}" class="btn btn-secondary btn-sm">Lihat Kelas</a>
+              <button type="button" class="btn btn-secondary btn-sm" data-aksi="hapus" data-id="${u.id}" data-nama="${namaEsc}">Hapus</button>
+            </td>
+          </tr>`;
       }).join('');
 
-      area.innerHTML =
-        '<div class="card table-wrap">' +
-          '<table class="table">' +
-            '<thead>' +
-              '<tr>' +
-                '<th>No</th>' +
-                '<th>Nama</th>' +
-                '<th>Email</th>' +
-                '<th>Tanggal Daftar</th>' +
-                '<th>Keahlian</th>' +
-                '<th>Saldo</th>' +
-                '<th>Jumlah Kelas</th>' +
-                '<th>Status</th>' +
-                '<th>Aksi</th>' +
-              '</tr>' +
-            '</thead>' +
-            '<tbody>' + rows + '</tbody>' +
-          '</table>' +
-        '</div>';
+      area.innerHTML = `
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Tanggal Daftar</th>
+                <th>Keahlian</th>
+                <th>Saldo</th>
+                <th>Jumlah Kelas</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
 
       area.querySelectorAll('button[data-aksi]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -167,32 +182,19 @@
           var aksi = this.getAttribute('data-aksi');
 
           if (aksi === 'blokir') {
-            updateItem('users', id, { status: 'blokir' });
-            renderTable();
+            blokirUser(id);
             return;
           }
-
           if (aksi === 'aktifkan') {
-            updateItem('users', id, { status: 'aktif' });
-            renderTable();
+            aktifkanUser(id);
             return;
           }
-
           if (aksi === 'hapus') {
-            var nama = this.getAttribute('data-nama');
-            if (!confirm('Hapus akun instruktur "' + nama + '"? Tindakan ini tidak dapat dibatalkan.')) {
-              return;
-            }
-            deleteItem('users', id);
-            renderTable();
+            hapusUser(id, this.getAttribute('data-nama'));
           }
         });
       });
     }
-
-    document.getElementById('search-input').addEventListener('input', renderTable);
-
-    renderTable();
-  })();</script>
+  </script>
 </body>
 </html>

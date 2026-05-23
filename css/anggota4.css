@@ -1,0 +1,399 @@
+/* Anggota 4 — instruktur/buat-kuis s.d. instruktur/notifikasi */
+
+.page-header-flex {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.page-header-flex h1 {
+  margin: 0 0 8px;
+}
+
+/* Buat kuis */
+.soal-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.soal-builder-form {
+  max-width: 720px;
+}
+
+.soal-builder-item {
+  margin-bottom: 0;
+  padding: 16px;
+}
+
+.soal-builder-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.soal-builder-item ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.pilihan-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .pilihan-input-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kunci-jawaban-select {
+  max-width: 200px;
+}
+
+/* Tanya jawab */
+.tanya-jawab-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tanya-item {
+  margin: 0;
+}
+
+.tanya-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tanya-tanggal {
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+}
+
+.tanya-pertanyaan {
+  margin: 0 0 16px;
+  line-height: 1.6;
+  color: var(--gray-700);
+}
+
+.tanya-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.balasan-list {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.balasan-list h3 {
+  margin: 0 0 12px;
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tanya-balasan {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.tanya-balasan-body {
+  flex: 1;
+}
+
+.tanya-balasan-body strong {
+  color: var(--gray-900);
+  margin-right: 8px;
+}
+
+.tanya-balasan-body p {
+  margin: 6px 0 0;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.form-balas {
+  margin-top: 16px;
+}
+
+.form-balas .form-group {
+  margin-bottom: 12px;
+}
+
+/* Diskon kupon */
+.kupon-form {
+  margin-bottom: 24px;
+}
+
+.kupon-form h2 {
+  margin: 0 0 20px;
+  font-size: var(--font-size-lg);
+}
+
+.kupon-form-grid {
+  gap: 16px;
+}
+
+.kupon-form-submit {
+  margin-top: 8px;
+}
+
+.kupon-table {
+  /* wrapper tabel kupon memakai .card.table-wrap */
+}
+
+.kupon-kode-display {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Laporan pendapatan */
+.pendapatan-summary {
+  margin-bottom: 28px;
+}
+
+.pendapatan-table {
+  /* wrapper tabel memakai .card.table-wrap */
+}
+
+.catatan-platform {
+  margin-top: 16px;
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+}
+
+/* Tarik saldo */
+.saldo-display {
+  margin: 0;
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.saldo-display-card {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.saldo-display-label {
+  margin: 0 0 8px;
+}
+
+.saldo-info-link {
+  display: inline-block;
+  margin-top: 12px;
+}
+
+.form-tarik-saldo {
+  max-width: 520px;
+}
+
+.form-tarik-saldo h2 {
+  margin: 0 0 20px;
+  font-size: var(--font-size-lg);
+}
+
+.saldo-info {
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+  margin-top: 8px;
+}
+
+/* Daftar siswa */
+.daftar-siswa-table {
+  /* wrapper tabel memakai .card.table-wrap */
+}
+
+.siswa-progres-cell {
+  min-width: 160px;
+}
+
+.siswa-progres-cell .progress-text {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+
+/* Riwayat penarikan */
+.penarikan-table {
+  /* wrapper tabel memakai .card.table-wrap */
+}
+
+/* Ulasan masuk */
+.filter-kelas-ulasan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.filter-kelas-ulasan .form-label {
+  margin: 0;
+}
+
+.filter-kelas-ulasan .form-input {
+  max-width: 320px;
+}
+
+.ulasan-masuk-item {
+  margin-bottom: 16px;
+}
+
+.ulasan-masuk-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ulasan-masuk-item .ulasan-tanggal {
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+}
+
+.ulasan-masuk-item .ulasan-komentar {
+  margin: 0;
+  color: var(--gray-700);
+}
+
+.ulasan-masuk-item .stars {
+  margin: 8px 0;
+}
+
+/* Profil publik instruktur */
+.profil-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.profil-preview {
+  text-align: center;
+}
+
+.profil-foto-instruktur {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 16px;
+  display: block;
+  border: 3px solid var(--primary-light);
+}
+
+.profil-avatar {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+}
+
+.profil-preview h2 {
+  margin: 0 0 6px;
+  color: var(--gray-900);
+}
+
+.profil-preview-bio {
+  margin-top: 12px;
+  font-size: var(--font-size-sm);
+  color: var(--gray-700);
+}
+
+.profil-form-wrap h2 {
+  margin: 0 0 20px;
+  font-size: var(--font-size-lg);
+  color: var(--gray-900);
+}
+
+/* Notifikasi instruktur */
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.notif-item:hover {
+  background: var(--gray-50);
+}
+
+.notif-unread {
+  border-left: 4px solid var(--primary);
+}
+
+.notif-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.notif-body {
+  flex: 1;
+}
+
+.notif-pesan {
+  margin: 0 0 4px;
+  color: var(--gray-900);
+}
+
+.notif-tanggal {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.notif-badge-baru {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .profil-layout {
+    grid-template-columns: 1fr;
+  }
+}

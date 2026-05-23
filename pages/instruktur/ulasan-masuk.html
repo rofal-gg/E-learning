@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ulasan Masuk — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -35,9 +36,9 @@
         <p class="text-gray">Rating dan komentar siswa untuk kelas Anda</p>
       </div>
 
-      <div class="filter-bar" style="margin-bottom: 24px;">
-        <label class="form-label" for="filter-kelas" style="margin: 0;">Filter Kelas</label>
-        <select id="filter-kelas" class="form-input" style="max-width: 320px;">
+      <div class="filter-kelas-ulasan">
+        <label class="form-label" for="filter-kelas">Filter Kelas</label>
+        <select id="filter-kelas" class="form-input">
           <option value="">Semua Kelas</option>
         </select>
       </div>
@@ -47,23 +48,27 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
+    var user = window.__pageUser;
     var filterKelasId = '';
 
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    if (user) {
+      setActiveSidebar('ulasan-masuk');
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
 
-    function renderStars(rating) {
+      document.getElementById('filter-kelas').addEventListener('change', function () {
+        filterKelasId = this.value;
+        renderDaftarUlasan();
+      });
+
+      isiFilterKelas();
+      renderDaftarUlasan();
+    }
+
+    function renderBintang(rating) {
       var n = Math.max(0, Math.min(5, parseInt(rating, 10) || 0));
       var stars = '';
       for (var i = 0; i < n; i++) stars += '⭐';
@@ -71,40 +76,31 @@
       return stars;
     }
 
-    function formatTanggal(tanggal) {
-      if (!tanggal) return '-';
-      return new Date(tanggal).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-    }
-
-    function getMyKelas() {
+    function ambilKelasSaya() {
       return getAll('kelas').filter(function (k) {
-        return k.instrukturId === user.id;
+        return sameUserId(k.instrukturId, user.id);
       });
     }
 
-    function getKelasMap() {
+    function ambilMapKelas() {
       var map = {};
-      getMyKelas().forEach(function (k) { map[k.id] = k; });
+      ambilKelasSaya().forEach(function (k) { map[k.id] = k; });
       return map;
     }
 
-    function populateFilter() {
+    function isiFilterKelas() {
       var select = document.getElementById('filter-kelas');
-      var kelasList = getMyKelas();
+      var kelasList = ambilKelasSaya();
       select.innerHTML =
         '<option value="">Semua Kelas</option>' +
         kelasList.map(function (k) {
-          return '<option value="' + k.id + '">' + k.judul + '</option>';
+          return `<option value="${k.id}">${k.judul}</option>`;
         }).join('');
     }
 
-    function renderUlasan() {
+    function renderDaftarUlasan() {
       var container = document.getElementById('ulasan-list');
-      var kelasMap = getKelasMap();
+      var kelasMap = ambilMapKelas();
       var kelasIds = Object.keys(kelasMap);
 
       var list = getAll('ulasan')
@@ -117,37 +113,30 @@
         });
 
       if (list.length === 0) {
-        container.innerHTML =
-          '<div class="empty-state">' +
-            '<p>Belum ada ulasan untuk kelas Anda.</p>' +
-          '</div>';
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Belum ada ulasan untuk kelas Anda.</p>
+          </div>
+        `;
         return;
       }
 
       container.innerHTML = list.map(function (u) {
         var kelas = kelasMap[u.kelasId];
         var namaKelas = kelas ? kelas.judul : 'Kelas';
-        return (
-          '<article class="card" style="margin-bottom: 16px;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px;">' +
-              '<span class="badge badge-primary">' + namaKelas + '</span>' +
-              '<span class="text-gray" style="font-size:var(--font-size-sm);">' + formatTanggal(u.tanggal) + '</span>' +
-            '</div>' +
-            '<p><strong>' + (u.userName || 'Siswa') + '</strong></p>' +
-            '<p class="stars" style="margin: 8px 0;" aria-label="Rating ' + u.rating + ' dari 5">' + renderStars(u.rating) + '</p>' +
-            '<p style="margin:0;color:var(--gray-700);">' + (u.komentar || '-') + '</p>' +
-          '</article>'
-        );
+        return `
+          <article class="card ulasan-masuk-item">
+            <div class="ulasan-masuk-item-header">
+              <span class="badge badge-primary">${namaKelas}</span>
+              <span class="ulasan-tanggal">${formatTanggal(u.tanggal)}</span>
+            </div>
+            <p><strong>${u.userName || 'Siswa'}</strong></p>
+            <p class="stars" aria-label="Rating ${u.rating} dari 5">${renderBintang(u.rating)}</p>
+            <p class="ulasan-komentar">${u.komentar || '-'}</p>
+          </article>
+        `;
       }).join('');
     }
-
-    document.getElementById('filter-kelas').addEventListener('change', function () {
-      filterKelasId = this.value;
-      renderUlasan();
-    });
-
-    populateFilter();
-    renderUlasan();
-  })();</script>
+  </script>
 </body>
 </html>

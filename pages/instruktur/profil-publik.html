@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Profil Publik — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -34,17 +35,17 @@
         <p class="text-gray">Tampilan profil yang dilihat siswa di katalog instruktur</p>
       </div>
 
-      <div id="alert-profil" class="alert alert-success" style="display:none;"></div>
+      <div id="alert-box" class="alert-box-wrap"></div>
 
       <div class="profil-layout">
         <section class="card profil-preview">
           <div id="profil-foto-wrap">
-            <img id="profil-foto" class="instruktur-avatar" src="../../assets/images/placeholder.jpg" alt="Foto profil" style="display:none;" onerror="this.style.display='none';document.getElementById('profil-avatar-fallback').style.display='flex';">
+            <img id="profil-foto" class="profil-foto-instruktur" src="../../assets/images/placeholder.jpg" alt="Foto profil" hidden onerror="this.hidden=true;document.getElementById('profil-avatar-fallback').style.display='flex';">
             <div id="profil-avatar-fallback" class="profil-avatar">?</div>
           </div>
           <h2 id="preview-nama">—</h2>
           <p class="text-gray" id="preview-keahlian">—</p>
-          <p id="preview-bio" style="margin-top:12px;font-size:var(--font-size-sm);color:var(--gray-700);">—</p>
+          <p id="preview-bio" class="profil-preview-bio">—</p>
         </section>
 
         <section class="card profil-form-wrap">
@@ -75,97 +76,80 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('profil-publik');
 
-    function getInitials(nama) {
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+
+      document.getElementById('form-profil').addEventListener('submit', function (e) {
+        e.preventDefault();
+        simpanProfil();
+      });
+
+      ['input-nama', 'input-bio', 'input-keahlian', 'input-foto'].forEach(function (id) {
+        document.getElementById(id).addEventListener('input', function () {
+          renderPreview(ambilDataForm());
+        });
+      });
+
+      muatProfil();
+    }
+
+    function inisialNama(nama) {
       if (!nama) return '?';
       return nama.split(' ').map(function (n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
     }
 
-    function updatePreview(data) {
+    function ambilDataForm() {
+      return {
+        nama: document.getElementById('input-nama').value,
+        bio: document.getElementById('input-bio').value,
+        keahlian: document.getElementById('input-keahlian').value,
+        foto: document.getElementById('input-foto').value
+      };
+    }
+
+    function renderPreview(data) {
       var fotoEl = document.getElementById('profil-foto');
       var fallback = document.getElementById('profil-avatar-fallback');
 
       document.getElementById('preview-nama').textContent = data.nama || '—';
       document.getElementById('preview-keahlian').textContent = data.keahlian || 'Belum diisi';
       document.getElementById('preview-bio').textContent = data.bio || 'Belum ada bio.';
-
-      fallback.textContent = getInitials(data.nama);
+      fallback.textContent = inisialNama(data.nama);
 
       if (data.foto) {
         fotoEl.src = '../../' + data.foto.replace(/^\//, '');
-        fotoEl.style.display = 'block';
+        fotoEl.hidden = false;
         fallback.style.display = 'none';
       } else {
-        fotoEl.style.display = 'none';
+        fotoEl.hidden = true;
         fallback.style.display = 'flex';
       }
     }
 
-    function loadProfil() {
+    function muatProfil() {
       var data = getById('users', user.id) || user;
       document.getElementById('input-nama').value = data.nama || '';
       document.getElementById('input-bio').value = data.bio || '';
       document.getElementById('input-keahlian').value = data.keahlian || '';
       document.getElementById('input-foto').value = data.foto || '';
-      updatePreview(data);
+      renderPreview(data);
     }
 
-    document.getElementById('input-nama').addEventListener('input', function () {
-      updatePreview({
-        nama: this.value,
-        bio: document.getElementById('input-bio').value,
-        keahlian: document.getElementById('input-keahlian').value,
-        foto: document.getElementById('input-foto').value
-      });
-    });
-    document.getElementById('input-bio').addEventListener('input', function () {
-      updatePreview({
-        nama: document.getElementById('input-nama').value,
-        bio: this.value,
-        keahlian: document.getElementById('input-keahlian').value,
-        foto: document.getElementById('input-foto').value
-      });
-    });
-    document.getElementById('input-keahlian').addEventListener('input', function () {
-      updatePreview({
-        nama: document.getElementById('input-nama').value,
-        bio: document.getElementById('input-bio').value,
-        keahlian: this.value,
-        foto: document.getElementById('input-foto').value
-      });
-    });
-    document.getElementById('input-foto').addEventListener('input', function () {
-      updatePreview({
-        nama: document.getElementById('input-nama').value,
-        bio: document.getElementById('input-bio').value,
-        keahlian: document.getElementById('input-keahlian').value,
-        foto: this.value
-      });
-    });
-
-    document.getElementById('form-profil').addEventListener('submit', function (e) {
-      e.preventDefault();
-
+    function simpanProfil() {
       var nama = document.getElementById('input-nama').value.trim();
       var bio = document.getElementById('input-bio').value.trim();
       var keahlian = document.getElementById('input-keahlian').value.trim();
       var foto = document.getElementById('input-foto').value.trim();
 
       if (!nama) {
-        alert('Nama wajib diisi.');
+        showAlert('alert-box', 'Nama wajib diisi.', 'danger');
         return;
       }
 
@@ -175,15 +159,9 @@
       sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
       user = updatedUser;
 
-      var alertEl = document.getElementById('alert-profil');
-      alertEl.textContent = 'Profil berhasil disimpan.';
-      alertEl.style.display = 'block';
-      setTimeout(function () { alertEl.style.display = 'none'; }, 3000);
-
-      loadProfil();
-    });
-
-    loadProfil();
-  })();</script>
+      showAlert('alert-box', 'Profil berhasil disimpan.', 'success');
+      muatProfil();
+    }
+  </script>
 </body>
 </html>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Riwayat Penarikan — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -38,7 +39,7 @@
         <a href="tarik-saldo.html" class="btn btn-primary btn-sm">Tarik Saldo</a>
       </div>
 
-      <div class="card table-wrap">
+      <div class="card table-wrap penarikan-table">
         <table class="table">
           <thead>
             <tr>
@@ -56,26 +57,25 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('riwayat-penarikan');
 
-    function formatRupiah(angka) {
-      var n = angka || 0;
-      return n === 0 ? 'Rp 0' : 'Rp ' + n.toLocaleString('id-ID');
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+
+      renderTabelPenarikan();
     }
 
-    function formatTanggal(iso) {
+    function formatSaldoTampil(angka) {
+      var n = angka || 0;
+      return 'Rp ' + Number(n).toLocaleString('id-ID');
+    }
+
+    function formatTanggalWaktu(iso) {
       if (!iso) return '-';
       var d = new Date(iso);
       if (isNaN(d.getTime())) return iso;
@@ -88,7 +88,7 @@
       });
     }
 
-    function statusBadge(status) {
+    function badgeStatusPenarikan(status) {
       if (status === 'approved') {
         return '<span class="badge badge-success">Approved</span>';
       }
@@ -98,10 +98,10 @@
       return '<span class="badge badge-warning">Pending</span>';
     }
 
-    function renderTabel() {
+    function renderTabelPenarikan() {
       var tbody = document.getElementById('tabel-penarikan-body');
       var list = getAll('penarikan')
-        .filter(function (p) { return p.instrukturId === user.id; })
+        .filter(function (p) { return sameUserId(p.instrukturId, user.id); })
         .sort(function (a, b) {
           return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
         });
@@ -113,19 +113,17 @@
       }
 
       tbody.innerHTML = list.map(function (p) {
-        return (
-          '<tr>' +
-            '<td>' + formatTanggal(p.tanggal) + '</td>' +
-            '<td>' + formatRupiah(p.nominal) + '</td>' +
-            '<td>' + p.bank + '</td>' +
-            '<td>' + p.norek + '</td>' +
-            '<td>' + statusBadge(p.status) + '</td>' +
-          '</tr>'
-        );
+        return `
+          <tr>
+            <td>${formatTanggalWaktu(p.tanggal)}</td>
+            <td>${formatSaldoTampil(p.nominal)}</td>
+            <td>${p.bank}</td>
+            <td>${p.norek}</td>
+            <td>${badgeStatusPenarikan(p.status)}</td>
+          </tr>
+        `;
       }).join('');
     }
-
-    renderTabel();
-  })();</script>
+  </script>
 </body>
 </html>

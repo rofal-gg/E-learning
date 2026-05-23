@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verifikasi Penarikan — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota5.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -38,7 +39,7 @@
 
       <div class="filter-bar">
         <label class="form-label" for="filter-status" style="margin:0;">Filter Status</label>
-        <select id="filter-status" class="form-input" style="max-width:220px;">
+        <select id="filter-status" class="form-input filter-status-select">
           <option value="">Semua</option>
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
@@ -51,33 +52,26 @@
   </div>
 
   <script>
-    (function () {
-      var adminUser = window.__pageUser;
-      if (!adminUser) return;
+    var user = window.__pageUser;
     var filterStatus = '';
 
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    if (user) {
+      setActiveSidebar('verifikasi-penarikan');
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
 
-    document.getElementById('filter-status').addEventListener('change', function () {
-      filterStatus = this.value;
-      renderTable();
-    });
+      document.getElementById('filter-status').addEventListener('change', function () {
+        filterStatus = this.value;
+        renderTabelPenarikan(ambilPenarikan(filterStatus));
+      });
 
-    function formatRupiah(angka) {
-      var n = angka || 0;
-      return 'Rp ' + n.toLocaleString('id-ID');
+      renderTabelPenarikan(ambilPenarikan(filterStatus));
     }
 
-    function formatTanggal(iso) {
+    function formatTanggalJam(iso) {
       if (!iso) return '-';
       return new Date(iso).toLocaleString('id-ID', {
         day: 'numeric',
@@ -88,31 +82,21 @@
       });
     }
 
-    function statusBadge(status) {
+    function badgeStatusPenarikan(status) {
       if (status === 'approved') {
-        return '<span class="badge badge-success">Approved</span>';
+        return '<span class="badge badge-success status-sukses">Approved</span>';
       }
       if (status === 'rejected') {
         return '<span class="badge badge-danger">Rejected</span>';
       }
-      return '<span class="badge badge-warning">Pending</span>';
+      return '<span class="badge badge-warning status-pending">Pending</span>';
     }
 
-    function kirimNotifikasi(userId, pesan) {
-      createItem('notifikasi', {
-        id: generateId('n'),
-        userId: userId,
-        pesan: pesan,
-        dibaca: false,
-        tanggal: new Date().toISOString()
-      });
-    }
-
-    function getFilteredPenarikan() {
+    function ambilPenarikan(status) {
       return getAll('penarikan')
         .filter(function (p) {
-          if (!filterStatus) return true;
-          return (p.status || 'pending') === filterStatus;
+          if (!status) return true;
+          return (p.status || 'pending') === status;
         })
         .sort(function (a, b) {
           return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
@@ -123,8 +107,8 @@
       var p = getById('penarikan', id);
       if (!p || p.status !== 'pending') return;
       updateItem('penarikan', id, { status: 'approved' });
-      kirimNotifikasi(p.instrukturId, 'Penarikan saldo kamu telah disetujui.');
-      renderTable();
+      createNotifikasi(p.instrukturId, 'Penarikan saldo kamu telah disetujui.');
+      renderTabelPenarikan(ambilPenarikan(filterStatus));
     }
 
     function tolakPenarikan(id) {
@@ -146,22 +130,21 @@
         updateItem('users', p.instrukturId, { saldo: saldoBaru });
       }
 
-      kirimNotifikasi(
+      createNotifikasi(
         p.instrukturId,
         'Penarikan saldo ditolak. Alasan: ' + alasan + '. Saldo telah dikembalikan.'
       );
-      renderTable();
+      renderTabelPenarikan(ambilPenarikan(filterStatus));
     }
 
-    function renderTable() {
+    function renderTabelPenarikan(list) {
       var area = document.getElementById('table-area');
-      var list = getFilteredPenarikan();
 
       if (list.length === 0) {
-        area.innerHTML =
-          '<div class="empty-state card">' +
-            '<p>Belum ada permintaan penarikan.</p>' +
-          '</div>';
+        area.innerHTML = `
+          <div class="empty-state card">
+            <p>Belum ada permintaan penarikan.</p>
+          </div>`;
         return;
       }
 
@@ -172,43 +155,42 @@
         var aksi = '';
 
         if (status === 'pending') {
-          aksi =
-            '<button type="button" class="btn btn-primary btn-sm" data-aksi="setujui" data-id="' + p.id + '">Setujui</button> ' +
-            '<button type="button" class="btn btn-danger btn-sm" data-aksi="tolak" data-id="' + p.id + '">Tolak</button>';
+          aksi = `
+            <button type="button" class="btn btn-primary btn-sm" data-aksi="setujui" data-id="${p.id}">Setujui</button>
+            <button type="button" class="btn btn-danger btn-sm" data-aksi="tolak" data-id="${p.id}">Tolak</button>`;
         } else {
           aksi = '<span class="text-gray">—</span>';
         }
 
-        return (
-          '<tr>' +
-            '<td><strong>' + namaInstruktur + '</strong></td>' +
-            '<td>' + formatRupiah(p.nominal) + '</td>' +
-            '<td>' + (p.bank || '-') + '</td>' +
-            '<td>' + (p.norek || '-') + '</td>' +
-            '<td>' + formatTanggal(p.tanggal) + '</td>' +
-            '<td>' + statusBadge(status) + '</td>' +
-            '<td class="table-aksi">' + aksi + '</td>' +
-          '</tr>'
-        );
+        return `
+          <tr>
+            <td><strong>${namaInstruktur}</strong></td>
+            <td>Rp ${Number(p.nominal || 0).toLocaleString('id-ID')}</td>
+            <td>${p.bank || '-'}</td>
+            <td>${p.norek || '-'}</td>
+            <td>${formatTanggalJam(p.tanggal)}</td>
+            <td>${badgeStatusPenarikan(status)}</td>
+            <td class="table-aksi">${aksi}</td>
+          </tr>`;
       }).join('');
 
-      area.innerHTML =
-        '<div class="card table-wrap">' +
-          '<table class="table">' +
-            '<thead>' +
-              '<tr>' +
-                '<th>Instruktur</th>' +
-                '<th>Nominal</th>' +
-                '<th>Bank</th>' +
-                '<th>No. Rekening</th>' +
-                '<th>Tanggal</th>' +
-                '<th>Status</th>' +
-                '<th>Aksi</th>' +
-              '</tr>' +
-            '</thead>' +
-            '<tbody>' + rows + '</tbody>' +
-          '</table>' +
-        '</div>';
+      area.innerHTML = `
+        <div class="card table-wrap">
+          <table class="table verif-table">
+            <thead>
+              <tr>
+                <th>Instruktur</th>
+                <th>Nominal</th>
+                <th>Bank</th>
+                <th>No. Rekening</th>
+                <th>Tanggal</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
 
       area.querySelectorAll('button[data-aksi]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -219,8 +201,6 @@
         });
       });
     }
-
-    renderTable();
-  })();</script>
+  </script>
 </body>
 </html>

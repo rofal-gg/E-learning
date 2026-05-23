@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Laporan Pendapatan — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -35,7 +36,7 @@
         <p class="text-gray">Ringkasan penjualan dan pendapatan dari kelas Anda</p>
       </div>
 
-      <div class="grid-3" id="kpi-grid" style="margin-bottom: 28px;">
+      <div class="grid-3 pendapatan-summary">
         <div class="kpi-card">
           <div class="kpi-value" id="kpi-total-pendapatan">Rp 0</div>
           <div class="kpi-label">Total Pendapatan</div>
@@ -50,7 +51,7 @@
         </div>
       </div>
 
-      <div class="card table-wrap">
+      <div class="card table-wrap pendapatan-table">
         <table class="table">
           <thead>
             <tr>
@@ -64,40 +65,51 @@
         </table>
       </div>
 
-      <p class="form-hint" style="margin-top: 16px;">
+      <p class="catatan-platform">
         Pendapatan = 70% dari harga kelas (simulasi potongan platform 30%)
       </p>
     </main>
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('laporan-pendapatan');
 
-    function formatRupiah(angka) {
-      var n = angka || 0;
-      return n === 0 ? 'Rp 0' : 'Rp ' + n.toLocaleString('id-ID');
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+
+      renderTabelPendapatan(hitungPendapatan(ambilTransaksiInstruktur()));
     }
 
-    function getMyKelas() {
+    function formatSaldoTampil(angka) {
+      var n = angka || 0;
+      return 'Rp ' + Number(n).toLocaleString('id-ID');
+    }
+
+    function ambilKelasSaya() {
       return getAll('kelas').filter(function (k) {
-        return k.instrukturId === user.id;
+        return sameUserId(k.instrukturId, user.id);
       });
     }
 
-    function computeLaporan() {
-      var kelasList = getMyKelas();
+    // filter transaksi yang mengandung kelas milik instruktur
+    function ambilTransaksiInstruktur() {
+      var kelasIds = ambilKelasSaya().map(function (k) { return k.id; });
+      return getAll('transaksi').filter(function (t) {
+        if ((t.status || 'sukses') !== 'sukses') return false;
+        return (t.items || []).some(function (itemId) {
+          return kelasIds.indexOf(itemId) !== -1;
+        });
+      });
+    }
+
+    // hitung total pendapatan dan per kelas
+    function hitungPendapatan(transaksi) {
+      var kelasList = ambilKelasSaya();
       var kelasMap = {};
       var perKelas = {};
 
@@ -110,8 +122,7 @@
       var totalPendapatan = 0;
       var totalTransaksi = 0;
 
-      getAll('transaksi').forEach(function (t) {
-        if ((t.status || 'sukses') !== 'sukses') return;
+      transaksi.forEach(function (t) {
         var myItems = (t.items || []).filter(function (itemId) {
           return kelasIds.indexOf(itemId) !== -1;
         });
@@ -129,40 +140,39 @@
       });
 
       return {
-        rows: kelasList.map(function (k) { return perKelas[k.id]; }),
+        perKelas: kelasList.map(function (k) { return perKelas[k.id]; }),
         totalPendapatan: totalPendapatan,
         totalTransaksi: totalTransaksi
       };
     }
 
-    function render() {
-      var laporan = computeLaporan();
+    // render tabel + KPI total
+    function renderTabelPendapatan(data) {
       var freshUser = getById('users', user.id) || user;
+      var saldo = freshUser.saldo || 0;
 
-      document.getElementById('kpi-total-pendapatan').textContent = formatRupiah(laporan.totalPendapatan);
-      document.getElementById('kpi-saldo').textContent = formatRupiah(freshUser.saldo);
-      document.getElementById('kpi-transaksi').textContent = laporan.totalTransaksi;
+      document.getElementById('kpi-total-pendapatan').textContent = formatSaldoTampil(data.totalPendapatan);
+      document.getElementById('kpi-saldo').textContent = formatSaldoTampil(saldo);
+      document.getElementById('kpi-transaksi').textContent = data.totalTransaksi;
 
       var tbody = document.getElementById('tabel-pendapatan-body');
-      if (laporan.rows.length === 0) {
+      if (data.perKelas.length === 0) {
         tbody.innerHTML =
           '<tr><td colspan="4" class="text-center text-gray">Belum ada kelas.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = laporan.rows.map(function (row) {
-        return (
-          '<tr>' +
-            '<td><strong>' + row.kelas.judul + '</strong></td>' +
-            '<td>' + row.terjual + '</td>' +
-            '<td>' + formatRupiah(row.kelas.harga) + '</td>' +
-            '<td>' + formatRupiah(row.pendapatan) + '</td>' +
-          '</tr>'
-        );
+      tbody.innerHTML = data.perKelas.map(function (row) {
+        return `
+          <tr>
+            <td><strong>${row.kelas.judul}</strong></td>
+            <td>${row.terjual}</td>
+            <td>${formatSaldoTampil(row.kelas.harga)}</td>
+            <td>${formatSaldoTampil(row.pendapatan)}</td>
+          </tr>
+        `;
       }).join('');
     }
-
-    render();
-  })();</script>
+  </script>
 </body>
 </html>
