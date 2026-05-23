@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kurikulum — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -71,111 +73,124 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    var params = new URLSearchParams(window.location.search);
-    var kelasId = params.get('id');
+    var user = window.__pageUser;
+    var kelasId = getQueryParam('id');
+    var kelas = null;
 
     if (!kelasId) {
       alert('Kelas tidak dipilih.');
       window.location.href = 'daftar-kelas.html';
-      return;
+    } else {
+      kelas = ambilKelas();
+      if (!kelas) {
+        alert('Kelas tidak ditemukan atau bukan milik Anda.');
+        window.location.href = 'daftar-kelas.html';
+      }
     }
 
-    var kelas = getById('kelas', kelasId);
-    if (!kelas || kelas.instrukturId !== user.id) {
-      alert('Kelas tidak ditemukan atau bukan milik Anda.');
-      window.location.href = 'daftar-kelas.html';
-      return;
+    if (kelas) {
+      setActiveSidebar('daftar-kelas');
+
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+
+      document.getElementById('kelas-judul').textContent = 'Kurikulum: ' + kelas.judul;
+      updateInfoKelas();
+
+      document.getElementById('form-tambah-bab').addEventListener('submit', function (e) {
+        e.preventDefault();
+        tambahBab();
+      });
+
+      renderDaftarBab(ambilSilabus());
     }
 
-    setActiveSidebar('daftar-kelas');
+    // ambil kelas berdasarkan query param id
+    function ambilKelas() {
+      var data = getById('kelas', kelasId);
+      if (!data || data.instrukturId !== user.id) return null;
+      return data;
+    }
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
-
-    document.getElementById('kelas-judul').textContent = 'Kurikulum: ' + kelas.judul;
-    document.getElementById('kelas-info').textContent =
-      (kelas.silabus || []).length + ' bab · Status: ' + (kelas.status || 'pending');
-
-    function getSilabus() {
+    // ambil salinan silabus terbaru dari storage
+    function ambilSilabus() {
       var current = getById('kelas', kelasId);
       return (current && current.silabus) ? current.silabus.slice() : [];
     }
 
-    function saveSilabus(silabus) {
+    // simpan silabus dan perbarui nomor bab
+    function simpanSilabus(silabus) {
       var normalized = silabus.map(function (bab, index) {
-        return { ...bab, babKe: index + 1 };
+        return {
+          babKe: index + 1,
+          judul: bab.judul,
+          videoUrl: bab.videoUrl,
+          durasi: bab.durasi,
+          deskripsi: bab.deskripsi || ''
+        };
       });
       updateItem('kelas', kelasId, { silabus: normalized });
       kelas = getById('kelas', kelasId);
-      document.getElementById('kelas-info').textContent =
-        normalized.length + ' bab · Status: ' + (kelas.status || 'pending');
+      updateInfoKelas();
+      return normalized;
     }
 
-    function renderListBab() {
+    // perbarui teks info jumlah bab
+    function updateInfoKelas() {
+      var jumlah = (kelas.silabus || []).length;
+      document.getElementById('kelas-info').textContent =
+        jumlah + ' bab · Status: ' + (kelas.status || 'pending');
+    }
+
+    // render tabel daftar bab
+    function renderDaftarBab(silabus) {
       var container = document.getElementById('list-bab');
-      var silabus = getSilabus();
 
       if (silabus.length === 0) {
         container.innerHTML = '<div class="empty-state"><p>Belum ada bab. Tambahkan bab pertama di bawah.</p></div>';
         return;
       }
 
-      container.innerHTML =
-        '<table class="table">' +
-          '<thead>' +
-            '<tr>' +
-              '<th>No</th>' +
-              '<th>Judul Bab</th>' +
-              '<th>Durasi</th>' +
-              '<th>Video</th>' +
-              '<th>Aksi</th>' +
-            '</tr>' +
-          '</thead>' +
-          '<tbody>' +
-            silabus.map(function (bab) {
-              var videoShort = bab.videoUrl;
-              if (videoShort.length > 40) {
-                videoShort = videoShort.slice(0, 40) + '…';
-              }
-              return (
-                '<tr>' +
-                  '<td>' + bab.babKe + '</td>' +
-                  '<td><strong>' + bab.judul + '</strong></td>' +
-                  '<td>' + bab.durasi + '</td>' +
-                  '<td><span class="text-gray" title="' + bab.videoUrl + '">' + videoShort + '</span></td>' +
-                  '<td style="white-space:nowrap;">' +
-                    '<a href="unggah-materi.html?kelasId=' + encodeURIComponent(kelasId) + '" class="btn btn-secondary btn-sm">Materi</a> ' +
-                    '<a href="buat-kuis.html?kelasId=' + encodeURIComponent(kelasId) + '&babKe=' + bab.babKe + '" class="btn btn-secondary btn-sm">Kuis</a> ' +
-                    '<button type="button" class="btn btn-danger btn-sm btn-hapus-bab" data-bab-ke="' + bab.babKe + '">Hapus</button>' +
-                  '</td>' +
-                '</tr>'
-              );
-            }).join('') +
-          '</tbody>' +
-        '</table>';
+      var rows = silabus.map(function (bab) {
+        var videoShort = bab.videoUrl;
+        if (videoShort.length > 40) videoShort = videoShort.slice(0, 40) + '…';
+        return `
+          <tr>
+            <td>${bab.babKe}</td>
+            <td><strong>${bab.judul}</strong></td>
+            <td>${bab.durasi}</td>
+            <td><span class="text-gray" title="${bab.videoUrl}">${videoShort}</span></td>
+            <td style="white-space:nowrap;">
+              <a href="unggah-materi.html?kelasId=${encodeURIComponent(kelasId)}" class="btn btn-secondary btn-sm">Materi</a>
+              <a href="buat-kuis.html?kelasId=${encodeURIComponent(kelasId)}&babKe=${bab.babKe}" class="btn btn-secondary btn-sm">Kuis</a>
+              <button type="button" class="btn btn-danger btn-sm btn-hapus-bab" data-bab-ke="${bab.babKe}">Hapus</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="kurikulum-table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th>No</th><th>Judul Bab</th><th>Durasi</th><th>Video</th><th>Aksi</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
 
       container.querySelectorAll('.btn-hapus-bab').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          var babKe = parseInt(this.getAttribute('data-bab-ke'), 10);
-          if (!confirm('Hapus bab ke-' + babKe + '?')) return;
-
-          var updated = getSilabus().filter(function (b) {
-            return b.babKe !== babKe;
-          });
-          saveSilabus(updated);
-          renderListBab();
+          hapusBab(parseInt(this.getAttribute('data-bab-ke'), 10));
         });
       });
     }
 
-    document.getElementById('form-tambah-bab').addEventListener('submit', function (e) {
-      e.preventDefault();
-
+    // tambah bab baru dari form
+    function tambahBab() {
       var judul = document.getElementById('judul-bab').value.trim();
       var videoUrl = document.getElementById('video-url').value.trim();
       var durasi = document.getElementById('durasi').value.trim();
@@ -185,7 +200,7 @@
         return;
       }
 
-      var silabus = getSilabus();
+      var silabus = ambilSilabus();
       var nextBabKe = silabus.length === 0
         ? 1
         : Math.max.apply(null, silabus.map(function (b) { return b.babKe; })) + 1;
@@ -197,13 +212,18 @@
         durasi: durasi
       });
 
-      saveSilabus(silabus);
-      renderListBab();
-
+      renderDaftarBab(simpanSilabus(silabus));
       document.getElementById('form-tambah-bab').reset();
-    });
+    }
 
-    renderListBab();
-  })();</script>
+    // hapus satu bab dari silabus
+    function hapusBab(babKe) {
+      if (!confirm('Hapus bab ke-' + babKe + '?')) return;
+      var updated = ambilSilabus().filter(function (b) {
+        return b.babKe !== babKe;
+      });
+      renderDaftarBab(simpanSilabus(updated));
+    }
+  </script>
 </body>
 </html>

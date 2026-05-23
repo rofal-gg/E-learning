@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daftar Instruktur — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
 </head>
 <body class="public-layout">
 
@@ -55,20 +57,23 @@
 
       if (user && user.role === 'siswa') {
         document.getElementById('nav-dashboard-item').style.display = 'list-item';
-        container.innerHTML =
-          '<span class="navbar-user">' + user.nama + '</span>' +
-          '<a href="cart.html" class="btn btn-secondary btn-sm">Keranjang</a>' +
-          '<button type="button" class="btn btn-danger btn-sm" id="btn-logout">Logout</button>';
+        container.innerHTML = `
+          <span class="navbar-user">${user.nama}</span>
+          <a href="cart.html" class="btn btn-secondary btn-sm">Keranjang</a>
+          <button type="button" class="btn btn-danger btn-sm" id="btn-logout">Logout</button>
+        `;
         document.getElementById('btn-logout').addEventListener('click', logout);
       } else if (user) {
-        container.innerHTML =
-          '<span class="navbar-user">' + user.nama + '</span>' +
-          '<button type="button" class="btn btn-danger btn-sm" id="btn-logout">Logout</button>';
+        container.innerHTML = `
+          <span class="navbar-user">${user.nama}</span>
+          <button type="button" class="btn btn-danger btn-sm" id="btn-logout">Logout</button>
+        `;
         document.getElementById('btn-logout').addEventListener('click', logout);
       } else {
-        container.innerHTML =
-          '<a href="../auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>' +
-          '<a href="../auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>';
+        container.innerHTML = `
+          <a href="../auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>
+          <a href="../auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>
+        `;
       }
     }
 
@@ -100,14 +105,14 @@
         var jumlahKelas = hitungKelas(ins.id);
         var profilHref = '../instruktur/profil-publik.html?id=' + encodeURIComponent(ins.id);
 
-        return (
-          '<a href="' + profilHref + '" class="card instruktur-card">' +
-            '<img class="instruktur-avatar" src="' + foto + '" alt="' + ins.nama + '" onerror="this.src=\'../../assets/images/placeholder.jpg\'">' +
-            '<h3>' + ins.nama + '</h3>' +
-            '<p class="text-gray instruktur-keahlian">' + keahlian + '</p>' +
-            '<p class="instruktur-meta"><span class="badge badge-primary">' + jumlahKelas + ' kelas</span></p>' +
-          '</a>'
-        );
+        return `
+          <a href="${profilHref}" class="card instruktur-card">
+            <img class="instruktur-avatar" src="${foto}" alt="${ins.nama}" onerror="this.src='../../assets/images/placeholder.jpg'">
+            <h3>${ins.nama}</h3>
+            <p class="text-gray instruktur-keahlian">${keahlian}</p>
+            <p class="instruktur-meta"><span class="badge badge-primary">${jumlahKelas} kelas</span></p>
+          </a>
+        `;
       }).join('');
     }
 

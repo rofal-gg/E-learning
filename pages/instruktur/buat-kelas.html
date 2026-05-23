@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Buat Kelas — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -83,26 +85,46 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    var params = new URLSearchParams(window.location.search);
-    var editId = params.get('id');
-    var isEditMode = !!editId;
+    var user = window.__pageUser;
+    var mode = getQueryParam('id') ? 'edit' : 'baru';
+    var editId = getQueryParam('id');
     var kelasEdit = null;
 
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
+    if (user) {
+      setActiveSidebar('buat-kelas');
+
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+
+      if (mode === 'edit') {
+        kelasEdit = getById('kelas', editId);
+        if (!kelasEdit || kelasEdit.instrukturId !== user.id) {
+          alert('Kelas tidak ditemukan atau bukan milik Anda.');
+          window.location.href = 'daftar-kelas.html';
+        } else {
+          document.getElementById('page-title').textContent = 'Edit Kelas';
+          document.getElementById('page-subtitle').textContent = 'Perbarui detail kelas: ' + kelasEdit.judul;
+          document.getElementById('btn-simpan').textContent = 'Simpan Perubahan';
+          document.title = 'Edit Kelas — Platform E-Learning';
+        }
       }
-    });
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+      isiDropdownKategori();
 
-    function populateKategoriDropdown() {
+      if (mode === 'edit' && kelasEdit) {
+        prefillForm(kelasEdit);
+      }
+
+      document.getElementById('form-kelas').addEventListener('submit', function (e) {
+        e.preventDefault();
+        simpanKelas();
+      });
+    }
+
+    // isi dropdown kategori dari storage
+    function isiDropdownKategori() {
       var select = document.getElementById('kategori');
       var categories = getAll('categories');
       if (categories.length === 0) categories = SEED_CATEGORIES;
@@ -115,6 +137,7 @@
       });
     }
 
+    // isi form saat mode edit
     function prefillForm(kelas) {
       document.getElementById('judul').value = kelas.judul || '';
       document.getElementById('deskripsi').value = kelas.deskripsi || '';
@@ -124,7 +147,8 @@
       document.getElementById('gambar').value = kelas.gambar || '';
     }
 
-    function getFormData() {
+    // ambil nilai semua input form
+    function ambilDataForm() {
       var kategoriSelect = document.getElementById('kategori');
       var kategoriId = parseInt(kategoriSelect.value, 10);
       var kategoriNama = kategoriSelect.options[kategoriSelect.selectedIndex].text;
@@ -140,59 +164,39 @@
       };
     }
 
-    if (isEditMode) {
-      kelasEdit = getById('kelas', editId);
-      if (!kelasEdit || kelasEdit.instrukturId !== user.id) {
-        alert('Kelas tidak ditemukan atau bukan milik Anda.');
-        window.location.href = 'daftar-kelas.html';
-        return;
-      }
-
-      document.getElementById('page-title').textContent = 'Edit Kelas';
-      document.getElementById('page-subtitle').textContent = 'Perbarui detail kelas: ' + kelasEdit.judul;
-      document.getElementById('btn-simpan').textContent = 'Simpan Perubahan';
-      document.title = 'Edit Kelas — Platform E-Learning';
-    }
-
-    populateKategoriDropdown();
-
-    if (isEditMode && kelasEdit) {
-      prefillForm(kelasEdit);
-    }
-
-    document.getElementById('form-kelas').addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      var form = getFormData();
+    // simpan kelas baru atau perbarui lalu redirect
+    function simpanKelas() {
+      var form = ambilDataForm();
       if (!form.judul || !form.deskripsi || !form.kategoriId) {
         alert('Mohon lengkapi semua field wajib.');
         return;
       }
 
-      if (isEditMode) {
+      if (mode === 'edit') {
         updateItem('kelas', editId, form);
         window.location.href = 'daftar-kelas.html';
-      } else {
-        var newKelasId = generateId('k');
-        createItem('kelas', {
-          id: newKelasId,
-          judul: form.judul,
-          deskripsi: form.deskripsi,
-          kategoriId: form.kategoriId,
-          kategoriNama: form.kategoriNama,
-          level: form.level,
-          harga: form.harga,
-          gambar: form.gambar,
-          instrukturId: user.id,
-          instrukturNama: user.nama,
-          status: 'pending',
-          rating: 0,
-          totalSiswa: 0,
-          silabus: []
-        });
-        window.location.href = 'kurikulum.html?id=' + encodeURIComponent(newKelasId);
+        return;
       }
-    });
-  })();</script>
+
+      var newKelasId = generateId('k');
+      createItem('kelas', {
+        id: newKelasId,
+        judul: form.judul,
+        deskripsi: form.deskripsi,
+        kategoriId: form.kategoriId,
+        kategoriNama: form.kategoriNama,
+        level: form.level,
+        harga: form.harga,
+        gambar: form.gambar,
+        instrukturId: user.id,
+        instrukturNama: user.nama,
+        status: 'pending',
+        rating: 0,
+        totalSiswa: 0,
+        silabus: []
+      });
+      window.location.href = 'kurikulum.html?id=' + encodeURIComponent(newKelasId);
+    }
+  </script>
 </body>
 </html>

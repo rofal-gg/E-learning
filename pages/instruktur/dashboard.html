@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Instruktur — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -80,46 +83,37 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '! 👋';
+    var user = window.__pageUser;
 
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    if (user) {
+      document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '! 👋';
+      setActiveSidebar('dashboard');
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
-
-    function formatRupiah(angka) {
-      var n = angka || 0;
-      return n === 0 ? 'Rp 0' : 'Rp ' + n.toLocaleString('id-ID');
-    }
-
-    function formatTanggal(tanggal) {
-      if (!tanggal) return '-';
-      return new Date(tanggal).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
       });
+
+      var kelasList = ambilKelasInstruktur();
+      renderKPI(kelasList);
+      renderKelasTerbaru(kelasList);
+      renderQATerbaru(kelasList);
     }
 
-    function getMyKelas() {
+    // format saldo instruktur (bukan harga kelas)
+    function formatSaldo(angka) {
+      var n = angka || 0;
+      return 'Rp ' + Number(n).toLocaleString('id-ID');
+    }
+
+    // ambil semua kelas milik instruktur
+    function ambilKelasInstruktur() {
       return getAll('kelas').filter(function (k) {
         return k.instrukturId === user.id;
       });
     }
 
-    function getKelasIds() {
-      return getMyKelas().map(function (k) { return k.id; });
-    }
-
+    // badge status kelas
     function kelasStatusBadge(status) {
       if (status === 'published') {
         return '<span class="badge badge-success">Published</span>';
@@ -130,6 +124,7 @@
       return '<span class="badge badge-warning">Pending</span>';
     }
 
+    // hitung siswa unik per kelas
     function countSiswaPerKelas(kelasId) {
       var siswaIds = [];
       getAll('transaksi').forEach(function (t) {
@@ -143,6 +138,7 @@
       return siswaIds.length;
     }
 
+    // hitung total siswa unik di semua kelas instruktur
     function countTotalSiswaInstruktur(kelasIds) {
       var siswaIds = [];
       getAll('transaksi').forEach(function (t) {
@@ -157,8 +153,8 @@
       return siswaIds.length;
     }
 
-    function renderKPI() {
-      var kelasList = getMyKelas();
+    // render kartu KPI dashboard
+    function renderKPI(kelasList) {
       var kelasIds = kelasList.map(function (k) { return k.id; });
       var freshUser = getById('users', user.id) || user;
       var avgRating = 0;
@@ -172,37 +168,39 @@
 
       document.getElementById('kpi-total-kelas').textContent = kelasList.length;
       document.getElementById('kpi-total-siswa').textContent = countTotalSiswaInstruktur(kelasIds);
-      document.getElementById('kpi-saldo').textContent = formatRupiah(freshUser.saldo);
+      document.getElementById('kpi-saldo').textContent = formatSaldo(freshUser.saldo);
       document.getElementById('kpi-rating').textContent = kelasList.length ? avgRating + ' ★' : '-';
     }
 
-    function renderKelasTerbaru() {
+    // render tabel 5 kelas terbaru
+    function renderKelasTerbaru(kelasList) {
       var tbody = document.getElementById('kelas-terbaru-body');
-      var kelasList = getMyKelas().slice().reverse().slice(0, 5);
+      var terbaru = kelasList.slice().reverse().slice(0, 5);
 
-      if (kelasList.length === 0) {
+      if (terbaru.length === 0) {
         tbody.innerHTML =
           '<tr><td colspan="4" class="text-center text-gray">Belum ada kelas. Buat kelas pertama Anda!</td></tr>';
         return;
       }
 
-      tbody.innerHTML = kelasList.map(function (k) {
-        return (
-          '<tr>' +
-            '<td><strong>' + k.judul + '</strong></td>' +
-            '<td>' + kelasStatusBadge(k.status) + '</td>' +
-            '<td>' + countSiswaPerKelas(k.id) + '</td>' +
-            '<td><span class="stars">' + (k.rating || 0) + ' ★</span></td>' +
-          '</tr>'
-        );
+      tbody.innerHTML = terbaru.map(function (k) {
+        return `
+          <tr>
+            <td><strong>${k.judul}</strong></td>
+            <td>${kelasStatusBadge(k.status)}</td>
+            <td>${countSiswaPerKelas(k.id)}</td>
+            <td><span class="stars">${k.rating || 0} ★</span></td>
+          </tr>
+        `;
       }).join('');
     }
 
-    function renderQATerbaru() {
+    // render 3 Q&A terbaru dari siswa
+    function renderQATerbaru(kelasList) {
       var container = document.getElementById('qa-terbaru');
-      var kelasIds = getKelasIds();
+      var kelasIds = kelasList.map(function (k) { return k.id; });
       var kelasMap = {};
-      getMyKelas().forEach(function (k) { kelasMap[k.id] = k; });
+      kelasList.forEach(function (k) { kelasMap[k.id] = k; });
 
       var diskusiList = getAll('diskusi')
         .filter(function (d) { return kelasIds.indexOf(d.kelasId) !== -1; })
@@ -212,34 +210,31 @@
         .slice(0, 3);
 
       if (diskusiList.length === 0) {
-        container.innerHTML =
-          '<div class="empty-state">' +
-            '<p>Belum ada pertanyaan dari siswa.</p>' +
-            '<a href="tanya-jawab.html" class="btn btn-secondary btn-sm">Buka Q&amp;A</a>' +
-          '</div>';
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Belum ada pertanyaan dari siswa.</p>
+            <a href="tanya-jawab.html" class="btn btn-secondary btn-sm">Buka Q&amp;A</a>
+          </div>
+        `;
         return;
       }
 
       container.innerHTML = diskusiList.map(function (d) {
         var kelas = kelasMap[d.kelasId];
         var judulKelas = kelas ? kelas.judul : 'Kelas';
-        return (
-          '<article class="card diskusi-item" style="margin-bottom: 12px;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">' +
-              '<span class="badge badge-primary">' + judulKelas + '</span>' +
-              '<span class="diskusi-tanggal">' + formatTanggal(d.tanggal) + '</span>' +
-            '</div>' +
-            '<p><strong>' + d.userName + '</strong></p>' +
-            '<p class="diskusi-pertanyaan">' + d.pertanyaan + '</p>' +
-            '<a href="tanya-jawab.html" class="text-link-sm">Balas pertanyaan →</a>' +
-          '</article>'
-        );
+        return `
+          <article class="card diskusi-item" style="margin-bottom: 12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+              <span class="badge badge-primary">${judulKelas}</span>
+              <span class="diskusi-tanggal">${formatTanggal(d.tanggal)}</span>
+            </div>
+            <p><strong>${d.userName}</strong></p>
+            <p class="diskusi-pertanyaan">${d.pertanyaan}</p>
+            <a href="tanya-jawab.html" class="text-link-sm">Balas pertanyaan →</a>
+          </article>
+        `;
       }).join('');
     }
-
-    renderKPI();
-    renderKelasTerbaru();
-    renderQATerbaru();
-  })();</script>
+  </script>
 </body>
 </html>

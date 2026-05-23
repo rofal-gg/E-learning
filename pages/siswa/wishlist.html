@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wishlist — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -40,75 +41,68 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    setActiveSidebar('wishlist');
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('wishlist');
 
-    function formatRupiah(angka) {
-      return angka === 0 ? 'GRATIS' : 'Rp ' + angka.toLocaleString('id-ID');
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+
+      renderWishlist(ambilWishlist());
     }
 
-    function showAlert(pesan, tipe) {
-      tipe = tipe || 'success';
-      var el = document.getElementById('alert-box');
-      el.innerHTML = '<div class="alert alert-' + tipe + '">' + pesan + '</div>';
-      setTimeout(function () { el.innerHTML = ''; }, 3000);
-    }
-
-    function getWishlistItems() {
+    // ambil wishlist siswa beserta data kelas
+    function ambilWishlist() {
       return getAll('wishlist')
         .filter(function (w) { return sameUserId(w.userId, user.id); })
         .map(function (w) {
-          var kelas = getById('kelas', w.kelasId);
-          return { wishlist: w, kelas: kelas };
+          return { wishlist: w, kelas: getById('kelas', w.kelasId) };
         })
         .filter(function (item) { return item.kelas; });
     }
 
-    function renderWishlist() {
+    // render kartu wishlist
+    function renderWishlist(items) {
       var area = document.getElementById('wishlist-area');
-      var items = getWishlistItems();
 
       if (items.length === 0) {
-        area.innerHTML =
-          '<div class="empty-state">' +
-            '<p>Wishlist kamu masih kosong.</p>' +
-            '<a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>' +
-          '</div>';
+        area.innerHTML = `
+          <div class="empty-state">
+            <p>Wishlist kamu masih kosong.</p>
+            <a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>
+          </div>
+        `;
         return;
       }
 
       area.innerHTML = '<div class="grid-3">' + items.map(function (item) {
         var k = item.kelas;
         var w = item.wishlist;
-        return (
-          '<div class="card-kelas wishlist-card">' +
-            '<img src="../../' + k.gambar + '" alt="' + k.judul + '" onerror="this.src=\'../../assets/images/placeholder.jpg\'">' +
-            '<div class="card-body">' +
-              '<span class="badge badge-primary">' + k.kategoriNama + '</span>' +
-              '<h3>' + k.judul + '</h3>' +
-              '<p class="text-gray">' + k.instrukturNama + '</p>' +
-              '<p class="wishlist-price"><strong>' + formatRupiah(k.harga) + '</strong></p>' +
-              '<div class="wishlist-actions">' +
-                '<button type="button" class="btn btn-primary btn-sm btn-beli" data-kelas-id="' + k.id + '">Beli Sekarang</button>' +
-                '<button type="button" class="btn btn-danger btn-sm btn-hapus-wishlist" data-wishlist-id="' + w.id + '">Hapus dari Wishlist</button>' +
-              '</div>' +
-            '</div>' +
-          '</div>'
-        );
+        return `
+          <div class="card-kelas wishlist-card">
+            <img src="../../${k.gambar}" alt="${k.judul}" onerror="this.src='../../assets/images/placeholder.jpg'">
+            <div class="card-body">
+              <span class="badge badge-primary">${k.kategoriNama}</span>
+              <h3>${k.judul}</h3>
+              <p class="text-gray">${k.instrukturNama}</p>
+              <p class="wishlist-price"><strong>${formatRupiah(k.harga)}</strong></p>
+              <div class="wishlist-actions">
+                <button type="button" class="btn btn-primary btn-sm btn-beli" data-kelas-id="${k.id}">Beli Sekarang</button>
+                <button type="button" class="btn btn-danger btn-sm btn-hapus-wishlist" data-wishlist-id="${w.id}">Hapus dari Wishlist</button>
+              </div>
+            </div>
+          </div>
+        `;
       }).join('') + '</div>';
 
       document.querySelectorAll('.btn-hapus-wishlist').forEach(function (btn) {
         btn.addEventListener('click', function () {
           if (confirm('Hapus kelas dari wishlist?')) {
             deleteItem('wishlist', this.getAttribute('data-wishlist-id'));
-            renderWishlist();
+            renderWishlist(ambilWishlist());
           }
         });
       });
@@ -118,15 +112,13 @@
           var kelasId = this.getAttribute('data-kelas-id');
           var hasil = addToCart(user.id, kelasId);
           if (!hasil.sukses && hasil.pesan !== 'Kelas sudah ada di keranjang') {
-            showAlert(hasil.pesan, 'danger');
+            showAlert('alert-box', hasil.pesan, 'danger');
             return;
           }
           window.location.href = 'cart.html';
         });
       });
     }
-
-    renderWishlist();
-  })();</script>
+  </script>
 </body>
 </html>

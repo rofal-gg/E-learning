@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Riwayat Transaksi — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -39,21 +40,30 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    setActiveSidebar('riwayat-transaksi');
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('riwayat-transaksi');
 
-    function formatRupiah(angka) {
-      return angka === 0 ? 'GRATIS' : 'Rp ' + angka.toLocaleString('id-ID');
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+
+      renderRiwayat(ambilTransaksi());
     }
 
-    function formatTanggal(iso) {
+    // ambil transaksi siswa, urut terbaru
+    function ambilTransaksi() {
+      return getAll('transaksi')
+        .filter(function (t) { return sameUserId(t.userId, user.id); })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+    }
+
+    // format tanggal dengan jam
+    function formatTanggalWaktu(iso) {
       if (!iso) return '-';
       return new Date(iso).toLocaleString('id-ID', {
         day: 'numeric',
@@ -64,6 +74,7 @@
       });
     }
 
+    // gabung nama kelas dari id item transaksi
     function getNamaKelas(items) {
       return (items || []).map(function (kelasId) {
         var kelas = getById('kelas', kelasId);
@@ -71,6 +82,7 @@
       }).filter(Boolean).join(', ') || '-';
     }
 
+    // badge status transaksi
     function statusBadge(status) {
       var s = (status || 'sukses').toLowerCase();
       if (s === 'sukses' || s === 'lunas') {
@@ -85,57 +97,53 @@
       return '<span class="badge badge-primary">' + status + '</span>';
     }
 
-    function renderRiwayat() {
+    // render tabel riwayat transaksi
+    function renderRiwayat(list) {
       var area = document.getElementById('transaksi-area');
-      var list = getAll('transaksi')
-        .filter(function (t) { return sameUserId(t.userId, user.id); })
-        .sort(function (a, b) {
-          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
-        });
 
       if (list.length === 0) {
-        area.innerHTML =
-          '<div class="empty-state">' +
-            '<p>Belum ada transaksi.</p>' +
-            '<a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>' +
-          '</div>';
+        area.innerHTML = `
+          <div class="empty-state">
+            <p>Belum ada transaksi.</p>
+            <a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>
+          </div>
+        `;
         return;
       }
 
       var rows = list.map(function (t) {
-        return (
-          '<tr>' +
-            '<td><code class="transaksi-id">' + t.id + '</code></td>' +
-            '<td>' + formatTanggal(t.tanggal) + '</td>' +
-            '<td>' + getNamaKelas(t.items) + '</td>' +
-            '<td>' + (t.metode || '-') + '</td>' +
-            '<td>' + formatRupiah(t.total) + '</td>' +
-            '<td>' + statusBadge(t.status) + '</td>' +
-            '<td><a href="invoice.html?id=' + encodeURIComponent(t.id) + '" class="btn btn-secondary btn-sm">Invoice</a></td>' +
-          '</tr>'
-        );
+        return `
+          <tr>
+            <td><code class="transaksi-id">${t.id}</code></td>
+            <td>${formatTanggalWaktu(t.tanggal)}</td>
+            <td>${getNamaKelas(t.items)}</td>
+            <td>${t.metode || '-'}</td>
+            <td>${formatRupiah(t.total)}</td>
+            <td>${statusBadge(t.status)}</td>
+            <td><a href="invoice.html?id=${encodeURIComponent(t.id)}" class="btn btn-secondary btn-sm">Invoice</a></td>
+          </tr>
+        `;
       }).join('');
 
-      area.innerHTML =
-        '<div class="card table-wrap">' +
-          '<table class="table">' +
-            '<thead>' +
-              '<tr>' +
-                '<th>No. Transaksi</th>' +
-                '<th>Tanggal</th>' +
-                '<th>Kelas Dibeli</th>' +
-                '<th>Metode</th>' +
-                '<th>Total</th>' +
-                '<th>Status</th>' +
-                '<th>Aksi</th>' +
-              '</tr>' +
-            '</thead>' +
-            '<tbody>' + rows + '</tbody>' +
-          '</table>' +
-        '</div>';
+      area.innerHTML = `
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>No. Transaksi</th>
+                <th>Tanggal</th>
+                <th>Kelas Dibeli</th>
+                <th>Metode</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
     }
-
-    renderRiwayat();
-  })();</script>
+  </script>
 </body>
 </html>

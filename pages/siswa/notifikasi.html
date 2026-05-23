@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notifikasi — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -42,17 +43,39 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    setActiveSidebar('notifikasi');
+    var user = window.__pageUser;
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+    if (user) {
+      setActiveSidebar('notifikasi');
 
-    function formatTanggal(iso) {
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
+
+      document.getElementById('btn-tandai-semua').addEventListener('click', function () {
+        ambilNotifikasi().forEach(function (n) {
+          if (!n.dibaca) {
+            updateItem('notifikasi', n.id, { dibaca: true });
+          }
+        });
+        renderNotifikasi(ambilNotifikasi());
+      });
+
+      renderNotifikasi(ambilNotifikasi());
+    }
+
+    // ambil notifikasi user, urut terbaru
+    function ambilNotifikasi() {
+      return getAll('notifikasi')
+        .filter(function (n) { return sameUserId(n.userId, user.id); })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+    }
+
+    // format tanggal notifikasi dengan jam
+    function formatTanggalWaktu(iso) {
       if (!iso) return '-';
       var d = new Date(iso);
       if (isNaN(d.getTime())) return iso;
@@ -65,45 +88,37 @@
       });
     }
 
-    function getNotifikasiUser() {
-      return getAll('notifikasi')
-        .filter(function (n) { return sameUserId(n.userId, user.id); })
-        .sort(function (a, b) {
-          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
-        });
-    }
-
-    function renderNotifikasi() {
+    // render daftar notifikasi
+    function renderNotifikasi(list) {
       var area = document.getElementById('notifikasi-area');
-      var list = getNotifikasiUser();
 
       if (list.length === 0) {
-        area.innerHTML =
-          '<div class="empty-state">' +
-            '<p>Belum ada notifikasi.</p>' +
-          '</div>';
+        area.innerHTML = `
+          <div class="empty-state">
+            <p>Belum ada notifikasi.</p>
+          </div>
+        `;
         return;
       }
 
       area.innerHTML = '<div class="notif-list">' + list.map(function (n) {
         var unread = !n.dibaca;
-        return (
-          '<div class="notif-item card' + (unread ? ' notif-unread' : '') + '" data-id="' + n.id + '" role="button" tabindex="0">' +
-            '<span class="notif-icon" aria-hidden="true">🔔</span>' +
-            '<div class="notif-body">' +
-              '<p class="notif-pesan">' + n.pesan + '</p>' +
-              '<p class="notif-tanggal text-gray">' + formatTanggal(n.tanggal) + '</p>' +
-            '</div>' +
-            (unread ? '<span class="badge badge-primary notif-badge-baru">Baru</span>' : '') +
-          '</div>'
-        );
+        return `
+          <div class="notif-item card${unread ? ' notif-unread' : ''}" data-id="${n.id}" role="button" tabindex="0">
+            <span class="notif-icon" aria-hidden="true">🔔</span>
+            <div class="notif-body">
+              <p class="notif-pesan">${n.pesan}</p>
+              <p class="notif-tanggal text-gray">${formatTanggalWaktu(n.tanggal)}</p>
+            </div>
+            ${unread ? '<span class="badge badge-primary notif-badge-baru">Baru</span>' : ''}
+          </div>
+        `;
       }).join('') + '</div>';
 
       document.querySelectorAll('.notif-item').forEach(function (item) {
         function markRead() {
-          var id = item.getAttribute('data-id');
-          updateItem('notifikasi', id, { dibaca: true });
-          renderNotifikasi();
+          updateItem('notifikasi', item.getAttribute('data-id'), { dibaca: true });
+          renderNotifikasi(ambilNotifikasi());
         }
         item.addEventListener('click', markRead);
         item.addEventListener('keydown', function (e) {
@@ -114,17 +129,6 @@
         });
       });
     }
-
-    document.getElementById('btn-tandai-semua').addEventListener('click', function () {
-      getNotifikasiUser().forEach(function (n) {
-        if (!n.dibaca) {
-          updateItem('notifikasi', n.id, { dibaca: true });
-        }
-      });
-      renderNotifikasi();
-    });
-
-    renderNotifikasi();
-  })();</script>
+  </script>
 </body>
 </html>

@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daftar Kelas — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -68,37 +70,40 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
+    var user = window.__pageUser;
     var filterStatus = '';
 
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    if (user) {
+      setActiveSidebar('daftar-kelas');
 
-    document.getElementById('btn-logout').addEventListener('click', function (e) {
-      e.preventDefault();
-      logout();
-    });
+      document.getElementById('btn-logout').addEventListener('click', function (e) {
+        e.preventDefault();
+        logout();
+      });
 
-    document.getElementById('filter-status').addEventListener('change', function () {
-      filterStatus = this.value;
-      renderTabel();
-    });
+      document.getElementById('filter-status').addEventListener('change', function () {
+        filterStatus = this.value;
+        var list = ambilKelasSaya();
+        if (filterStatus) {
+          list = list.filter(function (k) {
+            return (k.status || 'pending') === filterStatus;
+          });
+        }
+        renderTabelKelas(list);
+      });
 
-    function formatRupiah(angka) {
-      return angka === 0 ? 'GRATIS' : 'Rp ' + angka.toLocaleString('id-ID');
+      var listAwal = ambilKelasSaya();
+      renderTabelKelas(listAwal);
     }
 
-    function getMyKelas() {
+    // ambil semua kelas milik instruktur login
+    function ambilKelasSaya() {
       return getAll('kelas').filter(function (k) {
         return k.instrukturId === user.id;
       });
     }
 
+    // badge status kelas untuk tabel
     function kelasStatusBadge(status) {
       if (status === 'published') {
         return '<span class="badge badge-success">Published</span>';
@@ -109,6 +114,7 @@
       return '<span class="badge badge-warning">Pending</span>';
     }
 
+    // hitung siswa unik yang membeli kelas
     function countSiswaPerKelas(kelasId) {
       var siswaIds = [];
       getAll('transaksi').forEach(function (t) {
@@ -122,23 +128,26 @@
       return siswaIds.length;
     }
 
-    function hapusKelas(kelasId, judul) {
-      if (!confirm('Yakin ingin menghapus kelas "' + judul + '"? Tindakan ini tidak dapat dibatalkan.')) {
+    // hapus kelas setelah konfirmasi
+    function hapusKelas(id) {
+      var kelas = getById('kelas', id);
+      if (!kelas) return;
+      if (!confirm('Yakin ingin menghapus kelas "' + kelas.judul + '"? Tindakan ini tidak dapat dibatalkan.')) {
         return;
       }
-      deleteItem('kelas', kelasId);
-      renderTabel();
-    }
-
-    function renderTabel() {
-      var tbody = document.getElementById('tabel-kelas-body');
-      var list = getMyKelas();
-
+      deleteItem('kelas', id);
+      var list = ambilKelasSaya();
       if (filterStatus) {
         list = list.filter(function (k) {
           return (k.status || 'pending') === filterStatus;
         });
       }
+      renderTabelKelas(list);
+    }
+
+    // render baris tabel kelas
+    function renderTabelKelas(list) {
+      var tbody = document.getElementById('tabel-kelas-body');
 
       if (list.length === 0) {
         tbody.innerHTML =
@@ -149,35 +158,32 @@
       }
 
       tbody.innerHTML = list.map(function (k, index) {
-        return (
-          '<tr>' +
-            '<td>' + (index + 1) + '</td>' +
-            '<td><img src="../../' + k.gambar + '" alt="' + k.judul + '" style="width:48px;height:48px;object-fit:cover;border-radius:var(--radius);" onerror="this.src=\'../../assets/images/placeholder.jpg\'"></td>' +
-            '<td><strong>' + k.judul + '</strong></td>' +
-            '<td>' + (k.kategoriNama || '-') + '</td>' +
-            '<td>' + formatRupiah(k.harga) + '</td>' +
-            '<td>' + kelasStatusBadge(k.status) + '</td>' +
-            '<td>' + countSiswaPerKelas(k.id) + '</td>' +
-            '<td style="white-space:nowrap;">' +
-              '<a href="buat-kelas.html?id=' + encodeURIComponent(k.id) + '" class="btn btn-secondary btn-sm">Edit</a> ' +
-              '<a href="kurikulum.html?id=' + encodeURIComponent(k.id) + '" class="btn btn-secondary btn-sm">Kurikulum</a> ' +
-              '<a href="unggah-materi.html?kelasId=' + encodeURIComponent(k.id) + '" class="btn btn-secondary btn-sm">Materi</a> ' +
-              '<a href="daftar-siswa.html?kelasId=' + encodeURIComponent(k.id) + '" class="btn btn-secondary btn-sm">Siswa</a> ' +
-              '<button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="' + k.id + '">Hapus</button>' +
-            '</td>' +
-          '</tr>'
-        );
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td><img src="../../${k.gambar}" alt="${k.judul}" style="width:48px;height:48px;object-fit:cover;border-radius:var(--radius);" onerror="this.src='../../assets/images/placeholder.jpg'"></td>
+            <td><strong>${k.judul}</strong></td>
+            <td>${k.kategoriNama || '-'}</td>
+            <td>${formatRupiah(k.harga)}</td>
+            <td>${kelasStatusBadge(k.status)}</td>
+            <td>${countSiswaPerKelas(k.id)}</td>
+            <td style="white-space:nowrap;">
+              <a href="buat-kelas.html?id=${encodeURIComponent(k.id)}" class="btn btn-secondary btn-sm">Edit</a>
+              <a href="kurikulum.html?id=${encodeURIComponent(k.id)}" class="btn btn-secondary btn-sm">Kurikulum</a>
+              <a href="unggah-materi.html?kelasId=${encodeURIComponent(k.id)}" class="btn btn-secondary btn-sm">Materi</a>
+              <a href="daftar-siswa.html?kelasId=${encodeURIComponent(k.id)}" class="btn btn-secondary btn-sm">Siswa</a>
+              <button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="${k.id}">Hapus</button>
+            </td>
+          </tr>
+        `;
       }).join('');
 
       tbody.querySelectorAll('.btn-hapus').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          var kelas = getById('kelas', this.getAttribute('data-id'));
-          if (kelas) hapusKelas(kelas.id, kelas.judul);
+          hapusKelas(this.getAttribute('data-id'));
         });
       });
     }
-
-    renderTabel();
-  })();</script>
+  </script>
 </body>
 </html>
