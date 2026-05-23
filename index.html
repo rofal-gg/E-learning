@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Landing Page — Platform E-Learning</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/anggota1.css">
 </head>
 <body class="public-layout">
 
@@ -99,7 +100,7 @@
     document.documentElement.classList.add('auth-ok');
     initStorage();
 
-    const KATEGORI_EMOJI = {
+    var KATEGORI_EMOJI = {
       1: '💻',
       2: '🎨',
       3: '📊',
@@ -107,60 +108,76 @@
       5: '💼'
     };
 
-    function formatRupiah(angka) {
-      return angka === 0 ? 'GRATIS' : 'Rp ' + angka.toLocaleString('id-ID');
+    // ambil daftar kategori dari storage
+    function ambilKategori() {
+      return getAll('categories');
     }
 
-    function renderKategori() {
-      const container = document.getElementById('grid-kategori');
-      const kategori = getAll('categories');
-
-      container.innerHTML = kategori.map(k => `
-        <div class="card-kategori">
-          <span class="emoji">${KATEGORI_EMOJI[k.id] || '📚'}</span>
-          <h3>${k.nama}</h3>
-        </div>
-      `).join('');
+    // tampilkan grid kategori di landing
+    function tampilkanKategori() {
+      var container = document.getElementById('grid-kategori');
+      var kategori = ambilKategori();
+      container.innerHTML = kategori.map(function (k) {
+        return `
+          <div class="card-kategori">
+            <span class="emoji">${KATEGORI_EMOJI[k.id] || '📚'}</span>
+            <h3>${k.nama}</h3>
+          </div>
+        `;
+      }).join('');
     }
 
-    function renderKelasUnggulan() {
-      const container = document.getElementById('grid-kelas');
-      const kelasList = getAll('kelas')
-        .filter(k => k.status === 'published')
+    // ambil 3 kelas published untuk unggulan
+    function ambilKelasUnggulan() {
+      return getAll('kelas')
+        .filter(function (k) { return k.status === 'published'; })
         .slice(0, 3);
+    }
+
+    // tampilkan kartu kelas unggulan
+    function tampilkanKelasUnggulan() {
+      var container = document.getElementById('grid-kelas');
+      var kelasList = ambilKelasUnggulan();
 
       if (kelasList.length === 0) {
-        container.innerHTML =
-          '<div class="empty-state">' +
-            '<p>Belum ada kelas tersedia.</p>' +
-          '</div>';
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Belum ada kelas tersedia.</p>
+          </div>
+        `;
         return;
       }
 
-      container.innerHTML = kelasList.map(k => `
-        <div class="card-kelas">
-          <img src="${k.gambar}" alt="${k.judul}" onerror="this.src='assets/images/placeholder.jpg'">
-          <div class="card-body">
-            <span class="badge badge-primary">${k.kategoriNama}</span>
-            <h3>${k.judul}</h3>
-            <p class="text-gray">${k.instrukturNama}</p>
-            <div class="card-kelas-footer">
-              <strong>${formatRupiah(k.harga)}</strong>
-              <a href="pages/siswa/detail-kelas.html?id=${k.id}" class="btn btn-primary btn-sm">Lihat Kelas</a>
+      container.innerHTML = kelasList.map(function (k) {
+        return `
+          <div class="card-kelas">
+            <img src="${k.gambar}" alt="${k.judul}" onerror="this.src='assets/images/placeholder.jpg'">
+            <div class="card-body">
+              <span class="badge badge-primary">${k.kategoriNama}</span>
+              <h3>${k.judul}</h3>
+              <p class="text-gray">${k.instrukturNama}</p>
+              <div class="card-kelas-footer">
+                <strong>${formatRupiah(k.harga)}</strong>
+                <a href="pages/siswa/detail-kelas.html?id=${k.id}" class="btn btn-primary btn-sm">Lihat Kelas</a>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    function renderBanner() {
-      var banner = {};
+    // baca pengaturan banner dari localStorage
+    function ambilBanner() {
       try {
-        banner = JSON.parse(localStorage.getItem('banner')) || {};
+        return JSON.parse(localStorage.getItem('banner')) || {};
       } catch (e) {
-        banner = {};
+        return {};
       }
+    }
 
+    // terapkan teks, warna, dan link CTA hero
+    function tampilkanBanner() {
+      var banner = ambilBanner();
       var promoEl = document.getElementById('hero-promo');
       var heroEl = document.getElementById('hero-banner');
 
@@ -174,18 +191,14 @@
       }
 
       if (banner.link && banner.link !== '#') {
-        var link = banner.link;
-        if (link.indexOf('http') !== 0 && link.indexOf('pages/') !== 0 && link.indexOf('/') !== 0) {
-          link = link;
-        }
-        document.getElementById('hero-cta-primary').href = link;
+        document.getElementById('hero-cta-primary').href = banner.link;
         document.getElementById('hero-cta-primary').textContent = 'Lihat Promo';
       }
     }
 
-    renderKategori();
-    renderKelasUnggulan();
-    renderBanner();
+    tampilkanKategori();
+    tampilkanKelasUnggulan();
+    tampilkanBanner();
   </script>
 </body>
 </html>

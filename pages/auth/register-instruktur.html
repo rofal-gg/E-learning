@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daftar Instruktur — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
 </head>
 <body class="auth-page">
 
@@ -60,13 +61,7 @@
   <script>
     initStorage();
 
-    function showAlert(containerId, pesan, tipe) {
-      tipe = tipe || 'success';
-      var el = document.getElementById(containerId);
-      el.innerHTML = '<div class="alert alert-' + tipe + '">' + pesan + '</div>';
-      setTimeout(function () { el.innerHTML = ''; }, 3000);
-    }
-
+    // cek password dan konfirmasi
     function validasiForm(password, konfirmasi) {
       if (!password || password.length < 6) {
         return 'Password minimal 6 karakter.';
@@ -77,6 +72,7 @@
       return null;
     }
 
+    // tombol lihat/sembunyikan password
     document.querySelectorAll('.password-toggle').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var input = document.getElementById(this.getAttribute('data-target'));

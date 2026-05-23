@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Katalog Kelas — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
 </head>
 <body class="public-layout">
 
@@ -67,29 +68,29 @@
   <script>
     initStorage();
 
-    function formatRupiah(angka) {
-      return angka === 0 ? 'GRATIS' : 'Rp ' + angka.toLocaleString('id-ID');
-    }
-
-    function renderNavbar() {
+    // tampilkan tombol navbar sesuai status login
+    function tampilkanNavbar() {
       var container = document.getElementById('navbar-actions');
       var user = getCurrentUser();
 
       if (user && user.role === 'siswa') {
         document.getElementById('nav-dashboard-item').style.display = 'list-item';
-        container.innerHTML =
-          '<span class="navbar-user">' + user.nama + '</span>' +
-          '<a href="cart.html" class="btn btn-secondary btn-sm">Keranjang</a>' +
-          '<button type="button" class="btn btn-danger btn-sm" id="btn-logout">Logout</button>';
+        container.innerHTML = `
+          <span class="navbar-user">${user.nama}</span>
+          <a href="cart.html" class="btn btn-secondary btn-sm">Keranjang</a>
+          <button type="button" class="btn btn-danger btn-sm" id="btn-logout">Logout</button>
+        `;
         document.getElementById('btn-logout').addEventListener('click', logout);
       } else {
-        container.innerHTML =
-          '<a href="../auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>' +
-          '<a href="../auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>';
+        container.innerHTML = `
+          <a href="../auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>
+          <a href="../auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>
+        `;
       }
     }
 
-    function renderKategoriFilter() {
+    // isi dropdown filter kategori
+    function isiFilterKategori() {
       var select = document.getElementById('filter-kategori');
       getAll('categories').forEach(function (cat) {
         var opt = document.createElement('option');
@@ -99,38 +100,46 @@
       });
     }
 
-    function renderGrid(kelasList) {
+    // buat HTML satu kartu kelas
+    function buatCardKelas(k) {
+      return `
+        <div class="card-kelas">
+          <img src="../../${k.gambar}" alt="${k.judul}" onerror="this.src='../../assets/images/placeholder.jpg'">
+          <div class="card-body">
+            <span class="badge badge-primary">${k.kategoriNama}</span>
+            <span class="badge badge-warning badge-gap">${k.level}</span>
+            <h3>${k.judul}</h3>
+            <p class="text-gray">${k.instrukturNama}</p>
+            <div class="card-kelas-footer">
+              <strong>${formatRupiah(k.harga)}</strong>
+              <a href="detail-kelas.html?id=${k.id}" class="btn btn-primary btn-sm">Lihat Kelas</a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // tampilkan grid hasil filter
+    function tampilkanGrid(kelasList) {
       var container = document.getElementById('grid-kelas');
       document.getElementById('total-kelas').textContent = kelasList.length;
 
       if (kelasList.length === 0) {
-        container.innerHTML =
-          '<div class="empty-state grid-empty-msg">' +
-            '<p>Tidak ada kelas yang cocok dengan filter Anda.</p>' +
-          '</div>';
+        container.innerHTML = `
+          <div class="empty-state grid-empty-msg">
+            <p>Tidak ada kelas yang cocok dengan filter Anda.</p>
+          </div>
+        `;
         return;
       }
 
       container.innerHTML = kelasList.map(function (k) {
-        return (
-          '<div class="card-kelas">' +
-            '<img src="../../' + k.gambar + '" alt="' + k.judul + '" onerror="this.src=\'../../assets/images/placeholder.jpg\'">' +
-            '<div class="card-body">' +
-              '<span class="badge badge-primary">' + k.kategoriNama + '</span>' +
-              '<span class="badge badge-warning badge-gap">' + k.level + '</span>' +
-              '<h3>' + k.judul + '</h3>' +
-              '<p class="text-gray">' + k.instrukturNama + '</p>' +
-              '<div class="card-kelas-footer">' +
-                '<strong>' + formatRupiah(k.harga) + '</strong>' +
-                '<a href="detail-kelas.html?id=' + k.id + '" class="btn btn-primary btn-sm">Lihat Kelas</a>' +
-              '</div>' +
-            '</div>' +
-          '</div>'
-        );
+        return buatCardKelas(k);
       }).join('');
     }
 
-    function applyFilters() {
+    // filter kelas berdasarkan input form
+    function terapkanFilter() {
       var kategori = document.getElementById('filter-kategori').value;
       var level = document.getElementById('filter-level').value;
       var harga = document.getElementById('filter-harga').value;
@@ -164,18 +173,18 @@
         });
       }
 
-      renderGrid(list);
+      tampilkanGrid(list);
     }
 
-    renderNavbar();
-    renderKategoriFilter();
+    tampilkanNavbar();
+    isiFilterKategori();
 
-    document.getElementById('filter-kategori').addEventListener('change', applyFilters);
-    document.getElementById('filter-level').addEventListener('change', applyFilters);
-    document.getElementById('filter-harga').addEventListener('change', applyFilters);
-    document.getElementById('filter-search').addEventListener('input', applyFilters);
+    document.getElementById('filter-kategori').addEventListener('change', terapkanFilter);
+    document.getElementById('filter-level').addEventListener('change', terapkanFilter);
+    document.getElementById('filter-harga').addEventListener('change', terapkanFilter);
+    document.getElementById('filter-search').addEventListener('input', terapkanFilter);
 
-    applyFilters();
+    terapkanFilter();
   </script>
 </body>
 </html>

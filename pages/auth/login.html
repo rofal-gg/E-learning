@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
 </head>
 <body class="auth-page">
 
@@ -48,6 +49,7 @@
   <script>
     initStorage();
 
+    // tampilkan pesan flash setelah reset password
     var flash = sessionStorage.getItem('flashMessage');
     if (flash) {
       sessionStorage.removeItem('flashMessage');
@@ -59,6 +61,7 @@
       redirectByRole(currentUser.role);
     }
 
+    // toggle tampil/sembunyi password
     document.getElementById('toggle-password').addEventListener('click', function () {
       var input = document.getElementById('password');
       var isHidden = input.type === 'password';
@@ -66,6 +69,7 @@
       this.textContent = isHidden ? 'Sembunyi' : 'Lihat';
     });
 
+    // proses form login
     document.getElementById('form-login').addEventListener('submit', function (e) {
       e.preventDefault();
 

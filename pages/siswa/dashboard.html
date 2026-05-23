@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Siswa — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -66,142 +67,140 @@
   </div>
 
   <script>
-    (function () {
-      var user = window.__pageUser;
-      if (!user) return;
-    document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '!';
+    var user = window.__pageUser;
 
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(function (link) {
-      if (window.location.href.includes(link.getAttribute('data-page'))) {
-        link.classList.add('active');
-      }
-    });
+    setActiveSidebar('dashboard');
+    document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '!';
 
     document.getElementById('btn-logout').addEventListener('click', function (e) {
       e.preventDefault();
       logout();
     });
 
-    function formatRupiah(angka) {
-      return angka === 0 ? 'GRATIS' : 'Rp ' + angka.toLocaleString('id-ID');
-    }
-
-    function getUserTransaksi() {
-      return getAll('transaksi').filter(function (t) { return sameUserId(t.userId, user.id); });
-    }
-
-    function getKelasIdsDibeli() {
+    // ambil semua id kelas yang sudah dibeli user ini
+    function ambilKelasIds() {
+      var transaksi = getAll('transaksi').filter(function (t) {
+        return sameUserId(t.userId, user.id);
+      });
       var ids = [];
-      getUserTransaksi().forEach(function (t) {
-        (t.items || []).forEach(function (kelasId) {
-          if (ids.indexOf(kelasId) === -1) ids.push(kelasId);
+      transaksi.forEach(function (t) {
+        (t.items || []).forEach(function (id) {
+          if (ids.indexOf(id) === -1) ids.push(id);
         });
       });
       return ids;
     }
 
-    function getProgres(kelasId) {
+    // ambil progres user untuk satu kelas
+    function ambilProgres(kelasId) {
       var p = getAll('progres').find(function (pr) {
         return sameUserId(pr.userId, user.id) && String(pr.kelasId) === String(kelasId);
       });
       return p || { persen: 0, babSelesai: [] };
     }
 
-    function renderKPI() {
-      var kelasIds = getKelasIdsDibeli();
-      var progresList = getAll('progres').filter(function (p) {
+    // isi angka KPI cards
+    function tampilkanKPI() {
+      var ids = ambilKelasIds();
+      var selesai = getAll('progres').filter(function (p) {
         return sameUserId(p.userId, user.id) && p.persen >= 100;
       });
-      var diskusiCount = getAll('diskusi').filter(function (d) {
+      var diskusi = getAll('diskusi').filter(function (d) {
         return sameUserId(d.userId, user.id);
-      }).length;
-
-      document.getElementById('kpi-kelas-dibeli').textContent = kelasIds.length;
-      document.getElementById('kpi-kelas-selesai').textContent = progresList.length;
-      document.getElementById('kpi-diskusi').textContent = diskusiCount;
+      });
+      document.getElementById('kpi-kelas-dibeli').textContent = ids.length;
+      document.getElementById('kpi-kelas-selesai').textContent = selesai.length;
+      document.getElementById('kpi-diskusi').textContent = diskusi.length;
     }
 
-    function renderLanjutBelajar() {
-      var container = document.getElementById('lanjut-belajar');
-      var kelasIds = getKelasIdsDibeli();
+    // buat HTML satu card kelas lanjut belajar
+    function buatCardLanjut(kelas, persen) {
+      return `
+        <div class="card-lanjut">
+          <h3>${kelas.judul}</h3>
+          <p class="text-gray">${kelas.instrukturNama}</p>
+          <p class="progress-text">Progres: ${persen}%</p>
+          <div class="progress-bar"><div class="progress-fill" style="width:${persen}%"></div></div>
+          <a href="ruang-belajar.html?id=${kelas.id}" class="btn btn-primary btn-sm">Lanjutkan Belajar</a>
+        </div>
+      `;
+    }
 
-      if (kelasIds.length === 0) {
-        container.innerHTML =
-          '<div class="empty-state">' +
-            '<p>Kamu belum mengikuti kelas. Yuk mulai belajar!</p>' +
-            '<a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>' +
-          '</div>';
+    // tampilkan section lanjutkan belajar
+    function tampilkanLanjutBelajar() {
+      var container = document.getElementById('lanjut-belajar');
+      var ids = ambilKelasIds();
+
+      if (ids.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Kamu belum mengikuti kelas. Yuk mulai belajar!</p>
+            <a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>
+          </div>
+        `;
         return;
       }
 
-      var belumSelesai = kelasIds
-        .map(function (id) {
-          var kelas = getById('kelas', id);
-          var progres = getProgres(id);
-          return { kelas: kelas, progres: progres };
-        })
-        .filter(function (item) {
-          return item.kelas && item.progres.persen < 100;
-        })
-        .slice(0, 3);
+      var belumSelesai = ids.map(function (id) {
+        return {
+          kelas: getById('kelas', id),
+          persen: Math.round(ambilProgres(id).persen || 0)
+        };
+      }).filter(function (item) {
+        return item.kelas && item.persen < 100;
+      }).slice(0, 3);
 
       if (belumSelesai.length === 0) {
-        container.innerHTML =
-          '<div class="empty-state">' +
-            '<p>Semua kelas yang kamu beli sudah selesai. Kerja bagus!</p>' +
-            '<a href="katalog.html" class="btn btn-secondary">Lihat Katalog Lainnya</a>' +
-          '</div>';
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Semua kelas yang kamu beli sudah selesai. Kerja bagus!</p>
+            <a href="katalog.html" class="btn btn-secondary">Lihat Katalog Lainnya</a>
+          </div>
+        `;
         return;
       }
 
-      container.innerHTML = '<div class="grid-3">' + belumSelesai.map(function (item) {
-        var k = item.kelas;
-        var persen = Math.round(item.progres.persen || 0);
-        return (
-          '<div class="card-lanjut">' +
-            '<h3>' + k.judul + '</h3>' +
-            '<p class="text-gray">' + k.instrukturNama + '</p>' +
-            '<p class="progress-text">Progres: ' + persen + '%</p>' +
-            '<div class="progress-bar"><div class="progress-fill" style="width:' + persen + '%"></div></div>' +
-            '<a href="ruang-belajar.html?id=' + k.id + '" class="btn btn-primary btn-sm">Lanjutkan Belajar</a>' +
-          '</div>'
-        );
-      }).join('') + '</div>';
+      container.innerHTML = '<div class="grid-3">' +
+        belumSelesai.map(function (item) {
+          return buatCardLanjut(item.kelas, item.persen);
+        }).join('') +
+      '</div>';
     }
 
-    function renderKelasTerbaru() {
+    // tampilkan 3 kelas terbaru dari katalog
+    function tampilkanKelasTerbaru() {
       var container = document.getElementById('kelas-terbaru');
-      var kelasList = getAll('kelas')
+      var list = getAll('kelas')
         .filter(function (k) { return k.status === 'published'; })
         .slice(-3)
         .reverse();
 
-      if (kelasList.length === 0) {
+      if (list.length === 0) {
         container.innerHTML = '<p class="text-gray text-center">Belum ada kelas di katalog.</p>';
         return;
       }
 
-      container.innerHTML = kelasList.map(function (k) {
-        return (
-          '<div class="card-kelas">' +
-            '<img src="../../' + k.gambar + '" alt="' + k.judul + '" onerror="this.src=\'../../assets/images/placeholder.jpg\'">' +
-            '<div class="card-body">' +
-              '<span class="badge badge-primary">' + k.kategoriNama + '</span>' +
-              '<h3>' + k.judul + '</h3>' +
-              '<p class="text-gray">' + k.instrukturNama + '</p>' +
-              '<div class="card-kelas-footer">' +
-                '<strong>' + formatRupiah(k.harga) + '</strong>' +
-                '<a href="detail-kelas.html?id=' + k.id + '" class="btn btn-primary btn-sm">Lihat Kelas</a>' +
-              '</div>' +
-            '</div>' +
-          '</div>'
-        );
+      container.innerHTML = list.map(function (k) {
+        return `
+          <div class="card-kelas">
+            <img src="../../${k.gambar}" alt="${k.judul}" onerror="this.src='../../assets/images/placeholder.jpg'">
+            <div class="card-body">
+              <span class="badge badge-primary">${k.kategoriNama}</span>
+              <h3>${k.judul}</h3>
+              <p class="text-gray">${k.instrukturNama}</p>
+              <div class="card-kelas-footer">
+                <strong>${formatRupiah(k.harga)}</strong>
+                <a href="detail-kelas.html?id=${k.id}" class="btn btn-primary btn-sm">Lihat Kelas</a>
+              </div>
+            </div>
+          </div>
+        `;
       }).join('');
     }
 
-    renderKPI();
-    renderLanjutBelajar();
-    renderKelasTerbaru();
-  })();</script>
+    tampilkanKPI();
+    tampilkanLanjutBelajar();
+    tampilkanKelasTerbaru();
+  </script>
 </body>
 </html>

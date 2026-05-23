@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FAQ — Platform E-Learning</title>
   <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
 </head>
 <body class="public-layout">
 
@@ -131,20 +132,25 @@
   <script>
     initStorage();
 
-    document.querySelectorAll('.accordion-header').forEach(function (header) {
-      header.addEventListener('click', function () {
-        var item = this.parentElement;
-        var isOpen = item.classList.contains('open');
-        document.querySelectorAll('.accordion-item').forEach(function (el) {
-          el.classList.remove('open');
-          el.querySelector('.accordion-icon').textContent = '+';
+    // aktifkan buka-tutup item FAQ
+    function pasangAccordion() {
+      document.querySelectorAll('.accordion-header').forEach(function (header) {
+        header.addEventListener('click', function () {
+          var item = this.parentElement;
+          var isOpen = item.classList.contains('open');
+          document.querySelectorAll('.accordion-item').forEach(function (el) {
+            el.classList.remove('open');
+            el.querySelector('.accordion-icon').textContent = '+';
+          });
+          if (!isOpen) {
+            item.classList.add('open');
+            this.querySelector('.accordion-icon').textContent = '−';
+          }
         });
-        if (!isOpen) {
-          item.classList.add('open');
-          this.querySelector('.accordion-icon').textContent = '−';
-        }
       });
-    });
+    }
+
+    pasangAccordion();
   </script>
 </body>
 </html>
