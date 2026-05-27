@@ -17,7 +17,7 @@ const SEED_USERS = [
   {
     id: "u002", nama: "Sari Dewi", email: "sari@email.com",
     password: "password123", role: "instruktur",
-    foto: "assets/images/avatar-2.jpg", bio: "Web developer 5 tahun pengalaman",
+    foto: "assets/images/PP.jpg", bio: "Web developer 5 tahun pengalaman",
     keahlian: "HTML, CSS, JavaScript", saldo: 500000
   },
   {
