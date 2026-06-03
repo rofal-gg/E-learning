@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil Publik — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Profil Publik</h1>
+        <p class="text-gray">Tampilan profil yang dilihat siswa di katalog instruktur</p>
+      </div>
+
+      <div id="alert-box" class="alert-box-wrap"></div>
+
+      <div class="profil-layout">
+        <section class="card profil-preview">
+          <div id="profil-foto-wrap">
+            <img id="profil-foto" class="profil-foto-instruktur" src="../../assets/images/placeholder.jpg" alt="Foto profil" hidden onerror="this.hidden=true;document.getElementById('profil-avatar-fallback').style.display='flex';">
+            <div id="profil-avatar-fallback" class="profil-avatar">?</div>
+          </div>
+          <h2 id="preview-nama">—</h2>
+          <p class="text-gray" id="preview-keahlian">—</p>
+          <p id="preview-bio" class="profil-preview-bio">—</p>
+        </section>
+
+        <section class="card profil-form-wrap">
+          <h2>Edit Profil</h2>
+          <form id="form-profil">
+            <div class="form-group">
+              <label class="form-label" for="input-nama">Nama</label>
+              <input type="text" id="input-nama" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-bio">Bio</label>
+              <textarea id="input-bio" class="form-input" rows="4" placeholder="Ceritakan pengalaman mengajar Anda…"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-keahlian">Keahlian</label>
+              <input type="text" id="input-keahlian" class="form-input" placeholder="HTML, CSS, JavaScript">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-foto">URL Foto</label>
+              <input type="text" id="input-foto" class="form-input" placeholder="assets/images/avatar-2.jpg">
+              <p class="form-hint">Path relatif dari root project, misalnya assets/images/avatar-2.jpg</p>
+            </div>
+            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarInstruktur('profil-publik');
+
+      
+
+      document.getElementById('form-profil').addEventListener('submit', function (e) {
+        e.preventDefault();
+        simpanProfil();
+      });
+
+      ['input-nama', 'input-bio', 'input-keahlian', 'input-foto'].forEach(function (id) {
+        document.getElementById(id).addEventListener('input', function () {
+          renderPreview(ambilDataForm());
+        });
+      });
+
+      muatProfil();
+    }
+
+    function inisialNama(nama) {
+      if (!nama) return '?';
+      return nama.split(' ').map(function (n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
+    }
+
+    function ambilDataForm() {
+      return {
+        nama: document.getElementById('input-nama').value,
+        bio: document.getElementById('input-bio').value,
+        keahlian: document.getElementById('input-keahlian').value,
+        foto: document.getElementById('input-foto').value
+      };
+    }
+
+    function renderPreview(data) {
+      var fotoEl = document.getElementById('profil-foto');
+      var fallback = document.getElementById('profil-avatar-fallback');
+
+      document.getElementById('preview-nama').textContent = data.nama || '—';
+      document.getElementById('preview-keahlian').textContent = data.keahlian || 'Belum diisi';
+      document.getElementById('preview-bio').textContent = data.bio || 'Belum ada bio.';
+      fallback.textContent = inisialNama(data.nama);
+
+      if (data.foto) {
+        fotoEl.src = '../../' + data.foto.replace(/^\//, '');
+        fotoEl.hidden = false;
+        fallback.style.display = 'none';
+      } else {
+        fotoEl.hidden = true;
+        fallback.style.display = 'flex';
+      }
+    }
+
+    function muatProfil() {
+      var data = getById('users', user.id) || user;
+      document.getElementById('input-nama').value = data.nama || '';
+      document.getElementById('input-bio').value = data.bio || '';
+      document.getElementById('input-keahlian').value = data.keahlian || '';
+      document.getElementById('input-foto').value = data.foto || '';
+      renderPreview(data);
+    }
+
+    function simpanProfil() {
+      var nama = document.getElementById('input-nama').value.trim();
+      var bio = document.getElementById('input-bio').value.trim();
+      var keahlian = document.getElementById('input-keahlian').value.trim();
+      var foto = document.getElementById('input-foto').value.trim();
+
+      if (!nama) {
+        showAlert('alert-box', 'Nama wajib diisi.', 'danger');
+        return;
+      }
+
+      updateItem('users', user.id, { nama: nama, bio: bio, keahlian: keahlian, foto: foto });
+
+      var updatedUser = getById('users', user.id);
+      sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      user = updatedUser;
+
+      showAlert('alert-box', 'Profil berhasil disimpan.', 'success');
+      muatProfil();
+    }
+  </script>
+</body>
+</html>

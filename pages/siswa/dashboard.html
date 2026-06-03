@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Siswa — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 id="greeting">Halo, Siswa!</h1>
+      </div>
+
+      <div class="grid-4" id="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-kelas-dibeli">0</div>
+          <div class="kpi-label">Total Kelas Dibeli</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-kelas-selesai">0</div>
+          <div class="kpi-label">Kelas Selesai</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-diskusi">0</div>
+          <div class="kpi-label">Total Diskusi</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value">120</div>
+          <div class="kpi-label">Poin</div>
+        </div>
+      </div>
+
+      <section class="content-section">
+        <h2>Lanjutkan Belajar</h2>
+        <div id="lanjut-belajar"></div>
+      </section>
+
+      <section class="content-section">
+        <h2>Kelas Terbaru di Katalog</h2>
+        <div id="kelas-terbaru" class="grid-3"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    // render sidebar siswa
+    renderSidebarSiswa('dashboard');
+    document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '!';
+
+    // ambil semua id kelas yang sudah dibeli user ini
+    function ambilKelasIds() {
+      var transaksi = getAll('transaksi').filter(function (t) {
+        return sameUserId(t.userId, user.id);
+      });
+      var ids = [];
+      transaksi.forEach(function (t) {
+        (t.items || []).forEach(function (id) {
+          if (ids.indexOf(id) === -1) ids.push(id);
+        });
+      });
+      return ids;
+    }
+
+    // ambil progres user untuk satu kelas
+    function ambilProgres(kelasId) {
+      var p = getAll('progres').find(function (pr) {
+        return sameUserId(pr.userId, user.id) && String(pr.kelasId) === String(kelasId);
+      });
+      return p || { persen: 0, babSelesai: [] };
+    }
+
+    // isi angka KPI cards
+    function tampilkanKPI() {
+      var ids = ambilKelasIds();
+      var selesai = getAll('progres').filter(function (p) {
+        return sameUserId(p.userId, user.id) && p.persen >= 100;
+      });
+      var diskusi = getAll('diskusi').filter(function (d) {
+        return sameUserId(d.userId, user.id);
+      });
+      document.getElementById('kpi-kelas-dibeli').textContent = ids.length;
+      document.getElementById('kpi-kelas-selesai').textContent = selesai.length;
+      document.getElementById('kpi-diskusi').textContent = diskusi.length;
+    }
+
+    // buat HTML satu card kelas lanjut belajar
+    function buatCardLanjut(kelas, persen) {
+      return `
+        <div class="card-lanjut">
+          <h3>${kelas.judul}</h3>
+          <p class="text-gray">${kelas.instrukturNama}</p>
+          <p class="progress-text">Progres: ${persen}%</p>
+          <div class="progress-bar"><div class="progress-fill" style="width:${persen}%"></div></div>
+          <a href="ruang-belajar.html?id=${kelas.id}" class="btn btn-primary btn-sm">Lanjutkan Belajar</a>
+        </div>
+      `;
+    }
+
+    // tampilkan section lanjutkan belajar
+    function tampilkanLanjutBelajar() {
+      var container = document.getElementById('lanjut-belajar');
+      var ids = ambilKelasIds();
+
+      if (ids.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Kamu belum mengikuti kelas. Yuk mulai belajar!</p>
+            <a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>
+          </div>
+        `;
+        return;
+      }
+
+      var belumSelesai = ids.map(function (id) {
+        return {
+          kelas: getById('kelas', id),
+          persen: Math.round(ambilProgres(id).persen || 0)
+        };
+      }).filter(function (item) {
+        return item.kelas && item.persen < 100;
+      }).slice(0, 3);
+
+      if (belumSelesai.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Semua kelas yang kamu beli sudah selesai. Kerja bagus!</p>
+            <a href="katalog.html" class="btn btn-secondary">Lihat Katalog Lainnya</a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '<div class="grid-3">' +
+        belumSelesai.map(function (item) {
+          return buatCardLanjut(item.kelas, item.persen);
+        }).join('') +
+      '</div>';
+    }
+
+    // tampilkan 3 kelas terbaru dari katalog
+    function tampilkanKelasTerbaru() {
+      var container = document.getElementById('kelas-terbaru');
+      var list = getAll('kelas')
+        .filter(function (k) { return k.status === 'published'; })
+        .slice(-3)
+        .reverse();
+
+      if (list.length === 0) {
+        container.innerHTML = '<p class="text-gray text-center">Belum ada kelas di katalog.</p>';
+        return;
+      }
+
+      container.innerHTML = list.map(function (k) {
+        return buatCardKelas(k, { basePath: '../../' });
+      }).join('');
+    }
+
+    tampilkanKPI();
+    tampilkanLanjutBelajar();
+    tampilkanKelasTerbaru();
+  </script>
+</body>
+</html>

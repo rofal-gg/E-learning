@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kurikulum — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header-flex">
+        <div>
+          <h1 id="kelas-judul">Kurikulum Kelas</h1>
+          <p class="text-gray" id="kelas-info">Susun bab materi untuk kelas Anda</p>
+        </div>
+        <a href="daftar-kelas.html" class="btn btn-secondary">← Kembali</a>
+      </div>
+
+      <section class="content-section">
+        <h2>Daftar Bab</h2>
+        <div class="card" id="list-bab">
+          <div class="empty-state"><p>Belum ada bab. Tambahkan bab pertama di bawah.</p></div>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <h2>Tambah Bab Baru</h2>
+        <div class="card" style="max-width: 640px;">
+          <form id="form-tambah-bab">
+            <div class="form-group">
+              <label class="form-label" for="judul-bab">Judul Bab</label>
+              <input type="text" id="judul-bab" class="form-input" required placeholder="Contoh: Pengenalan HTML">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="video-url">URL Video YouTube</label>
+              <input type="text" id="video-url" class="form-input" required placeholder="https://www.youtube.com/embed/...">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="durasi">Durasi</label>
+              <input type="text" id="durasi" class="form-input" required placeholder="45 menit">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Tambah Bab</button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+    var kelasId = getQueryParam('id');
+    var kelas = null;
+
+    if (!kelasId) {
+      alert('Kelas tidak dipilih.');
+      window.location.href = 'daftar-kelas.html';
+    } else {
+      kelas = ambilKelas();
+      if (!kelas) {
+        alert('Kelas tidak ditemukan atau bukan milik Anda.');
+        window.location.href = 'daftar-kelas.html';
+      }
+    }
+
+    if (kelas) {
+      renderSidebarInstruktur('daftar-kelas');
+
+      
+
+      document.getElementById('kelas-judul').textContent = 'Kurikulum: ' + kelas.judul;
+      updateInfoKelas();
+
+      document.getElementById('form-tambah-bab').addEventListener('submit', function (e) {
+        e.preventDefault();
+        tambahBab();
+      });
+
+      renderDaftarBab(ambilSilabus());
+    }
+
+    // ambil kelas berdasarkan query param id
+    function ambilKelas() {
+      var data = getById('kelas', kelasId);
+      if (!data || data.instrukturId !== user.id) return null;
+      return data;
+    }
+
+    // ambil salinan silabus terbaru dari storage
+    function ambilSilabus() {
+      var current = getById('kelas', kelasId);
+      return (current && current.silabus) ? current.silabus.slice() : [];
+    }
+
+    // simpan silabus dan perbarui nomor bab
+    function simpanSilabus(silabus) {
+      var normalized = silabus.map(function (bab, index) {
+        return {
+          babKe: index + 1,
+          judul: bab.judul,
+          videoUrl: bab.videoUrl,
+          durasi: bab.durasi,
+          deskripsi: bab.deskripsi || ''
+        };
+      });
+      updateItem('kelas', kelasId, { silabus: normalized });
+      kelas = getById('kelas', kelasId);
+      updateInfoKelas();
+      return normalized;
+    }
+
+    // perbarui teks info jumlah bab
+    function updateInfoKelas() {
+      var jumlah = (kelas.silabus || []).length;
+      document.getElementById('kelas-info').textContent =
+        jumlah + ' bab · Status: ' + (kelas.status || 'pending');
+    }
+
+    // render tabel daftar bab
+    function renderDaftarBab(silabus) {
+      var container = document.getElementById('list-bab');
+
+      if (silabus.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Belum ada bab. Tambahkan bab pertama di bawah.</p></div>';
+        return;
+      }
+
+      var rows = silabus.map(function (bab) {
+        var videoShort = bab.videoUrl;
+        if (videoShort.length > 40) videoShort = videoShort.slice(0, 40) + '…';
+        return `
+          <tr>
+            <td>${bab.babKe}</td>
+            <td><strong>${bab.judul}</strong></td>
+            <td>${bab.durasi}</td>
+            <td><span class="text-gray" title="${bab.videoUrl}">${videoShort}</span></td>
+            <td style="white-space:nowrap;">
+              <a href="unggah-materi.html?kelasId=${encodeURIComponent(kelasId)}" class="btn btn-secondary btn-sm">Materi</a>
+              <a href="buat-kuis.html?kelasId=${encodeURIComponent(kelasId)}&babKe=${bab.babKe}" class="btn btn-secondary btn-sm">Kuis</a>
+              <button type="button" class="btn btn-danger btn-sm btn-hapus-bab" data-bab-ke="${bab.babKe}">Hapus</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="kurikulum-table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th>No</th><th>Judul Bab</th><th>Durasi</th><th>Video</th><th>Aksi</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+
+      container.querySelectorAll('.btn-hapus-bab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          hapusBab(parseInt(this.getAttribute('data-bab-ke'), 10));
+        });
+      });
+    }
+
+    // tambah bab baru dari form
+    function tambahBab() {
+      var judul = document.getElementById('judul-bab').value.trim();
+      var videoUrl = document.getElementById('video-url').value.trim();
+      var durasi = document.getElementById('durasi').value.trim();
+
+      if (!judul || !videoUrl || !durasi) {
+        alert('Mohon lengkapi semua field bab.');
+        return;
+      }
+
+      var silabus = ambilSilabus();
+      var nextBabKe = silabus.length === 0
+        ? 1
+        : Math.max.apply(null, silabus.map(function (b) { return b.babKe; })) + 1;
+
+      silabus.push({
+        babKe: nextBabKe,
+        judul: judul,
+        videoUrl: videoUrl,
+        durasi: durasi
+      });
+
+      renderDaftarBab(simpanSilabus(silabus));
+      document.getElementById('form-tambah-bab').reset();
+    }
+
+    // hapus satu bab dari silabus
+    function hapusBab(babKe) {
+      if (!confirm('Hapus bab ke-' + babKe + '?')) return;
+      var updated = ambilSilabus().filter(function (b) {
+        return b.babKe !== babKe;
+      });
+      renderDaftarBab(simpanSilabus(updated));
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota5.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1 id="greeting">Dashboard Admin</h1>
+        <p class="text-gray">Ringkasan platform E-Learning</p>
+      </div>
+
+      <div class="grid-4">
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-siswa">0</div>
+          <div class="kpi-label">Total Siswa</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-instruktur">0</div>
+          <div class="kpi-label">Total Instruktur</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-kelas">0</div>
+          <div class="kpi-label">Total Kelas Published</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-transaksi">0</div>
+          <div class="kpi-label">Total Transaksi</div>
+        </div>
+      </div>
+
+      <section class="content-section">
+        <div class="page-header-flex">
+          <h2>Transaksi Terbaru</h2>
+          <a href="verifikasi-pembayaran.html" class="btn btn-secondary btn-sm">Lihat Semua</a>
+        </div>
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Nama User</th>
+                <th>Kelas</th>
+                <th>Total</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="transaksi-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <div class="page-header-flex">
+          <h2>Kelas Pending Persetujuan</h2>
+          <a href="persetujuan-kelas.html" class="btn btn-secondary btn-sm">Kelola Persetujuan</a>
+        </div>
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Judul</th>
+                <th>Instruktur</th>
+                <th>Kategori</th>
+                <th>Harga</th>
+              </tr>
+            </thead>
+            <tbody id="pending-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarAdmin('dashboard');
+      document.getElementById('greeting').textContent = 'Halo, ' + user.nama + '!';
+
+      
+
+      renderKPI();
+      renderTransaksiTerbaru();
+      renderKelasPending();
+    }
+
+    function statusBadge(status) {
+      var s = (status || 'sukses').toLowerCase();
+      if (s === 'sukses' || s === 'lunas') {
+        return '<span class="badge badge-success">Sukses</span>';
+      }
+      if (s === 'pending' || s === 'menunggu') {
+        return '<span class="badge badge-warning">Menunggu</span>';
+      }
+      if (s === 'gagal' || s === 'ditolak') {
+        return '<span class="badge badge-danger">Gagal</span>';
+      }
+      return `<span class="badge badge-primary">${status}</span>`;
+    }
+
+    function namaKelasDariItems(items) {
+      return (items || []).map(function (kelasId) {
+        var kelas = getById('kelas', kelasId);
+        return kelas ? kelas.judul : null;
+      }).filter(Boolean).join(', ') || '-';
+    }
+
+    function renderKPI() {
+      var users = getAll('users');
+      var kelas = getAll('kelas');
+      var transaksi = getAll('transaksi');
+
+      document.getElementById('kpi-siswa').textContent =
+        users.filter(function (u) { return u.role === 'siswa'; }).length;
+      document.getElementById('kpi-instruktur').textContent =
+        users.filter(function (u) { return u.role === 'instruktur'; }).length;
+      document.getElementById('kpi-kelas').textContent =
+        kelas.filter(function (k) { return k.status === 'published'; }).length;
+      document.getElementById('kpi-transaksi').textContent = transaksi.length;
+    }
+
+    function ambilTransaksiTerbaru() {
+      return getAll('transaksi')
+        .slice()
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        })
+        .slice(0, 5);
+    }
+
+    function renderTransaksiTerbaru() {
+      var tbody = document.getElementById('transaksi-body');
+      var list = ambilTransaksiTerbaru();
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5">
+              <div class="empty-state empty-state-inline"><p>Belum ada transaksi.</p></div>
+            </td>
+          </tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(function (t) {
+        var pembeli = getById('users', t.userId);
+        var namaUser = pembeli ? pembeli.nama : 'User tidak ditemukan';
+        return `
+          <tr>
+            <td>${formatTanggal(t.tanggal)}</td>
+            <td>${namaUser}</td>
+            <td>${namaKelasDariItems(t.items)}</td>
+            <td>${formatRupiah(t.total)}</td>
+            <td>${statusBadge(t.status)}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    function ambilKelasPending() {
+      return getAll('kelas')
+        .filter(function (k) { return k.status === 'pending'; })
+        .slice(0, 5);
+    }
+
+    function renderKelasPending() {
+      var tbody = document.getElementById('pending-body');
+      var list = ambilKelasPending();
+
+      if (list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center text-gray">Tidak ada kelas yang menunggu persetujuan.</td>
+          </tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(function (k) {
+        return `
+          <tr>
+            <td><strong>${k.judul}</strong></td>
+            <td>${k.instrukturNama || '-'}</td>
+            <td>${k.kategoriNama || '-'}</td>
+            <td>${formatRupiah(k.harga)}</td>
+          </tr>`;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moderasi Ulasan — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota5.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Moderasi Ulasan</h1>
+        <p class="text-gray">Kelola ulasan siswa yang melanggar ketentuan</p>
+      </div>
+
+      <div class="filter-bar moderasi-filter">
+        <div class="form-group">
+          <label class="form-label" for="filter-kelas">Filter Kelas</label>
+          <select id="filter-kelas" class="form-input">
+            <option value="">Semua Kelas</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="filter-rating">Filter Rating</label>
+          <select id="filter-rating" class="form-input">
+            <option value="">Semua Rating</option>
+            <option value="5">5 Bintang</option>
+            <option value="4">4 Bintang</option>
+            <option value="3">3 Bintang</option>
+            <option value="2">2 Bintang</option>
+            <option value="1">1 Bintang</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="table-area"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarAdmin('moderasi-ulasan');
+
+      
+
+      isiFilterKelas();
+
+      document.getElementById('filter-kelas').addEventListener('change', function () {
+        renderTabelUlasan(ambilUlasan());
+      });
+      document.getElementById('filter-rating').addEventListener('change', function () {
+        renderTabelUlasan(ambilUlasan());
+      });
+
+      renderTabelUlasan(ambilUlasan());
+    }
+
+    function bintangHtml(rating) {
+      var n = Math.max(0, Math.min(5, parseInt(rating, 10) || 0));
+      var stars = '';
+      for (var i = 0; i < n; i++) stars += '★';
+      for (var j = n; j < 5; j++) stars += '☆';
+      return `<span class="stars">${stars}</span>`;
+    }
+
+    function namaKelas(kelasId) {
+      var kelas = getById('kelas', kelasId);
+      return kelas ? kelas.judul : '-';
+    }
+
+    function isiFilterKelas() {
+      var select = document.getElementById('filter-kelas');
+      getAll('kelas').forEach(function (k) {
+        var opt = document.createElement('option');
+        opt.value = k.id;
+        opt.textContent = k.judul;
+        select.appendChild(opt);
+      });
+    }
+
+    function ambilUlasan() {
+      var kelasId = document.getElementById('filter-kelas').value;
+      var rating = document.getElementById('filter-rating').value;
+
+      return getAll('ulasan').filter(function (u) {
+        if (kelasId && u.kelasId !== kelasId) return false;
+        if (rating && String(u.rating) !== rating) return false;
+        return true;
+      });
+    }
+
+    function hapusUlasan(id) {
+      if (!confirm('Hapus ulasan ini? Tindakan tidak dapat dibatalkan.')) return;
+      deleteItem('ulasan', id);
+      renderTabelUlasan(ambilUlasan());
+    }
+
+    function renderTabelUlasan(list) {
+      var area = document.getElementById('table-area');
+
+      if (list.length === 0) {
+        area.innerHTML = `
+          <div class="empty-state card">
+            <p>Tidak ada ulasan untuk ditampilkan.</p>
+          </div>`;
+        return;
+      }
+
+      var rows = list.map(function (u) {
+        return `
+          <tr>
+            <td><strong>${u.userName || '-'}</strong></td>
+            <td>${namaKelas(u.kelasId)}</td>
+            <td>${bintangHtml(u.rating)}</td>
+            <td class="moderasi-komentar">${u.komentar || '-'}</td>
+            <td>${formatTanggal(u.tanggal)}</td>
+            <td class="table-aksi">
+              <button type="button" class="btn btn-danger btn-sm" data-aksi="hapus" data-id="${u.id}">Hapus</button>
+            </td>
+          </tr>`;
+      }).join('');
+
+      area.innerHTML = `
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nama Siswa</th>
+                <th>Nama Kelas</th>
+                <th>Rating</th>
+                <th>Komentar</th>
+                <th>Tanggal</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+
+      area.querySelectorAll('button[data-aksi="hapus"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          hapusUlasan(this.getAttribute('data-id'));
+        });
+      });
+    }
+  </script>
+</body>
+</html>

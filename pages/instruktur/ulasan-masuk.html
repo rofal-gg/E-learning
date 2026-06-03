@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ulasan Masuk — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Ulasan Masuk</h1>
+        <p class="text-gray">Rating dan komentar siswa untuk kelas Anda</p>
+      </div>
+
+      <div class="filter-kelas-ulasan">
+        <label class="form-label" for="filter-kelas">Filter Kelas</label>
+        <select id="filter-kelas" class="form-input">
+          <option value="">Semua Kelas</option>
+        </select>
+      </div>
+
+      <div id="ulasan-list"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+    var filterKelasId = '';
+
+    if (user) {
+      renderSidebarInstruktur('ulasan-masuk');
+
+      
+
+      document.getElementById('filter-kelas').addEventListener('change', function () {
+        filterKelasId = this.value;
+        renderDaftarUlasan();
+      });
+
+      isiFilterKelas();
+      renderDaftarUlasan();
+    }
+
+    function renderBintang(rating) {
+      var n = Math.max(0, Math.min(5, parseInt(rating, 10) || 0));
+      var stars = '';
+      for (var i = 0; i < n; i++) stars += '⭐';
+      for (var j = n; j < 5; j++) stars += '☆';
+      return stars;
+    }
+
+    function ambilKelasSaya() {
+      return getAll('kelas').filter(function (k) {
+        return sameUserId(k.instrukturId, user.id);
+      });
+    }
+
+    function ambilMapKelas() {
+      var map = {};
+      ambilKelasSaya().forEach(function (k) { map[k.id] = k; });
+      return map;
+    }
+
+    function isiFilterKelas() {
+      var select = document.getElementById('filter-kelas');
+      var kelasList = ambilKelasSaya();
+      select.innerHTML =
+        '<option value="">Semua Kelas</option>' +
+        kelasList.map(function (k) {
+          return `<option value="${k.id}">${k.judul}</option>`;
+        }).join('');
+    }
+
+    function renderDaftarUlasan() {
+      var container = document.getElementById('ulasan-list');
+      var kelasMap = ambilMapKelas();
+      var kelasIds = Object.keys(kelasMap);
+
+      var list = getAll('ulasan')
+        .filter(function (u) { return kelasIds.indexOf(u.kelasId) !== -1; })
+        .filter(function (u) {
+          return !filterKelasId || u.kelasId === filterKelasId;
+        })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Belum ada ulasan untuk kelas Anda.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(function (u) {
+        var kelas = kelasMap[u.kelasId];
+        var namaKelas = kelas ? kelas.judul : 'Kelas';
+        return `
+          <article class="card ulasan-masuk-item">
+            <div class="ulasan-masuk-item-header">
+              <span class="badge badge-primary">${namaKelas}</span>
+              <span class="ulasan-tanggal">${formatTanggal(u.tanggal)}</span>
+            </div>
+            <p><strong>${u.userName || 'Siswa'}</strong></p>
+            <p class="stars" aria-label="Rating ${u.rating} dari 5">${renderBintang(u.rating)}</p>
+            <p class="ulasan-komentar">${u.komentar || '-'}</p>
+          </article>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

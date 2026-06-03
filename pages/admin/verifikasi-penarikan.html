@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Penarikan — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota5.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Verifikasi Penarikan</h1>
+        <p class="text-gray">Setujui atau tolak permintaan penarikan saldo instruktur</p>
+      </div>
+
+      <div class="filter-bar">
+        <label class="form-label" for="filter-status" style="margin:0;">Filter Status</label>
+        <select id="filter-status" class="form-input filter-status-select">
+          <option value="">Semua</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+
+      <div id="table-area"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+    var filterStatus = '';
+
+    if (user) {
+      renderSidebarAdmin('verifikasi-penarikan');
+
+      
+
+      document.getElementById('filter-status').addEventListener('change', function () {
+        filterStatus = this.value;
+        renderTabelPenarikan(ambilPenarikan(filterStatus));
+      });
+
+      renderTabelPenarikan(ambilPenarikan(filterStatus));
+    }
+
+    function formatTanggalJam(iso) {
+      if (!iso) return '-';
+      return new Date(iso).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function badgeStatusPenarikan(status) {
+      if (status === 'approved') {
+        return '<span class="badge badge-success status-sukses">Approved</span>';
+      }
+      if (status === 'rejected') {
+        return '<span class="badge badge-danger">Rejected</span>';
+      }
+      return '<span class="badge badge-warning status-pending">Pending</span>';
+    }
+
+    function ambilPenarikan(status) {
+      return getAll('penarikan')
+        .filter(function (p) {
+          if (!status) return true;
+          return (p.status || 'pending') === status;
+        })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+    }
+
+    function setujuiPenarikan(id) {
+      var p = getById('penarikan', id);
+      if (!p || p.status !== 'pending') return;
+      updateItem('penarikan', id, { status: 'approved' });
+      createNotifikasi(p.instrukturId, 'Penarikan saldo kamu telah disetujui.');
+      renderTabelPenarikan(ambilPenarikan(filterStatus));
+    }
+
+    function tolakPenarikan(id) {
+      var p = getById('penarikan', id);
+      if (!p || p.status !== 'pending') return;
+      var alasan = prompt('Masukkan alasan penolakan penarikan:');
+      if (alasan === null) return;
+      alasan = alasan.trim();
+      if (!alasan) {
+        alert('Alasan penolakan wajib diisi.');
+        return;
+      }
+
+      updateItem('penarikan', id, { status: 'rejected', alasanTolak: alasan });
+
+      var instruktur = getById('users', p.instrukturId);
+      if (instruktur) {
+        var saldoBaru = (instruktur.saldo || 0) + (p.nominal || 0);
+        updateItem('users', p.instrukturId, { saldo: saldoBaru });
+      }
+
+      createNotifikasi(
+        p.instrukturId,
+        'Penarikan saldo ditolak. Alasan: ' + alasan + '. Saldo telah dikembalikan.'
+      );
+      renderTabelPenarikan(ambilPenarikan(filterStatus));
+    }
+
+    function renderTabelPenarikan(list) {
+      var area = document.getElementById('table-area');
+
+      if (list.length === 0) {
+        area.innerHTML = `
+          <div class="empty-state card">
+            <p>Belum ada permintaan penarikan.</p>
+          </div>`;
+        return;
+      }
+
+      var rows = list.map(function (p) {
+        var instruktur = getById('users', p.instrukturId);
+        var namaInstruktur = instruktur ? instruktur.nama : 'Instruktur tidak ditemukan';
+        var status = p.status || 'pending';
+        var aksi = '';
+
+        if (status === 'pending') {
+          aksi = `
+            <button type="button" class="btn btn-primary btn-sm" data-aksi="setujui" data-id="${p.id}">Setujui</button>
+            <button type="button" class="btn btn-danger btn-sm" data-aksi="tolak" data-id="${p.id}">Tolak</button>`;
+        } else {
+          aksi = '<span class="text-gray">—</span>';
+        }
+
+        return `
+          <tr>
+            <td><strong>${namaInstruktur}</strong></td>
+            <td>Rp ${Number(p.nominal || 0).toLocaleString('id-ID')}</td>
+            <td>${p.bank || '-'}</td>
+            <td>${p.norek || '-'}</td>
+            <td>${formatTanggalJam(p.tanggal)}</td>
+            <td>${badgeStatusPenarikan(status)}</td>
+            <td class="table-aksi">${aksi}</td>
+          </tr>`;
+      }).join('');
+
+      area.innerHTML = `
+        <div class="card table-wrap">
+          <table class="table verif-table">
+            <thead>
+              <tr>
+                <th>Instruktur</th>
+                <th>Nominal</th>
+                <th>Bank</th>
+                <th>No. Rekening</th>
+                <th>Tanggal</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+
+      area.querySelectorAll('button[data-aksi]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-id');
+          var aksi = this.getAttribute('data-aksi');
+          if (aksi === 'setujui') setujuiPenarikan(id);
+          if (aksi === 'tolak') tolakPenarikan(id);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

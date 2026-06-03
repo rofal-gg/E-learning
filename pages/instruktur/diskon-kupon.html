@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diskon & Kupon — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Diskon &amp; Kupon</h1>
+        <p class="text-gray">Buat dan kelola kode kupon untuk kelas Anda</p>
+      </div>
+
+      <div id="alert-box" class="alert-box-wrap"></div>
+
+      <section class="card kupon-form">
+        <h2>Buat Kupon Baru</h2>
+        <form id="form-kupon">
+          <div class="grid-2 kupon-form-grid">
+            <div class="form-group">
+              <label class="form-label" for="input-kode">Kode Kupon</label>
+              <input type="text" id="input-kode" class="form-input" placeholder="CONTOH10" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-diskon">Diskon (%)</label>
+              <input type="number" id="input-diskon" class="form-input" min="1" max="100" placeholder="10" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="select-kelas">Kelas</label>
+              <select id="select-kelas" class="form-input" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-expired">Tanggal Kadaluarsa</label>
+              <input type="date" id="input-expired" class="form-input" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary kupon-form-submit">Buat Kupon</button>
+        </form>
+      </section>
+
+      <div class="card table-wrap kupon-table">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Kode</th>
+              <th>Diskon</th>
+              <th>Kelas</th>
+              <th>Kadaluarsa</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabel-kupon-body"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarInstruktur('diskon-kupon');
+
+      
+
+      document.getElementById('input-kode').addEventListener('input', function () {
+        this.value = this.value.toUpperCase();
+      });
+
+      document.getElementById('form-kupon').addEventListener('submit', function (e) {
+        e.preventDefault();
+        buatKupon();
+      });
+
+      isiSelectKelas();
+      renderTabelKupon();
+    }
+
+    function ambilKelasSaya() {
+      return getAll('kelas').filter(function (k) {
+        return sameUserId(k.instrukturId, user.id);
+      });
+    }
+
+    function ambilMapKelas() {
+      var map = {};
+      ambilKelasSaya().forEach(function (k) { map[k.id] = k; });
+      return map;
+    }
+
+    function kuponKadaluarsa(expired) {
+      if (!expired) return false;
+      var d = new Date(expired);
+      d.setHours(23, 59, 59, 999);
+      return d < new Date();
+    }
+
+    function badgeStatusKupon(expired) {
+      if (kuponKadaluarsa(expired)) {
+        return '<span class="badge badge-danger">Kadaluarsa</span>';
+      }
+      return '<span class="badge badge-success">Aktif</span>';
+    }
+
+    function isiSelectKelas() {
+      var select = document.getElementById('select-kelas');
+      var kelasList = ambilKelasSaya();
+      if (kelasList.length === 0) {
+        select.innerHTML = '<option value="">Belum ada kelas</option>';
+        select.disabled = true;
+        return;
+      }
+      select.disabled = false;
+      select.innerHTML = kelasList.map(function (k) {
+        return `<option value="${k.id}">${k.judul}</option>`;
+      }).join('');
+    }
+
+    function renderTabelKupon() {
+      var tbody = document.getElementById('tabel-kupon-body');
+      var kelasMap = ambilMapKelas();
+      var list = getAll('kupon')
+        .filter(function (k) { return sameUserId(k.instrukturId, user.id); })
+        .sort(function (a, b) {
+          return new Date(b.expired || 0) - new Date(a.expired || 0);
+        });
+
+      if (list.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="6" class="text-center text-gray">Belum ada kupon. Buat kupon pertama Anda!</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(function (k) {
+        var kelas = kelasMap[k.kelasId];
+        var namaKelas = kelas ? kelas.judul : k.kelasId;
+        return `
+          <tr>
+            <td><span class="kupon-kode-display">${k.kode}</span></td>
+            <td>${k.diskon}%</td>
+            <td>${namaKelas}</td>
+            <td>${formatTanggal(k.expired)}</td>
+            <td>${badgeStatusKupon(k.expired)}</td>
+            <td><button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="${k.id}">Hapus</button></td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.querySelectorAll('.btn-hapus').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (!confirm('Hapus kupon ini?')) return;
+          deleteItem('kupon', btn.getAttribute('data-id'));
+          renderTabelKupon();
+        });
+      });
+    }
+
+    function buatKupon() {
+      var kode = document.getElementById('input-kode').value.trim().toUpperCase();
+      var diskon = parseInt(document.getElementById('input-diskon').value, 10);
+      var kelasId = document.getElementById('select-kelas').value;
+      var expired = document.getElementById('input-expired').value;
+
+      if (!kode || !kelasId || !expired) {
+        showAlert('alert-box', 'Lengkapi semua field.', 'danger');
+        return;
+      }
+      if (isNaN(diskon) || diskon < 1 || diskon > 100) {
+        showAlert('alert-box', 'Diskon harus antara 1–100%.', 'danger');
+        return;
+      }
+
+      var duplikat = getAll('kupon').some(function (k) {
+        return k.kode.toUpperCase() === kode;
+      });
+      if (duplikat) {
+        showAlert('alert-box', 'Kode kupon sudah digunakan.', 'danger');
+        return;
+      }
+
+      createItem('kupon', {
+        id: generateId('kp'),
+        kode: kode,
+        diskon: diskon,
+        kelasId: kelasId,
+        instrukturId: user.id,
+        expired: expired
+      });
+
+      document.getElementById('form-kupon').reset();
+      isiSelectKelas();
+      renderTabelKupon();
+    }
+  </script>
+</body>
+</html>

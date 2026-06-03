@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diskusi — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <div>
+          <a href="#" id="link-kembali" class="text-link-sm">← Kembali ke Ruang Belajar</a>
+          <h1 id="page-title">Diskusi Kelas</h1>
+          <p class="text-gray" id="kelas-subtitle"></p>
+        </div>
+      </div>
+
+      <div id="diskusi-list" class="diskusi-list"></div>
+
+      <section class="card diskusi-form-card">
+        <h2>Kirim Pertanyaan</h2>
+        <form id="form-diskusi">
+          <div class="form-group">
+            <label class="form-label" for="input-pertanyaan">Pertanyaan Anda</label>
+            <textarea id="input-pertanyaan" class="form-input" rows="4" placeholder="Tulis pertanyaan tentang materi kelas ini..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Kirim Pertanyaan</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+    var kelasId = getQueryParam('kelasId') || getQueryParam('id');
+
+    setActiveSidebar();
+
+    
+
+    // format tanggal diskusi
+    // formatTanggal — pakai dari auth.js (sudah tersedia global)
+
+    // ambil inisial nama untuk avatar
+    function ambilInisial(nama) {
+      if (!nama) return '?';
+      return nama.split(' ').map(function (n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
+    }
+
+    // tampilkan daftar diskusi kelas
+    function tampilkanDiskusi() {
+      var container = document.getElementById('diskusi-list');
+      var list = getAll('diskusi')
+        .filter(function (d) { return String(d.kelasId) === String(kelasId); })
+        .sort(function (a, b) {
+          return new Date(b.tanggal) - new Date(a.tanggal);
+        });
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <p>Belum ada diskusi. Jadilah yang pertama bertanya!</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(function (d) {
+        var balasanHtml = (d.balasan || []).map(function (b) {
+          return `
+            <div class="diskusi-balasan">
+              <div class="diskusi-avatar diskusi-avatar-sm">${ambilInisial(b.userName)}</div>
+              <div class="diskusi-balasan-body">
+                <strong>${b.userName}</strong>
+                <span class="diskusi-tanggal">${formatTanggal(b.tanggal)}</span>
+                <p>${b.teks}</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        var blokBalasan = balasanHtml
+          ? `<div class="diskusi-balasan-list"><h3>Balasan</h3>${balasanHtml}</div>`
+          : '';
+
+        return `
+          <article class="card diskusi-item">
+            <div class="diskusi-item-header">
+              <div class="diskusi-avatar">${ambilInisial(d.userName)}</div>
+              <div class="diskusi-item-meta">
+                <strong>${d.userName}</strong>
+                <span class="diskusi-tanggal">${formatTanggal(d.tanggal)}</span>
+              </div>
+            </div>
+            <p class="diskusi-pertanyaan">${d.pertanyaan}</p>
+            ${blokBalasan}
+          </article>
+        `;
+      }).join('');
+    }
+
+    if (!kelasId) {
+      window.location.href = 'dashboard.html';
+    } else {
+      var kelas = getById('kelas', kelasId);
+      if (!kelas) {
+        window.location.href = 'dashboard.html';
+      } else {
+        document.title = 'Diskusi — ' + kelas.judul;
+        document.getElementById('page-title').textContent = 'Diskusi: ' + kelas.judul;
+        document.getElementById('kelas-subtitle').textContent = 'Instruktur: ' + kelas.instrukturNama;
+        document.getElementById('link-kembali').href =
+          'ruang-belajar.html?id=' + encodeURIComponent(kelasId);
+
+        tampilkanDiskusi();
+
+        document.getElementById('form-diskusi').addEventListener('submit', function (e) {
+          e.preventDefault();
+          var pertanyaan = document.getElementById('input-pertanyaan').value.trim();
+          if (!pertanyaan) return;
+
+          createItem('diskusi', {
+            id: generateId('d'),
+            kelasId: kelasId,
+            userId: user.id,
+            userName: user.nama,
+            pertanyaan: pertanyaan,
+            balasan: [],
+            tanggal: new Date().toISOString()
+          });
+
+          document.getElementById('input-pertanyaan').value = '';
+          tampilkanDiskusi();
+        });
+      }
+    }
+  </script>
+</body>
+</html>

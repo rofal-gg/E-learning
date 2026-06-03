@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Pendapatan — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Laporan Pendapatan</h1>
+        <p class="text-gray">Ringkasan penjualan dan pendapatan dari kelas Anda</p>
+      </div>
+
+      <div class="grid-3 pendapatan-summary">
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-total-pendapatan">Rp 0</div>
+          <div class="kpi-label">Total Pendapatan</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-saldo">Rp 0</div>
+          <div class="kpi-label">Saldo Tersedia</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-transaksi">0</div>
+          <div class="kpi-label">Total Transaksi</div>
+        </div>
+      </div>
+
+      <div class="card table-wrap pendapatan-table">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nama Kelas</th>
+              <th>Jumlah Terjual</th>
+              <th>Harga</th>
+              <th>Total Pendapatan</th>
+            </tr>
+          </thead>
+          <tbody id="tabel-pendapatan-body"></tbody>
+        </table>
+      </div>
+
+      <p class="catatan-platform">
+        Pendapatan = 70% dari harga kelas (simulasi potongan platform 30%)
+      </p>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarInstruktur('laporan-pendapatan');
+
+      
+
+      renderTabelPendapatan(hitungPendapatan(ambilTransaksiInstruktur()));
+    }
+
+    function formatSaldoTampil(angka) {
+      var n = angka || 0;
+      return 'Rp ' + Number(n).toLocaleString('id-ID');
+    }
+
+    function ambilKelasSaya() {
+      return getAll('kelas').filter(function (k) {
+        return sameUserId(k.instrukturId, user.id);
+      });
+    }
+
+    // filter transaksi yang mengandung kelas milik instruktur
+    function ambilTransaksiInstruktur() {
+      var kelasIds = ambilKelasSaya().map(function (k) { return k.id; });
+      return getAll('transaksi').filter(function (t) {
+        if ((t.status || 'sukses') !== 'sukses') return false;
+        return (t.items || []).some(function (itemId) {
+          return kelasIds.indexOf(itemId) !== -1;
+        });
+      });
+    }
+
+    // hitung total pendapatan dan per kelas
+    function hitungPendapatan(transaksi) {
+      var kelasList = ambilKelasSaya();
+      var kelasMap = {};
+      var perKelas = {};
+
+      kelasList.forEach(function (k) {
+        kelasMap[k.id] = k;
+        perKelas[k.id] = { kelas: k, terjual: 0, pendapatan: 0 };
+      });
+
+      var kelasIds = kelasList.map(function (k) { return k.id; });
+      var totalPendapatan = 0;
+      var totalTransaksi = 0;
+
+      transaksi.forEach(function (t) {
+        var myItems = (t.items || []).filter(function (itemId) {
+          return kelasIds.indexOf(itemId) !== -1;
+        });
+        if (myItems.length === 0) return;
+
+        totalTransaksi++;
+        myItems.forEach(function (kelasId) {
+          var k = kelasMap[kelasId];
+          if (!k) return;
+          perKelas[kelasId].terjual++;
+          var share = Math.round((k.harga || 0) * 0.7);
+          perKelas[kelasId].pendapatan += share;
+          totalPendapatan += share;
+        });
+      });
+
+      return {
+        perKelas: kelasList.map(function (k) { return perKelas[k.id]; }),
+        totalPendapatan: totalPendapatan,
+        totalTransaksi: totalTransaksi
+      };
+    }
+
+    // render tabel + KPI total
+    function renderTabelPendapatan(data) {
+      var freshUser = getById('users', user.id) || user;
+      var saldo = freshUser.saldo || 0;
+
+      document.getElementById('kpi-total-pendapatan').textContent = formatSaldoTampil(data.totalPendapatan);
+      document.getElementById('kpi-saldo').textContent = formatSaldoTampil(saldo);
+      document.getElementById('kpi-transaksi').textContent = data.totalTransaksi;
+
+      var tbody = document.getElementById('tabel-pendapatan-body');
+      if (data.perKelas.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="4" class="text-center text-gray">Belum ada kelas.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.perKelas.map(function (row) {
+        return `
+          <tr>
+            <td><strong>${row.kelas.judul}</strong></td>
+            <td>${row.terjual}</td>
+            <td>${formatSaldoTampil(row.kelas.harga)}</td>
+            <td>${formatSaldoTampil(row.pendapatan)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

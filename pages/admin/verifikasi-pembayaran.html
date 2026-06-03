@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Pembayaran — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota5.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Verifikasi Pembayaran</h1>
+        <p class="text-gray">Monitor semua transaksi pembelian kelas di platform</p>
+      </div>
+
+      <div class="grid-2 kpi-row-spaced">
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-hari-ini">0</div>
+          <div class="kpi-label">Transaksi Hari Ini</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-pendapatan-platform">Rp 0</div>
+          <div class="kpi-label">Pendapatan Platform (30%)</div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div>
+          <label class="form-label" for="filter-dari">Dari Tanggal</label>
+          <input type="date" id="filter-dari" class="form-input">
+        </div>
+        <div>
+          <label class="form-label" for="filter-sampai">Sampai Tanggal</label>
+          <input type="date" id="filter-sampai" class="form-input">
+        </div>
+        <div class="filter-bar-end">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-filter">Reset</button>
+        </div>
+      </div>
+
+      <div id="table-area"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarAdmin('verifikasi-pembayaran');
+
+      
+
+      document.getElementById('filter-dari').addEventListener('change', renderSemua);
+      document.getElementById('filter-sampai').addEventListener('change', renderSemua);
+      document.getElementById('btn-reset-filter').addEventListener('click', function () {
+        document.getElementById('filter-dari').value = '';
+        document.getElementById('filter-sampai').value = '';
+        renderSemua();
+      });
+
+      renderSemua();
+    }
+
+    function formatRupiahAdmin(angka) {
+      return 'Rp ' + Number(angka || 0).toLocaleString('id-ID');
+    }
+
+    function formatTanggalJam(iso) {
+      if (!iso) return '-';
+      return new Date(iso).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function kunciTanggal(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+    }
+
+    function transaksiHariIni(iso) {
+      var hariIni = kunciTanggal(new Date().toISOString());
+      return kunciTanggal(iso) === hariIni;
+    }
+
+    function namaKelasDariItems(items) {
+      return (items || []).map(function (kelasId) {
+        var kelas = getById('kelas', kelasId);
+        return kelas ? kelas.judul : null;
+      }).filter(Boolean).join(', ') || '-';
+    }
+
+    function badgeStatusTransaksi(status) {
+      var s = (status || 'sukses').toLowerCase();
+      if (s === 'sukses' || s === 'lunas') {
+        return '<span class="badge badge-success status-sukses">Sukses</span>';
+      }
+      if (s === 'pending' || s === 'menunggu') {
+        return '<span class="badge badge-warning status-pending">Menunggu</span>';
+      }
+      if (s === 'gagal' || s === 'ditolak') {
+        return '<span class="badge badge-danger">Gagal</span>';
+      }
+      return `<span class="badge badge-primary">${status}</span>`;
+    }
+
+    function ambilTransaksi() {
+      var dari = document.getElementById('filter-dari').value;
+      var sampai = document.getElementById('filter-sampai').value;
+
+      return getAll('transaksi')
+        .filter(function (t) {
+          var key = kunciTanggal(t.tanggal);
+          if (!key) return true;
+          if (dari && key < dari) return false;
+          if (sampai && key > sampai) return false;
+          return true;
+        })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+    }
+
+    function renderKPI() {
+      var all = getAll('transaksi');
+      var hariIni = all.filter(function (t) { return transaksiHariIni(t.tanggal); }).length;
+      var totalSemua = all.reduce(function (sum, t) { return sum + (t.total || 0); }, 0);
+      var pendapatanPlatform = Math.round(totalSemua * 0.3);
+
+      document.getElementById('kpi-hari-ini').textContent = hariIni;
+      document.getElementById('kpi-pendapatan-platform').textContent = formatRupiahAdmin(pendapatanPlatform);
+    }
+
+    function renderTabelTransaksi(list) {
+      var area = document.getElementById('table-area');
+
+      if (list.length === 0) {
+        area.innerHTML = `
+          <div class="empty-state card">
+            <p>Belum ada transaksi untuk filter ini.</p>
+          </div>`;
+        return;
+      }
+
+      var rows = list.map(function (t) {
+        var pembeli = getById('users', t.userId);
+        var namaPembeli = pembeli ? pembeli.nama : 'User tidak ditemukan';
+        return `
+          <tr>
+            <td><code class="transaksi-id">${t.id}</code></td>
+            <td>${formatTanggalJam(t.tanggal)}</td>
+            <td>${namaPembeli}</td>
+            <td>${namaKelasDariItems(t.items)}</td>
+            <td>${t.metode || '-'}</td>
+            <td>${formatRupiahAdmin(t.total)}</td>
+            <td>${badgeStatusTransaksi(t.status)}</td>
+          </tr>`;
+      }).join('');
+
+      area.innerHTML = `
+        <div class="card table-wrap">
+          <table class="table verif-table">
+            <thead>
+              <tr>
+                <th>No. Transaksi</th>
+                <th>Tanggal</th>
+                <th>Nama Pembeli</th>
+                <th>Kelas</th>
+                <th>Metode</th>
+                <th>Total</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function renderSemua() {
+      renderKPI();
+      renderTabelTransaksi(ambilTransaksi());
+    }
+  </script>
+</body>
+</html>

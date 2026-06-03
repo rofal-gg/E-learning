@@ -1,0 +1,30 @@
+<!-- card-kelas.html — Template Card Kelas (Referensi) -->
+<!-- Dirender via JS: buatCardKelas(k, options) dari components.js -->
+<!-- fungsi ini dipanggil dalam loop untuk setiap kelas -->
+
+<!--
+  Penggunaan:
+  
+  container.innerHTML = kelasList.map(function(k) {
+    return buatCardKelas(k, {
+      basePath: '../../',       // path relatif ke root (default: '../../')
+      showLevel: true,          // tampilkan badge level (opsional)
+      detailPath: 'detail-kelas.html'  // path halaman detail (default: 'detail-kelas.html')
+    });
+  }).join('');
+-->
+
+<div class="card-kelas">
+  <img src="../../assets/images/placeholder.jpg" alt="Judul Kelas"
+       onerror="this.src='../../assets/images/placeholder.jpg'">
+  <div class="card-body">
+    <span class="badge badge-primary">Kategori</span>
+    <!-- opsional: <span class="badge badge-warning badge-gap">Level</span> -->
+    <h3>Judul Kelas</h3>
+    <p class="text-gray">Nama Instruktur</p>
+    <div class="card-kelas-footer">
+      <strong>Rp 150.000</strong>
+      <a href="detail-kelas.html?id=k001" class="btn btn-primary btn-sm">Lihat Kelas</a>
+    </div>
+  </div>
+</div>

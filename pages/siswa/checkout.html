@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Checkout</h1>
+        <p class="text-gray">Konfirmasi pesanan dan pilih metode pembayaran</p>
+      </div>
+
+      <div id="alert-box" class="alert-box-wrap"></div>
+      <div id="checkout-area"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+    var appliedKupon = null;
+    var savedKupon = sessionStorage.getItem('appliedKupon');
+    if (savedKupon) {
+      try { appliedKupon = JSON.parse(savedKupon); } catch (e) { appliedKupon = null; }
+    }
+
+    renderSidebarSiswa('cart');
+
+    
+
+    // ambil item keranjang user
+    function ambilItemCart() {
+      return getCartItemsForUser(user.id);
+    }
+
+    // hitung subtotal, diskon, dan total
+    function hitungTotal(items) {
+      var subtotal = items.reduce(function (sum, item) {
+        return sum + item.kelas.harga;
+      }, 0);
+      var diskon = hitungDiskonKupon(subtotal, items, appliedKupon);
+      var total = Math.max(0, subtotal - diskon);
+      return { subtotal: subtotal, diskon: diskon, total: total };
+    }
+
+    // tampilkan ringkasan pesanan dan form bayar
+    function renderRingkasan(items, angka) {
+      var area = document.getElementById('checkout-area');
+
+      if (items.length === 0) {
+        area.innerHTML = `
+          <div class="empty-state">
+            <p>Keranjang kosong. Tambahkan kelas terlebih dahulu.</p>
+            <a href="cart.html" class="btn btn-secondary">Kembali ke Keranjang</a>
+          </div>
+        `;
+        return;
+      }
+
+      var listItems = items.map(function (item) {
+        return `
+          <li class="checkout-order-item">
+            <span>${item.kelas.judul}</span>
+            <span>${formatRupiah(item.kelas.harga)}</span>
+          </li>
+        `;
+      }).join('');
+
+      var barisDiskon = angka.diskon > 0
+        ? `<div class="summary-row summary-discount"><span>Diskon kupon</span><span>- ${formatRupiah(angka.diskon)}</span></div>`
+        : '';
+
+      area.innerHTML = `
+        <div class="cart-layout checkout-layout">
+          <section class="card">
+            <h2 class="checkout-section-title">Ringkasan Pesanan</h2>
+            <ul class="checkout-order-list">${listItems}</ul>
+            ${barisDiskon}
+            <div class="summary-row total"><span>Total Pembayaran</span><span id="checkout-total">${formatRupiah(angka.total)}</span></div>
+          </section>
+          <aside class="card checkout-payment-card">
+            <h2 class="checkout-section-title">Metode Pembayaran</h2>
+            <form id="form-checkout">
+              <label class="payment-option">
+                <input type="radio" name="metode" value="Transfer Bank" checked> Transfer Bank
+              </label>
+              <label class="payment-option">
+                <input type="radio" name="metode" value="QRIS"> QRIS
+              </label>
+              <label class="payment-option">
+                <input type="radio" name="metode" value="Dompet Digital"> Dompet Digital
+              </label>
+              <p class="text-gray payment-note">Pembayaran disimulasikan — transaksi langsung berstatus sukses.</p>
+              <button type="submit" class="btn btn-primary btn-block" id="btn-bayar">Bayar Sekarang</button>
+              <a href="cart.html" class="btn btn-secondary btn-block checkout-back-link">Kembali ke Keranjang</a>
+            </form>
+          </aside>
+        </div>
+      `;
+
+      document.getElementById('form-checkout').addEventListener('submit', function (e) {
+        e.preventDefault();
+        prosesBayar(items, angka.total);
+      });
+    }
+
+    // buat transaksi, progres, notifikasi, lalu redirect invoice
+    function prosesBayar(items, total) {
+      var metodeEl = document.querySelector('input[name="metode"]:checked');
+      if (!metodeEl) {
+        showAlert('alert-box', 'Pilih metode pembayaran terlebih dahulu.', 'danger');
+        return;
+      }
+
+      var kelasIds = items.map(function (item) { return item.kelas.id; });
+      var transaksiId = generateId('t');
+
+      createItem('transaksi', {
+        id: transaksiId,
+        userId: user.id,
+        items: kelasIds,
+        total: total,
+        metode: metodeEl.value,
+        status: 'sukses',
+        tanggal: new Date().toISOString()
+      });
+
+      kelasIds.forEach(function (kelasId) {
+        var kelas = getById('kelas', kelasId);
+        if (kelas) {
+          updateItem('kelas', kelasId, { totalSiswa: (kelas.totalSiswa || 0) + 1 });
+          var share = Math.round((kelas.harga || 0) * 0.7);
+          if (share > 0 && kelas.instrukturId) {
+            var instruktur = getById('users', kelas.instrukturId);
+            if (instruktur) {
+              updateItem('users', kelas.instrukturId, {
+                saldo: (instruktur.saldo || 0) + share
+              });
+            }
+          }
+          notifyInstrukturKelasTerjual(kelas, user.nama, transaksiId);
+        }
+
+        var sudahAda = getAll('progres').some(function (p) {
+          return sameUserId(p.userId, user.id) && String(p.kelasId) === String(kelasId);
+        });
+        if (!sudahAda) {
+          createItem('progres', {
+            id: generateId('p'),
+            userId: user.id,
+            kelasId: kelasId,
+            babSelesai: [],
+            persen: 0
+          });
+        }
+      });
+
+      clearUserCart(user.id);
+      sessionStorage.removeItem('appliedKupon');
+      createNotifikasi(user.id, 'Pembelian berhasil! Kelas sudah bisa diakses.');
+      window.location.href = 'invoice.html?id=' + encodeURIComponent(transaksiId);
+    }
+
+    var itemsCheckout = ambilItemCart();
+    var angkaTotal = hitungTotal(itemsCheckout);
+    renderRingkasan(itemsCheckout, angkaTotal);
+  </script>
+</body>
+</html>

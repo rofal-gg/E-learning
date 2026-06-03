@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keranjang — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Keranjang Belanja</h1>
+        <p class="text-gray" id="cart-subtitle"></p>
+      </div>
+
+      <div id="alert-box" class="alert-box-wrap"></div>
+      <div id="cart-area"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+    var appliedKupon = null;
+
+    // render sidebar siswa
+    renderSidebarSiswa('cart');
+
+    // ambil item keranjang user saat ini
+    function ambilItemCart() {
+      var currentUser = getCurrentUser();
+      if (!currentUser) {
+        logout();
+        return [];
+      }
+      return getCartItemsForUser(currentUser.id);
+    }
+
+    // tampilkan isi keranjang dan ringkasan harga
+    function tampilkanKeranjang() {
+      var area = document.getElementById('cart-area');
+      var currentUser = getCurrentUser();
+      var items = ambilItemCart();
+
+      document.getElementById('cart-subtitle').textContent =
+        'Halo, ' + currentUser.nama + ' — ' + items.length + ' kelas di keranjang';
+
+      if (items.length === 0) {
+        appliedKupon = null;
+        sessionStorage.removeItem('appliedKupon');
+        area.innerHTML = `
+          <div class="empty-state">
+            <p>Keranjang kamu masih kosong.</p>
+            <p class="text-gray">Buka katalog, pilih kelas, lalu klik <strong>Tambah ke Keranjang</strong>.</p>
+            <a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>
+            <a href="detail-kelas.html?id=k001" class="btn btn-secondary" style="margin-left:8px;">Contoh: HTML &amp; CSS</a>
+          </div>
+        `;
+        return;
+      }
+
+      var subtotal = items.reduce(function (sum, item) {
+        return sum + item.kelas.harga;
+      }, 0);
+      var diskon = hitungDiskonKupon(subtotal, items, appliedKupon);
+      var total = Math.max(0, subtotal - diskon);
+
+      var barisDiskon = diskon > 0 && appliedKupon
+        ? `<div class="summary-row summary-discount"><span>Diskon (${appliedKupon.diskon}%)</span><span>- ${formatRupiah(diskon)}</span></div>`
+        : '';
+
+      var tableRows = items.map(function (item) {
+        return `
+          <tr>
+            <td><img class="table-img" src="../../${item.kelas.gambar}" alt="" onerror="this.src='../../assets/images/placeholder.jpg'"></td>
+            <td><strong>${item.kelas.judul}</strong><br><span class="text-gray">${item.kelas.instrukturNama}</span></td>
+            <td>${formatRupiah(item.kelas.harga)}</td>
+            <td><button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="${item.cart.id}">Hapus</button></td>
+          </tr>
+        `;
+      }).join('');
+
+      area.innerHTML = `
+        <div class="cart-layout">
+          <div class="card table-wrap">
+            <table class="table">
+              <thead><tr><th></th><th>Kelas</th><th>Harga</th><th>Aksi</th></tr></thead>
+              <tbody>${tableRows}</tbody>
+            </table>
+          </div>
+          <aside class="card cart-summary">
+            <h3 class="cart-summary-title">Ringkasan</h3>
+            <div class="summary-row"><span>Subtotal</span><span>${formatRupiah(subtotal)}</span></div>
+            ${barisDiskon}
+            <div class="summary-row total"><span>Total</span><span id="total-harga">${formatRupiah(total)}</span></div>
+            <div class="form-group kupon-form-group">
+              <label class="form-label" for="input-kupon">Kode Kupon</label>
+              <div class="kupon-input-row">
+                <input type="text" id="input-kupon" class="form-input" placeholder="Coba: EDUKITA10">
+                <button type="button" id="btn-kupon" class="btn btn-secondary btn-sm">Pakai</button>
+              </div>
+            </div>
+            <a href="checkout.html" class="btn btn-primary btn-block checkout-link">Lanjut ke Checkout</a>
+          </aside>
+        </div>
+      `;
+
+        document.querySelectorAll('.btn-hapus').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (confirm('Hapus kelas dari keranjang?')) {
+              deleteItem('cart', this.getAttribute('data-id'));
+              tampilkanKeranjang();
+            }
+          });
+        });
+
+        document.getElementById('btn-kupon').addEventListener('click', function () {
+          var kode = document.getElementById('input-kupon').value.trim().toUpperCase();
+          if (!kode) {
+            showAlert('alert-box', 'Masukkan kode kupon.', 'danger');
+            return;
+          }
+          var kupon = getAll('kupon').find(function (k) {
+            return String(k.kode).toUpperCase() === kode;
+          });
+          if (!kupon) {
+            appliedKupon = null;
+            sessionStorage.removeItem('appliedKupon');
+            showAlert('alert-box', 'Kode kupon tidak valid.', 'danger');
+            tampilkanKeranjang();
+            return;
+          }
+          if (kupon.expired && new Date(kupon.expired) < new Date()) {
+            appliedKupon = null;
+            sessionStorage.removeItem('appliedKupon');
+            showAlert('alert-box', 'Kupon sudah kadaluarsa.', 'danger');
+            tampilkanKeranjang();
+            return;
+          }
+          appliedKupon = kupon;
+          sessionStorage.setItem('appliedKupon', JSON.stringify(kupon));
+          showAlert('alert-box', 'Kupon berhasil diterapkan! Diskon ' + kupon.diskon + '%', 'success');
+          tampilkanKeranjang();
+        });
+
+        if (appliedKupon) {
+          document.getElementById('input-kupon').value = appliedKupon.kode;
+        }
+    }
+
+    var savedKupon = sessionStorage.getItem('appliedKupon');
+    if (savedKupon) {
+      try { appliedKupon = JSON.parse(savedKupon); } catch (e) { appliedKupon = null; }
+    }
+
+    tampilkanKeranjang();
+  </script>
+</body>
+</html>

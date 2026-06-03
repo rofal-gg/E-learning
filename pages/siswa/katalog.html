@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Katalog Kelas — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+</head>
+<body class="public-layout">
+
+  <!-- Navbar (dirender via komponen) -->
+  <div id="navbar-placeholder"></div>
+
+  <main class="section catalog-main">
+    <div class="container">
+      <div class="page-header-flex">
+        <h1>Katalog Kelas</h1>
+        <p class="page-meta"><span id="total-kelas">0</span> kelas tersedia</p>
+      </div>
+
+      <div class="filter-bar">
+        <select id="filter-kategori" class="form-input">
+          <option value="">Semua Kategori</option>
+        </select>
+        <select id="filter-level" class="form-input">
+          <option value="">Semua Level</option>
+          <option value="Pemula">Pemula</option>
+          <option value="Menengah">Menengah</option>
+          <option value="Mahir">Mahir</option>
+        </select>
+        <select id="filter-harga" class="form-input">
+          <option value="">Semua Harga</option>
+          <option value="gratis">Gratis</option>
+          <option value="berbayar">Berbayar</option>
+        </select>
+        <input type="text" id="filter-search" class="form-input filter-search" placeholder="Cari judul kelas...">
+      </div>
+
+      <div id="grid-kelas" class="grid-3"></div>
+    </div>
+  </main>
+
+  <!-- Footer (dirender via komponen) -->
+  <div id="footer-placeholder"></div>
+
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../components/components.js"></script>
+  <script>
+    initStorage();
+
+    // render navbar dan footer
+    renderNavbarPublik({ basePath: '../../', activeLink: 'katalog' });
+    renderFooter({ basePath: '../../' });
+
+    // isi dropdown filter kategori
+    function isiFilterKategori() {
+      var select = document.getElementById('filter-kategori');
+      getAll('categories').forEach(function (cat) {
+        var opt = document.createElement('option');
+        opt.value = cat.id;
+        opt.textContent = cat.nama;
+        select.appendChild(opt);
+      });
+    }
+
+    // tampilkan grid hasil filter
+    function tampilkanGrid(kelasList) {
+      var container = document.getElementById('grid-kelas');
+      document.getElementById('total-kelas').textContent = kelasList.length;
+
+      if (kelasList.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state grid-empty-msg">
+            <p>Tidak ada kelas yang cocok dengan filter Anda.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = kelasList.map(function (k) {
+        return buatCardKelas(k, { basePath: '../../', showLevel: true, detailPath: 'detail-kelas.html' });
+      }).join('');
+    }
+
+    // filter kelas berdasarkan input form
+    function terapkanFilter() {
+      var kategori = document.getElementById('filter-kategori').value;
+      var level = document.getElementById('filter-level').value;
+      var harga = document.getElementById('filter-harga').value;
+      var search = document.getElementById('filter-search').value.trim().toLowerCase();
+
+      var list = getAll('kelas').filter(function (k) {
+        return k.status === 'published';
+      });
+
+      if (kategori) {
+        list = list.filter(function (k) {
+          return k.kategoriId === parseInt(kategori, 10);
+        });
+      }
+
+      if (level) {
+        list = list.filter(function (k) {
+          return k.level === level;
+        });
+      }
+
+      if (harga === 'gratis') {
+        list = list.filter(function (k) { return k.harga === 0; });
+      } else if (harga === 'berbayar') {
+        list = list.filter(function (k) { return k.harga > 0; });
+      }
+
+      if (search) {
+        list = list.filter(function (k) {
+          return k.judul.toLowerCase().indexOf(search) !== -1;
+        });
+      }
+
+      tampilkanGrid(list);
+    }
+
+    isiFilterKategori();
+
+    document.getElementById('filter-kategori').addEventListener('change', terapkanFilter);
+    document.getElementById('filter-level').addEventListener('change', terapkanFilter);
+    document.getElementById('filter-harga').addEventListener('change', terapkanFilter);
+    document.getElementById('filter-search').addEventListener('input', terapkanFilter);
+
+    terapkanFilter();
+  </script>
+</body>
+</html>

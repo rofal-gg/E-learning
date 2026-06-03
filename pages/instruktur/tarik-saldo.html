@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tarik Saldo — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Tarik Saldo</h1>
+        <p class="text-gray">Ajukan penarikan saldo ke rekening bank Anda</p>
+      </div>
+
+      <div id="alert-box" class="alert-box-wrap"></div>
+
+      <div class="card saldo-display-card">
+        <p class="text-gray saldo-display-label">Saldo Tersedia</p>
+        <p id="saldo-display" class="saldo-display">Rp 0</p>
+        <a href="riwayat-penarikan.html" class="text-link-sm saldo-info-link">Lihat riwayat penarikan →</a>
+      </div>
+
+      <section class="card form-tarik-saldo">
+        <h2>Form Penarikan</h2>
+        <form id="form-tarik">
+          <div class="form-group">
+            <label class="form-label" for="input-nominal">Nominal Penarikan</label>
+            <input type="number" id="input-nominal" class="form-input" min="50000" placeholder="Minimal Rp 50.000" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="select-bank">Bank</label>
+            <select id="select-bank" class="form-input" required>
+              <option value="BCA">BCA</option>
+              <option value="Mandiri">Mandiri</option>
+              <option value="BNI">BNI</option>
+              <option value="Bank Jatim">Bank Jatim</option>
+              <option value="DANA">DANA</option>
+              <option value="GOPAY">GOPAY</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-norek">Nomor Rekening</label>
+            <input type="text" id="input-norek" class="form-input" placeholder="1234567890" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Tarik Saldo</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+    var MIN_TARIK = 50000;
+
+    if (user) {
+      renderSidebarInstruktur('tarik-saldo');
+
+      
+
+      document.getElementById('form-tarik').addEventListener('submit', function (e) {
+        e.preventDefault();
+        prosesTarik();
+      });
+
+      tampilkanSaldo();
+    }
+
+    function formatSaldoTampil(angka) {
+      var n = angka || 0;
+      return 'Rp ' + Number(n).toLocaleString('id-ID');
+    }
+
+    // render saldo user
+    function tampilkanSaldo() {
+      var freshUser = getById('users', user.id) || user;
+      user = freshUser;
+      document.getElementById('saldo-display').textContent = formatSaldoTampil(freshUser.saldo);
+    }
+
+    function validasiForm(nominal, saldo, norek) {
+      if (isNaN(nominal) || nominal < MIN_TARIK) {
+        showAlert('alert-box', 'Nominal minimal Rp 50.000.', 'danger');
+        return false;
+      }
+      if (nominal > saldo) {
+        showAlert('alert-box', 'Nominal melebihi saldo tersedia.', 'danger');
+        return false;
+      }
+      if (!norek) {
+        showAlert('alert-box', 'Nomor rekening wajib diisi.', 'danger');
+        return false;
+      }
+      return true;
+    }
+
+    // createItem penarikan + update saldo user
+    function prosesTarik() {
+      var freshUser = getById('users', user.id) || user;
+      var saldo = freshUser.saldo || 0;
+      var nominal = parseInt(document.getElementById('input-nominal').value, 10);
+      var bank = document.getElementById('select-bank').value;
+      var norek = document.getElementById('input-norek').value.trim();
+
+      if (!validasiForm(nominal, saldo, norek)) return;
+
+      createItem('penarikan', {
+        id: generateId('wd'),
+        instrukturId: user.id,
+        nominal: nominal,
+        bank: bank,
+        norek: norek,
+        status: 'pending',
+        tanggal: new Date().toISOString()
+      });
+
+      updateItem('users', user.id, { saldo: saldo - nominal });
+
+      var updatedUser = getById('users', user.id);
+      sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      user = updatedUser;
+
+      showAlert('alert-box', 'Permintaan penarikan berhasil diajukan. Status: menunggu verifikasi admin.', 'success');
+      document.getElementById('form-tarik').reset();
+      tampilkanSaldo();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <script src="../../components/components.js"></script>
+</head>
+<body class="public-layout">
+
+  <!-- Navbar (dirender via komponen) -->
+  <div id="navbar-placeholder"></div>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <h1 class="section-title">Pertanyaan yang Sering Ditanyakan</h1>
+        <p class="section-subtitle">Temukan jawaban seputar penggunaan platform EduKita</p>
+
+        <div class="accordion" id="faq-accordion">
+          <div class="accordion-item">
+            <button type="button" class="accordion-header">
+              Bagaimana cara daftar akun?
+              <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+              Klik tombol Daftar di navbar, pilih Daftar sebagai Siswa atau Instruktur, lalu isi formulir registrasi. Setelah berhasil, Anda akan langsung masuk ke dashboard sesuai peran akun.
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <button type="button" class="accordion-header">
+              Bagaimana cara beli kelas?
+              <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+              Jelajahi katalog kelas, buka detail kelas yang diminati, lalu tambahkan ke keranjang. Lanjutkan ke checkout, pilih metode pembayaran, dan tunggu verifikasi admin untuk mengaktifkan akses kelas.
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <button type="button" class="accordion-header">
+              Apakah ada kelas gratis?
+              <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+              Ya, beberapa kelas memiliki harga Rp 0 dan dapat diakses langsung tanpa pembayaran. Cek label GRATIS pada kartu kelas di halaman katalog atau landing page.
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <button type="button" class="accordion-header">
+              Bagaimana cara menjadi instruktur?
+              <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+              Daftar melalui halaman Daftar sebagai Instruktur dan isi bidang keahlian Anda. Setelah login, Anda dapat membuat kelas, menyusun kurikulum, dan mengelola siswa dari dashboard instruktur.
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <button type="button" class="accordion-header">
+              Bagaimana jika lupa password?
+              <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+              Buka halaman Lupa Password dari menu login, masukkan email terdaftar, lalu ikuti simulasi reset password. Untuk demo project, gunakan halaman reset dengan parameter email di URL.
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <button type="button" class="accordion-header">
+              Kapan saya mendapat sertifikat?
+              <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+              Sertifikat tersedia setelah Anda menyelesaikan semua modul dan lulus kuis di kelas tersebut. Unduh atau cetak sertifikat dari halaman Sertifikat di dashboard siswa.
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <button type="button" class="accordion-header">
+              Bagaimana cara menggunakan kode kupon?
+              <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+              Saat checkout, masukkan kode kupon yang diberikan instruktur pada kolom diskon. Sistem akan menghitung ulang total pembayaran jika kode masih aktif dan valid.
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <button type="button" class="accordion-header">
+              Siapa yang bisa saya hubungi untuk bantuan?
+              <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+              Gunakan halaman notifikasi atau forum diskusi per kelas untuk pertanyaan terkait materi. Untuk masalah teknis akun atau pembayaran, hubungi admin melalui dashboard admin sistem.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer (dirender via komponen) -->
+  <div id="footer-placeholder"></div>
+
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script>
+    initStorage();
+    renderNavbarPublik({ basePath: '../../' });
+    renderFooter({ basePath: '../../' });
+
+
+    // aktifkan buka-tutup item FAQ
+    function pasangAccordion() {
+      document.querySelectorAll('.accordion-header').forEach(function (header) {
+        header.addEventListener('click', function () {
+          var item = this.parentElement;
+          var isOpen = item.classList.contains('open');
+          document.querySelectorAll('.accordion-item').forEach(function (el) {
+            el.classList.remove('open');
+            el.querySelector('.accordion-icon').textContent = '+';
+          });
+          if (!isOpen) {
+            item.classList.add('open');
+            this.querySelector('.accordion-icon').textContent = '−';
+          }
+        });
+      });
+    }
+
+    pasangAccordion();
+  </script>
+</body>
+</html>

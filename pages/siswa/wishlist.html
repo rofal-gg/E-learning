@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wishlist — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Wishlist</h1>
+        <p class="text-gray">Kelas yang kamu simpan untuk dibeli nanti</p>
+      </div>
+
+      <div id="alert-box" class="alert-box-wrap"></div>
+      <div id="wishlist-area"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarSiswa('wishlist');
+
+      
+
+      renderWishlist(ambilWishlist());
+    }
+
+    // ambil wishlist siswa beserta data kelas
+    function ambilWishlist() {
+      return getAll('wishlist')
+        .filter(function (w) { return sameUserId(w.userId, user.id); })
+        .map(function (w) {
+          return { wishlist: w, kelas: getById('kelas', w.kelasId) };
+        })
+        .filter(function (item) { return item.kelas; });
+    }
+
+    // render kartu wishlist
+    function renderWishlist(items) {
+      var area = document.getElementById('wishlist-area');
+
+      if (items.length === 0) {
+        area.innerHTML = `
+          <div class="empty-state">
+            <p>Wishlist kamu masih kosong.</p>
+            <a href="katalog.html" class="btn btn-primary">Jelajahi Katalog</a>
+          </div>
+        `;
+        return;
+      }
+
+      area.innerHTML = '<div class="grid-3">' + items.map(function (item) {
+        var k = item.kelas;
+        var w = item.wishlist;
+        var customFooter = `
+          <p class="wishlist-price"><strong>${formatRupiah(k.harga)}</strong></p>
+          <div class="wishlist-actions">
+            <button type="button" class="btn btn-primary btn-sm btn-beli" data-kelas-id="${k.id}">Beli Sekarang</button>
+            <button type="button" class="btn btn-danger btn-sm btn-hapus-wishlist" data-wishlist-id="${w.id}">Hapus dari Wishlist</button>
+          </div>
+        `;
+        return buatCardKelas(k, { basePath: '../../', customFooter: customFooter });
+      }).join('') + '</div>';
+
+      document.querySelectorAll('.btn-hapus-wishlist').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (confirm('Hapus kelas dari wishlist?')) {
+            deleteItem('wishlist', this.getAttribute('data-wishlist-id'));
+            renderWishlist(ambilWishlist());
+          }
+        });
+      });
+
+      document.querySelectorAll('.btn-beli').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var kelasId = this.getAttribute('data-kelas-id');
+          var hasil = addToCart(user.id, kelasId);
+          if (!hasil.sukses && hasil.pesan !== 'Kelas sudah ada di keranjang') {
+            showAlert('alert-box', hasil.pesan, 'danger');
+            return;
+          }
+          window.location.href = 'cart.html';
+        });
+      });
+    }
+  </script>
+</body>
+</html>

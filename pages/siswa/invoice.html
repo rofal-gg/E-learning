@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body class="invoice-page">
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder" class="no-print"></div>
+
+    <main class="main-content">
+      <div id="invoice-area"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    renderSidebarSiswa('riwayat-transaksi');
+
+    
+
+    // format tanggal transaksi untuk tampilan
+    function formatTanggalInvoice(iso) {
+      if (!iso) return '-';
+      return new Date(iso).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    // tampilkan invoice berdasarkan id di URL
+    function tampilkanInvoice() {
+      var area = document.getElementById('invoice-area');
+      var transaksiId = getQueryParam('id');
+
+      if (!transaksiId) {
+        area.innerHTML =
+          '<div class="empty-state no-print">' +
+            '<p>Invoice tidak ditemukan.</p>' +
+            '<a href="riwayat-transaksi.html" class="btn btn-secondary">Lihat Riwayat Transaksi</a>' +
+          '</div>';
+        return;
+      }
+
+      var transaksi = getById('transaksi', transaksiId);
+      if (!transaksi || !sameUserId(transaksi.userId, user.id)) {
+        area.innerHTML =
+          '<div class="empty-state no-print">' +
+            '<p>Transaksi tidak ditemukan atau bukan milik akun Anda.</p>' +
+            '<a href="dashboard.html" class="btn btn-secondary">Kembali ke Dashboard</a>' +
+          '</div>';
+        return;
+      }
+
+      var kelasItems = (transaksi.items || []).map(function (kelasId) {
+        var kelas = getById('kelas', kelasId);
+        return kelas ? { id: kelas.id, judul: kelas.judul, harga: kelas.harga } : null;
+      }).filter(Boolean);
+
+      var rows = kelasItems.map(function (item) {
+        return `
+          <tr>
+            <td>${item.judul}</td>
+            <td class="text-right">${formatRupiah(item.harga)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      var firstKelasId = kelasItems.length > 0 ? kelasItems[0].id : null;
+      var belajarHref = firstKelasId
+        ? 'ruang-belajar.html?id=' + encodeURIComponent(firstKelasId)
+        : 'katalog.html';
+
+      area.innerHTML = `
+        <div class="invoice-card card" id="invoice-print">
+          <div class="invoice-header">
+            <div>
+              <h1 class="invoice-title">Invoice Pembayaran</h1>
+              <p class="invoice-brand">Platform E-Learning EduKita</p>
+            </div>
+            <span class="badge badge-success invoice-status">LUNAS</span>
+          </div>
+          <div class="invoice-meta grid-2">
+            <div><strong>No. Transaksi</strong><br>${transaksi.id}</div>
+            <div><strong>Tanggal</strong><br>${formatTanggalInvoice(transaksi.tanggal)}</div>
+            <div><strong>Metode Pembayaran</strong><br>${transaksi.metode || '-'}</div>
+            <div><strong>Pembeli</strong><br>${user.nama}</div>
+          </div>
+          <div class="table-wrap invoice-table-wrap">
+            <table class="table invoice-table">
+              <thead><tr><th>Kelas Dibeli</th><th class="text-right">Harga</th></tr></thead>
+              <tbody>${rows || '<tr><td colspan="2">Tidak ada item</td></tr>'}</tbody>
+              <tfoot>
+                <tr class="invoice-total-row">
+                  <td><strong>Total</strong></td>
+                  <td class="text-right"><strong>${formatRupiah(transaksi.total)}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <p class="invoice-thanks">Terima kasih telah belajar bersama EduKita!</p>
+        </div>
+        <div class="invoice-actions no-print">
+          <a href="${belajarHref}" class="btn btn-primary">Mulai Belajar</a>
+          <button type="button" class="btn btn-secondary" id="btn-cetak">Cetak Invoice</button>
+          <a href="riwayat-transaksi.html" class="btn btn-secondary">Riwayat Transaksi</a>
+        </div>
+      `;
+
+      document.getElementById('btn-cetak').addEventListener('click', function () {
+        window.print();
+      });
+    }
+
+    tampilkanInvoice();
+  </script>
+</body>
+</html>

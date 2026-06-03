@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruang Belajar — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body class="layout-ruang-belajar">
+
+  <header class="ruang-topbar">
+    <a href="dashboard.html">← Kembali ke Dashboard</a>
+    <h1 class="ruang-topbar-title" id="kelas-judul-top">Ruang Belajar</h1>
+    <div class="ruang-topbar-actions">
+      <span class="navbar-user" id="ruang-user-name"></span>
+      <a href="#" id="btn-logout-top">Logout</a>
+    </div>
+  </header>
+
+  <div class="ruang-body">
+    <div class="ruang-main">
+      <h2 class="ruang-bab-title" id="bab-judul-aktif">Memuat materi…</h2>
+      <div class="video-wrapper">
+        <iframe id="video-frame" title="Video materi" allowfullscreen></iframe>
+      </div>
+      <div class="ruang-actions">
+        <button type="button" class="btn btn-primary" id="btn-selesai">Tandai Selesai</button>
+        <a href="#" class="btn btn-secondary" id="btn-kuis" style="display:none;">Kerjakan Kuis</a>
+        <a href="#" class="btn btn-secondary" id="btn-diskusi">Diskusi Kelas</a>
+        <span class="ruang-progress-text" id="progres-text"></span>
+      </div>
+    </div>
+    <aside class="ruang-sidebar">
+      <div class="bab-sidebar-header">
+        <h2>Daftar Bab</h2>
+      </div>
+      <ul class="bab-list" id="bab-list"></ul>
+    </aside>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+    var kelas = null;
+    var progres = null;
+    var silabus = [];
+    var babAktif = 0;
+
+    document.getElementById('ruang-user-name').textContent = user.nama;
+
+    document.getElementById('btn-logout-top').addEventListener('click', function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+    // ambil kelas dan progres dari query id
+    function ambilDataKelas() {
+      var kelasId = getQueryParam('id') || getQueryParam('kelasId');
+      if (!kelasId) return null;
+      if (!userOwnsKelas(user.id, kelasId)) return null;
+      var dataKelas = getById('kelas', kelasId);
+      if (!dataKelas) return null;
+
+      var dataProgres = getAll('progres').find(function (p) {
+        return sameUserId(p.userId, user.id) && String(p.kelasId) === String(kelasId);
+      });
+
+      if (!dataProgres) {
+        dataProgres = {
+          id: generateId('p'),
+          userId: user.id,
+          kelasId: dataKelas.id,
+          babSelesai: [],
+          persen: 0
+        };
+        createItem('progres', dataProgres);
+      }
+
+      return { kelas: dataKelas, progres: dataProgres };
+    }
+
+    // cek apakah satu bab sudah selesai
+    function babSudahSelesai(babKe) {
+      return (progres.babSelesai || []).indexOf(babKe) !== -1;
+    }
+
+    // update teks progres di bawah video
+    function updateTeksProgres() {
+      var total = silabus.length;
+      var selesai = (progres.babSelesai || []).length;
+      var persen = total > 0 ? Math.round((selesai / total) * 100) : 0;
+      document.getElementById('progres-text').textContent =
+        'Progres: ' + persen + '% (' + selesai + '/' + total + ' bab)';
+    }
+
+    // render daftar bab di panel kanan
+    function renderDaftarBab() {
+      document.getElementById('bab-list').innerHTML = silabus.map(function (bab, idx) {
+        var selesai = babSudahSelesai(bab.babKe);
+        var kelasAktif = idx === babAktif ? ' active' : '';
+        var kelasDone = selesai ? ' done' : '';
+        return `
+          <li class="bab-item${kelasAktif}${kelasDone}" data-idx="${idx}">
+            <span class="bab-item-check">${selesai ? '✓' : ''}</span>
+            <div class="bab-item-info">
+              <p class="bab-item-title">Bab ${bab.babKe}: ${bab.judul}</p>
+              <p class="bab-item-durasi">${bab.durasi}</p>
+            </div>
+          </li>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.bab-item').forEach(function (item) {
+        item.addEventListener('click', function () {
+          gantiBab(parseInt(this.getAttribute('data-idx'), 10));
+        });
+      });
+    }
+
+    // ganti bab aktif: video + highlight
+    function gantiBab(idx) {
+      babAktif = idx;
+      var bab = silabus[babAktif];
+      document.getElementById('bab-judul-aktif').textContent = 'Bab ' + bab.babKe + ': ' + bab.judul;
+      document.getElementById('video-frame').src = bab.videoUrl;
+
+      var selesai = babSudahSelesai(bab.babKe);
+      var btnSelesai = document.getElementById('btn-selesai');
+      var btnKuis = document.getElementById('btn-kuis');
+
+      if (selesai) {
+        btnSelesai.textContent = 'Sudah Selesai';
+        btnSelesai.disabled = true;
+        btnSelesai.classList.remove('btn-primary');
+        btnSelesai.classList.add('btn-secondary');
+        btnKuis.style.display = 'inline-block';
+        btnKuis.href = 'kuis.html?kelasId=' + encodeURIComponent(kelas.id) + '&bab=' + bab.babKe;
+      } else {
+        btnSelesai.textContent = 'Tandai Selesai';
+        btnSelesai.disabled = false;
+        btnSelesai.classList.add('btn-primary');
+        btnSelesai.classList.remove('btn-secondary');
+        btnKuis.style.display = 'none';
+      }
+
+      updateTeksProgres();
+      renderDaftarBab();
+    }
+
+    // tandai bab selesai dan simpan progres
+    function tandaiSelesai(babKe) {
+      if (babSudahSelesai(babKe)) return;
+
+      var babSelesai = (progres.babSelesai || []).slice();
+      if (babSelesai.indexOf(babKe) === -1) babSelesai.push(babKe);
+
+      var persen = silabus.length > 0
+        ? Math.round((babSelesai.length / silabus.length) * 100)
+        : 0;
+
+      updateItem('progres', progres.id, { babSelesai: babSelesai, persen: persen });
+      progres = getAll('progres').find(function (p) {
+        return p.id === progres.id;
+      }) || progres;
+      progres.babSelesai = babSelesai;
+      progres.persen = persen;
+
+      gantiBab(babAktif);
+    }
+
+    // inisialisasi halaman ruang belajar
+    function mulaiRuangBelajar() {
+      document.title = kelas.judul + ' — Ruang Belajar';
+      document.getElementById('kelas-judul-top').textContent = kelas.judul;
+      document.getElementById('btn-diskusi').href =
+        'diskusi.html?kelasId=' + encodeURIComponent(kelas.id);
+
+      if (silabus.length === 0) {
+        document.getElementById('bab-judul-aktif').textContent = 'Silabus belum tersedia';
+        document.getElementById('btn-selesai').style.display = 'none';
+        document.getElementById('bab-list').innerHTML =
+          '<li class="empty-state"><p>Belum ada bab untuk kelas ini.</p></li>';
+        return;
+      }
+
+      document.getElementById('btn-selesai').addEventListener('click', function () {
+        tandaiSelesai(silabus[babAktif].babKe);
+      });
+
+      gantiBab(0);
+    }
+
+    var data = ambilDataKelas();
+    if (!data) {
+      var idParam = getQueryParam('id') || getQueryParam('kelasId');
+      if (idParam) {
+        window.location.href = 'detail-kelas.html?id=' + encodeURIComponent(idParam);
+      } else {
+        window.location.href = 'katalog.html';
+      }
+    } else {
+      kelas = data.kelas;
+      progres = data.progres;
+      silabus = kelas.silabus || [];
+      mulaiRuangBelajar();
+    }
+  </script>
+</body>
+</html>

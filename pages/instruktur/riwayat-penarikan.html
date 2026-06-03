@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riwayat Penarikan — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header page-header-flex">
+        <div>
+          <h1>Riwayat Penarikan</h1>
+          <p class="text-gray">Daftar permintaan penarikan saldo Anda</p>
+        </div>
+        <a href="tarik-saldo.html" class="btn btn-primary btn-sm">Tarik Saldo</a>
+      </div>
+
+      <div class="card table-wrap penarikan-table">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Nominal</th>
+              <th>Bank</th>
+              <th>No. Rekening</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabel-penarikan-body"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarInstruktur('riwayat-penarikan');
+
+      
+
+      renderTabelPenarikan();
+    }
+
+    function formatSaldoTampil(angka) {
+      var n = angka || 0;
+      return 'Rp ' + Number(n).toLocaleString('id-ID');
+    }
+
+    function formatTanggalWaktu(iso) {
+      if (!iso) return '-';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function badgeStatusPenarikan(status) {
+      if (status === 'approved') {
+        return '<span class="badge badge-success">Approved</span>';
+      }
+      if (status === 'rejected') {
+        return '<span class="badge badge-danger">Rejected</span>';
+      }
+      return '<span class="badge badge-warning">Pending</span>';
+    }
+
+    function renderTabelPenarikan() {
+      var tbody = document.getElementById('tabel-penarikan-body');
+      var list = getAll('penarikan')
+        .filter(function (p) { return sameUserId(p.instrukturId, user.id); })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+
+      if (list.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="5" class="text-center text-gray">Belum ada riwayat penarikan.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(function (p) {
+        return `
+          <tr>
+            <td>${formatTanggalWaktu(p.tanggal)}</td>
+            <td>${formatSaldoTampil(p.nominal)}</td>
+            <td>${p.bank}</td>
+            <td>${p.norek}</td>
+            <td>${badgeStatusPenarikan(p.status)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Instruktur — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota5.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Manajemen Instruktur</h1>
+        <p class="text-gray">Kelola akun instruktur dan kelas mereka</p>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="search-input" class="form-input filter-search" placeholder="Cari nama atau email...">
+      </div>
+
+      <div id="table-area"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarAdmin('manajemen-instruktur');
+
+      
+
+      document.getElementById('search-input').addEventListener('input', function () {
+        renderTabelInstruktur(ambilInstruktur(this.value.trim()));
+      });
+
+      renderTabelInstruktur(ambilInstruktur(''));
+    }
+
+    function tanggalDaftarDariId(userId) {
+      if (!userId) return '-';
+      var stamp = userId.slice(1, 9);
+      var ms = parseInt(stamp, 36);
+      if (!isNaN(ms) && ms > 946684800000) {
+        return new Date(ms).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+      }
+      return userId.substring(1, 9) || userId;
+    }
+
+    function badgeStatus(status) {
+      var s = status || 'aktif';
+      if (s === 'blokir') {
+        return '<span class="badge badge-danger">Blokir</span>';
+      }
+      return '<span class="badge badge-success">Aktif</span>';
+    }
+
+    function hitungKelasInstruktur(instrukturId) {
+      return getAll('kelas').filter(function (k) {
+        return k.instrukturId === instrukturId;
+      }).length;
+    }
+
+    function ambilInstruktur(query) {
+      var q = (query || '').toLowerCase();
+      return getAll('users')
+        .filter(function (u) { return u.role === 'instruktur'; })
+        .filter(function (u) {
+          if (!q) return true;
+          return u.nama.toLowerCase().indexOf(q) !== -1 ||
+            u.email.toLowerCase().indexOf(q) !== -1;
+        });
+    }
+
+    function blokirUser(id) {
+      updateItem('users', id, { status: 'blokir' });
+      renderTabelInstruktur(ambilInstruktur(document.getElementById('search-input').value.trim()));
+    }
+
+    function aktifkanUser(id) {
+      updateItem('users', id, { status: 'aktif' });
+      renderTabelInstruktur(ambilInstruktur(document.getElementById('search-input').value.trim()));
+    }
+
+    function hapusUser(id, nama) {
+      if (!confirm(`Hapus akun instruktur "${nama}"? Tindakan ini tidak dapat dibatalkan.`)) {
+        return;
+      }
+      deleteItem('users', id);
+      renderTabelInstruktur(ambilInstruktur(document.getElementById('search-input').value.trim()));
+    }
+
+    function renderTabelInstruktur(list) {
+      var area = document.getElementById('table-area');
+
+      if (list.length === 0) {
+        area.innerHTML = `
+          <div class="empty-state card">
+            <p>Tidak ada instruktur ditemukan.</p>
+          </div>`;
+        return;
+      }
+
+      var rows = list.map(function (u, index) {
+        var status = u.status || 'aktif';
+        var tombolStatus = status === 'blokir'
+          ? `<button type="button" class="btn btn-primary btn-sm btn-aktifkan" data-aksi="aktifkan" data-id="${u.id}">Aktifkan</button>`
+          : `<button type="button" class="btn btn-danger btn-sm btn-blokir" data-aksi="blokir" data-id="${u.id}">Blokir</button>`;
+        var namaEsc = u.nama.replace(/"/g, '&quot;');
+
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td><strong>${u.nama}</strong></td>
+            <td>${u.email}</td>
+            <td>${tanggalDaftarDariId(u.id)}</td>
+            <td>${u.keahlian || '-'}</td>
+            <td>Rp ${Number(u.saldo || 0).toLocaleString('id-ID')}</td>
+            <td>${hitungKelasInstruktur(u.id)}</td>
+            <td>${badgeStatus(status)}</td>
+            <td class="table-aksi action-cell">
+              ${tombolStatus}
+              <a href="persetujuan-kelas.html?instruktur=${encodeURIComponent(u.id)}" class="btn btn-secondary btn-sm">Lihat Kelas</a>
+              <button type="button" class="btn btn-secondary btn-sm" data-aksi="hapus" data-id="${u.id}" data-nama="${namaEsc}">Hapus</button>
+            </td>
+          </tr>`;
+      }).join('');
+
+      area.innerHTML = `
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Tanggal Daftar</th>
+                <th>Keahlian</th>
+                <th>Saldo</th>
+                <th>Jumlah Kelas</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+
+      area.querySelectorAll('button[data-aksi]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-id');
+          var aksi = this.getAttribute('data-aksi');
+
+          if (aksi === 'blokir') {
+            blokirUser(id);
+            return;
+          }
+          if (aksi === 'aktifkan') {
+            aktifkanUser(id);
+            return;
+          }
+          if (aksi === 'hapus') {
+            hapusUser(id, this.getAttribute('data-nama'));
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>

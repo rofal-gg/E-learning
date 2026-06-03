@@ -1,0 +1,155 @@
+/* Anggota 3 — wishlist, ulasan, instruktur publik, notifikasi, form instruktur */
+
+/* Wishlist */
+.wishlist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.wishlist-price {
+  margin: 8px 0 0;
+}
+
+.transaksi-id {
+  font-size: 0.8rem;
+  color: var(--gray-500);
+}
+
+/* Instruktur cards */
+.instruktur-card {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.instruktur-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.instruktur-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 16px;
+  display: block;
+  border: 3px solid var(--primary-light);
+}
+
+.instruktur-card h3 {
+  margin: 0 0 8px;
+  color: var(--gray-900);
+}
+
+.instruktur-keahlian {
+  font-size: var(--font-size-sm);
+  margin: 0 0 12px;
+}
+
+/* Notifikasi */
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.notif-item:hover {
+  background: var(--gray-50);
+}
+
+.notif-unread {
+  border-left: 4px solid var(--primary);
+}
+
+.notif-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.notif-body {
+  flex: 1;
+}
+
+.notif-pesan {
+  margin: 0 0 4px;
+  color: var(--gray-900);
+  font-weight: 500;
+}
+
+.notif-tanggal {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.notif-badge-baru {
+  flex-shrink: 0;
+}
+
+/* Star rating picker */
+.star-picker {
+  display: flex;
+  gap: 4px;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: var(--gray-300);
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.star-btn:hover,
+.star-btn.active {
+  color: #F59E0B;
+}
+
+.star-btn:hover {
+  transform: scale(1.1);
+}
+
+.ulasan-form-card .btn {
+  margin-right: 8px;
+  margin-top: 8px;
+}
+
+.ulasan-lama {
+  margin-bottom: 20px;
+}
+
+.ulasan-lama h3 {
+  margin: 0 0 12px;
+  font-size: var(--font-size-lg);
+}
+
+.instruktur-meta {
+  margin-top: 8px;
+}
+
+.kurikulum-table-wrap {
+  overflow-x: auto;
+}
+
+.materi-panel {
+  min-height: 180px;
+}
+
+.bab-edit-form {
+  margin-top: 0;
+}

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Kategori — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota5.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-admin.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Manajemen Kategori</h1>
+        <p class="text-gray">Kelola kategori kelas di platform</p>
+      </div>
+
+      <div class="card admin-form-card">
+        <h2>Tambah Kategori</h2>
+        <form id="form-tambah" class="kategori-form">
+          <div class="form-group">
+            <label class="form-label" for="nama-kategori">Nama Kategori</label>
+            <input type="text" id="nama-kategori" class="form-input" placeholder="Contoh: Machine Learning" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Tambah</button>
+        </form>
+      </div>
+
+      <div id="table-area"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarAdmin('manajemen-kategori');
+
+      
+
+      document.getElementById('form-tambah').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var nama = document.getElementById('nama-kategori').value.trim();
+        if (!nama) {
+          alert('Nama kategori wajib diisi.');
+          return;
+        }
+
+        var duplikat = getAll('categories').some(function (c) {
+          return c.nama.toLowerCase() === nama.toLowerCase();
+        });
+        if (duplikat) {
+          alert('Kategori dengan nama tersebut sudah ada.');
+          return;
+        }
+
+        createItem('categories', { id: generateId('cat'), nama: nama });
+        document.getElementById('nama-kategori').value = '';
+        renderTabelKategori(getAll('categories'));
+      });
+
+      renderTabelKategori(getAll('categories'));
+    }
+
+    function hitungKelasKategori(cat) {
+      return getAll('kelas').filter(function (k) {
+        return k.kategoriId == cat.id || k.kategoriNama === cat.nama;
+      }).length;
+    }
+
+    function mulaiEditNama(cell, cat) {
+      if (cell.querySelector('input')) return;
+
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'form-input';
+      cell.className = 'kategori-inline-edit';
+      input.value = cat.nama;
+
+      cell.innerHTML = '';
+      cell.appendChild(input);
+      input.focus();
+      input.select();
+
+      function simpan() {
+        var baru = input.value.trim();
+        if (!baru) {
+          alert('Nama kategori tidak boleh kosong.');
+          renderTabelKategori(getAll('categories'));
+          return;
+        }
+        updateItem('categories', cat.id, { nama: baru });
+        getAll('kelas').filter(function (k) {
+          return k.kategoriId == cat.id;
+        }).forEach(function (k) {
+          updateItem('kelas', k.id, { kategoriNama: baru });
+        });
+        renderTabelKategori(getAll('categories'));
+      }
+
+      input.addEventListener('blur', simpan);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          input.blur();
+        }
+        if (e.key === 'Escape') {
+          renderTabelKategori(getAll('categories'));
+        }
+      });
+    }
+
+    function hapusKategori(id) {
+      var cat = getById('categories', id);
+      if (!cat) return;
+
+      if (hitungKelasKategori(cat) > 0) {
+        alert('Tidak bisa hapus, masih ada kelas');
+        return;
+      }
+
+      if (!confirm(`Hapus kategori "${cat.nama}"?`)) return;
+      deleteItem('categories', id);
+      renderTabelKategori(getAll('categories'));
+    }
+
+    function renderTabelKategori(list) {
+      var area = document.getElementById('table-area');
+
+      if (list.length === 0) {
+        area.innerHTML = `
+          <div class="empty-state card">
+            <p>Belum ada kategori. Tambahkan kategori pertama di atas.</p>
+          </div>`;
+        return;
+      }
+
+      var rows = list.map(function (cat, index) {
+        var jumlah = hitungKelasKategori(cat);
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>
+              <button type="button" class="btn-link-nama" data-id="${cat.id}">
+                <strong>${cat.nama}</strong>
+              </button>
+            </td>
+            <td>${jumlah} kelas</td>
+            <td class="table-aksi">
+              <button type="button" class="btn btn-danger btn-sm" data-aksi="hapus" data-id="${cat.id}">Hapus</button>
+            </td>
+          </tr>`;
+      }).join('');
+
+      area.innerHTML = `
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Jumlah Kelas</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+
+      area.querySelectorAll('.btn-link-nama').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-id');
+          var cat = getById('categories', id);
+          var cell = this.closest('td');
+          if (cat && cell) mulaiEditNama(cell, cat);
+        });
+      });
+
+      area.querySelectorAll('button[data-aksi="hapus"]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          hapusKategori(this.getAttribute('data-id'));
+        });
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Kelas — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body class="public-layout">
+
+  <!-- Navbar (dirender via komponen) -->
+  <div id="navbar-placeholder"></div>
+
+  <main class="section catalog-main">
+    <div class="container">
+      <div id="alert-box" class="alert-box-wrap"></div>
+      <div id="detail-content"></div>
+    </div>
+  </main>
+
+  <!-- Footer (dirender via komponen) -->
+  <div id="footer-placeholder"></div>
+
+  <script>
+    initStorage();
+    renderNavbarPublik({ basePath: '../../' });
+    renderFooter({ basePath: '../../' });
+
+
+    // buat HTML bintang rating
+    function buatBintang(rating) {
+      var full = Math.floor(rating);
+      var half = rating % 1 >= 0.5 ? 1 : 0;
+      var stars = '';
+      for (var i = 0; i < full; i++) stars += '★';
+      if (half) stars += '☆';
+      while (stars.length < 5) stars += '☆';
+      return '<span class="stars">' + stars + '</span> ' + rating;
+    }
+
+    
+    // buat HTML accordion silabus
+    function buatHtmlSilabus(silabus) {
+      if (!silabus || silabus.length === 0) {
+        return '<p class="text-gray">Silabus belum tersedia.</p>';
+      }
+      return `<div class="accordion" id="silabus-accordion">${silabus.map(function (bab, idx) {
+        return `
+          <div class="accordion-item">
+            <button type="button" class="accordion-header" data-idx="${idx}">
+              Bab ${bab.babKe}: ${bab.judul}
+              <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">Durasi: ${bab.durasi}</div>
+          </div>
+        `;
+      }).join('')}</div>`;
+    }
+
+    // pasang klik buka-tutup silabus
+    function pasangAccordionSilabus() {
+      document.querySelectorAll('#silabus-accordion .accordion-header').forEach(function (header) {
+        header.addEventListener('click', function () {
+          var item = this.parentElement;
+          var isOpen = item.classList.contains('open');
+          document.querySelectorAll('#silabus-accordion .accordion-item').forEach(function (el) {
+            el.classList.remove('open');
+            el.querySelector('.accordion-icon').textContent = '+';
+          });
+          if (!isOpen) {
+            item.classList.add('open');
+            this.querySelector('.accordion-icon').textContent = '−';
+          }
+        });
+      });
+    }
+
+    // pasang tombol cart dan wishlist
+    function pasangTombolAksi(kelas) {
+      var user = getCurrentUser();
+      var kelasId = kelas.id;
+      var sudahBeli = user && userOwnsKelas(user.id, kelasId);
+
+      if (sudahBeli) return;
+
+      var btnCart = document.getElementById('btn-cart');
+      var btnWishlist = document.getElementById('btn-wishlist');
+
+      if (btnCart) {
+        btnCart.addEventListener('click', function () {
+          var currentUser = getCurrentUser() || autoLoginDemoForRole('siswa');
+          if (!currentUser || currentUser.role !== 'siswa') {
+            window.location.href = buildLoginUrl();
+            return;
+          }
+          var hasil = addToCart(currentUser.id, kelasId);
+          if (hasil.sukses) {
+            showAlert('alert-box', hasil.pesan + ' <a href="cart.html">Lihat keranjang</a>', 'success');
+          } else {
+            showAlert('alert-box', hasil.pesan, 'danger');
+          }
+        });
+      }
+
+      if (btnWishlist) {
+        btnWishlist.addEventListener('click', function () {
+          var currentUser = getCurrentUser() || autoLoginDemoForRole('siswa');
+          if (!currentUser || currentUser.role !== 'siswa') {
+            window.location.href = buildLoginUrl();
+            return;
+          }
+          var hasilWishlist = addToWishlist(currentUser.id, kelasId);
+          showAlert('alert-box', hasilWishlist.pesan, hasilWishlist.sukses ? 'success' : 'danger');
+        });
+      }
+    }
+
+    // tampilkan halaman detail kelas
+    function tampilkanDetail(kelas) {
+      var user = getCurrentUser();
+      var sudahBeli = user && userOwnsKelas(user.id, kelas.id);
+
+      var panelButtons = sudahBeli
+        ? `<a href="ruang-belajar.html?id=${kelas.id}" class="btn btn-primary btn-block">Lanjutkan Belajar</a>
+           <a href="diskusi.html?kelasId=${kelas.id}" class="btn btn-secondary btn-block">Forum Diskusi</a>`
+        : `<button type="button" id="btn-cart" class="btn btn-primary btn-block">Tambah ke Keranjang</button>
+           <button type="button" id="btn-wishlist" class="btn btn-secondary btn-block">Simpan ke Wishlist</button>`;
+
+      document.getElementById('detail-content').innerHTML = `
+        <div class="detail-layout">
+          <div class="detail-main">
+            <img class="detail-hero-img" src="../../${kelas.gambar}" alt="${kelas.judul}" onerror="this.src='../../assets/images/placeholder.jpg'">
+            <h1 class="detail-title">${kelas.judul}</h1>
+            <div class="detail-meta">
+              <span class="badge badge-primary">${kelas.kategoriNama}</span>
+              <span class="badge badge-warning">${kelas.level}</span>
+              ${buatBintang(kelas.rating)}
+              <span class="text-gray">· ${kelas.totalSiswa} siswa</span>
+            </div>
+            <p class="detail-instruktur">Instruktur: <strong>${kelas.instrukturNama}</strong></p>
+            <p class="detail-desc">${kelas.deskripsi}</p>
+            <h2 class="detail-section-title">Silabus Kelas</h2>
+            ${buatHtmlSilabus(kelas.silabus)}
+          </div>
+          <aside class="price-panel card">
+            <h3 class="price-panel-title">Harga Kelas</h3>
+            <p class="price-big">${formatRupiah(kelas.harga)}</p>
+            ${panelButtons}
+          </aside>
+        </div>
+      `;
+
+      document.title = kelas.judul + ' — Platform E-Learning';
+      pasangAccordionSilabus();
+      pasangTombolAksi(kelas);
+    }
+
+    
+
+    var kelasId = getQueryParam('id');
+    if (!kelasId) {
+      document.getElementById('detail-content').innerHTML =
+        '<div class="empty-state"><p>Kelas tidak ditemukan.</p><a href="katalog.html" class="btn btn-primary">Kembali ke Katalog</a></div>';
+    } else {
+      var kelas = getById('kelas', kelasId);
+      if (!kelas) {
+        document.getElementById('detail-content').innerHTML =
+          '<div class="empty-state"><p>Kelas tidak ditemukan.</p><a href="katalog.html" class="btn btn-primary">Kembali ke Katalog</a></div>';
+      } else if (kelas.status !== 'published') {
+        var userPreview = getCurrentUser();
+        var bolehLihat = userPreview && (
+          userPreview.role === 'admin' ||
+          (userPreview.role === 'instruktur' && kelas.instrukturId === userPreview.id)
+        );
+        if (!bolehLihat) {
+          document.getElementById('detail-content').innerHTML =
+            '<div class="empty-state"><p>Kelas ini belum tersedia di katalog.</p><a href="katalog.html" class="btn btn-primary">Kembali ke Katalog</a></div>';
+        } else {
+          tampilkanDetail(kelas);
+        }
+      } else {
+        tampilkanDetail(kelas);
+      }
+    }
+  </script>
+</body>
+</html>

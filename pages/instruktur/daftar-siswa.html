@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Siswa — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header-flex">
+        <div>
+          <h1 id="kelas-judul">Daftar Siswa</h1>
+          <p class="text-gray" id="kelas-info">Siswa terdaftar dan progres belajar</p>
+        </div>
+        <a href="daftar-kelas.html" class="btn btn-secondary">← Kembali</a>
+      </div>
+
+      <div class="card table-wrap daftar-siswa-table">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Siswa</th>
+              <th>Email</th>
+              <th>Tanggal Beli</th>
+              <th>Progres</th>
+            </tr>
+          </thead>
+          <tbody id="tabel-siswa-body"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+    var kelasId = getQueryParam('kelasId') || getQueryParam('id');
+    var kelas = null;
+
+    if (!user) {
+      /* boot-instruktur menangani redirect */
+    } else if (!kelasId) {
+      alert('Kelas tidak dipilih.');
+      window.location.href = 'daftar-kelas.html';
+    } else {
+      kelas = ambilKelas();
+      if (!kelas) {
+        alert('Kelas tidak ditemukan atau bukan milik Anda.');
+        window.location.href = 'daftar-kelas.html';
+      } else {
+        renderSidebarInstruktur('daftar-kelas');
+
+        
+
+        document.getElementById('kelas-judul').textContent = 'Daftar Siswa: ' + kelas.judul;
+        renderTabelSiswa();
+      }
+    }
+
+    // ambil kelas dari query param
+    function ambilKelas() {
+      var data = getById('kelas', kelasId);
+      if (!data || !sameUserId(data.instrukturId, user.id)) return null;
+      return data;
+    }
+
+    // ambil progres satu siswa di kelas ini
+    function ambilProgresSiswa(userId) {
+      return getAll('progres').find(function (p) {
+        return sameUserId(p.userId, userId) && String(p.kelasId) === String(kelasId);
+      });
+    }
+
+    // kumpulkan siswa yang sudah membeli kelas
+    function ambilDaftarSiswa() {
+      var seen = {};
+      var rows = [];
+
+      getAll('transaksi').forEach(function (t) {
+        if ((t.status || 'sukses') !== 'sukses') return;
+        if ((t.items || []).indexOf(kelasId) === -1) return;
+        if (seen[t.userId]) return;
+        seen[t.userId] = true;
+
+        var siswa = getById('users', t.userId);
+        var progres = ambilProgresSiswa(t.userId);
+        var persen = progres ? Math.round(progres.persen || 0) : 0;
+
+        rows.push({
+          nama: siswa ? siswa.nama : 'Pengguna tidak ditemukan',
+          email: siswa ? siswa.email : '-',
+          tanggal: t.tanggal,
+          persen: persen
+        });
+      });
+
+      rows.sort(function (a, b) {
+        return new Date(b.tanggal) - new Date(a.tanggal);
+      });
+
+      return rows;
+    }
+
+    // render tabel siswa
+    function renderTabelSiswa() {
+      var tbody = document.getElementById('tabel-siswa-body');
+      var rows = ambilDaftarSiswa();
+
+      document.getElementById('kelas-info').textContent =
+        rows.length + ' siswa terdaftar di kelas ini';
+
+      if (rows.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="5" class="text-center text-gray">Belum ada siswa yang membeli kelas ini.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(function (row, index) {
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td><strong>${row.nama}</strong></td>
+            <td>${row.email}</td>
+            <td>${formatTanggal(row.tanggal)}</td>
+            <td class="siswa-progres-cell">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width:${row.persen}%"></div>
+              </div>
+              <span class="progress-text">${row.persen}%</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

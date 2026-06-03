@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifikasi — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota4.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header page-header-flex">
+        <div>
+          <h1>Notifikasi</h1>
+          <p class="text-gray">Pembaruan terkait kelas, penjualan, dan akun Anda</p>
+        </div>
+        <button type="button" id="btn-tandai-semua" class="btn btn-secondary btn-sm">Tandai Semua Dibaca</button>
+      </div>
+
+      <div id="notifikasi-area"></div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarInstruktur('notifikasi');
+
+      
+
+      document.getElementById('btn-tandai-semua').addEventListener('click', function () {
+        ambilNotifikasi().forEach(function (n) {
+          if (!n.dibaca) {
+            updateItem('notifikasi', n.id, { dibaca: true });
+          }
+        });
+        renderNotifikasi(ambilNotifikasi());
+      });
+
+      renderNotifikasi(ambilNotifikasi());
+    }
+
+    function formatTanggalWaktu(iso) {
+      if (!iso) return '-';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    // sync penjualan + ambil notifikasi instruktur
+    function ambilNotifikasi() {
+      syncNotifikasiPenjualanInstruktur(user.id);
+      return getAll('notifikasi')
+        .filter(function (n) { return sameUserId(n.userId, user.id); })
+        .sort(function (a, b) {
+          return new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        });
+    }
+
+    function renderNotifikasi(list) {
+      var area = document.getElementById('notifikasi-area');
+
+      if (list.length === 0) {
+        area.innerHTML = `
+          <div class="empty-state">
+            <p>Belum ada notifikasi.</p>
+          </div>
+        `;
+        return;
+      }
+
+      area.innerHTML = '<div class="notif-list">' + list.map(function (n) {
+        var unread = !n.dibaca;
+        return `
+          <div class="notif-item card${unread ? ' notif-unread' : ''}" data-id="${n.id}" role="button" tabindex="0">
+            <span class="notif-icon" aria-hidden="true">🔔</span>
+            <div class="notif-body">
+              <p class="notif-pesan">${n.pesan}</p>
+              <p class="notif-tanggal text-gray">${formatTanggalWaktu(n.tanggal)}</p>
+            </div>
+            ${unread ? '<span class="badge badge-primary notif-badge-baru">Baru</span>' : ''}
+          </div>
+        `;
+      }).join('') + '</div>';
+
+      document.querySelectorAll('.notif-item').forEach(function (item) {
+        function tandaiDibaca() {
+          updateItem('notifikasi', item.getAttribute('data-id'), { dibaca: true });
+          renderNotifikasi(ambilNotifikasi());
+        }
+        item.addEventListener('click', tandaiDibaca);
+        item.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            tandaiDibaca();
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>

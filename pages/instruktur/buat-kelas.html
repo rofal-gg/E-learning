@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buat Kelas — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header-flex">
+        <div>
+          <h1 id="page-title">Buat Kelas Baru</h1>
+          <p class="text-gray" id="page-subtitle">Isi detail kelas yang ingin Anda ajarkan</p>
+        </div>
+        <a href="daftar-kelas.html" class="btn btn-secondary">← Kembali</a>
+      </div>
+
+      <div class="card" style="max-width: 640px;">
+        <form id="form-kelas">
+          <div class="form-group">
+            <label class="form-label" for="judul">Judul Kelas</label>
+            <input type="text" id="judul" class="form-input" required placeholder="Contoh: Belajar HTML &amp; CSS dari Nol">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="deskripsi">Deskripsi</label>
+            <textarea id="deskripsi" class="form-input" rows="4" required placeholder="Jelaskan apa yang akan dipelajari siswa..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="kategori">Kategori</label>
+            <select id="kategori" class="form-input" required>
+              <option value="">— Pilih Kategori —</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="level">Level</label>
+            <select id="level" class="form-input" required>
+              <option value="Pemula">Pemula</option>
+              <option value="Menengah">Menengah</option>
+              <option value="Mahir">Mahir</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="harga">Harga (Rp)</label>
+            <input type="number" id="harga" class="form-input" min="0" step="1000" value="0" required>
+            <small class="text-gray">Isi 0 jika kelas gratis</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="gambar">URL Gambar Kelas</label>
+            <input type="text" id="gambar" class="form-input" placeholder="assets/images/kelas-1.jpg atau https://...">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-simpan">Simpan Kelas</button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+    var mode = getQueryParam('id') ? 'edit' : 'baru';
+    var editId = getQueryParam('id');
+    var kelasEdit = null;
+
+    if (user) {
+      renderSidebarInstruktur('buat-kelas');
+
+      
+
+      if (mode === 'edit') {
+        kelasEdit = getById('kelas', editId);
+        if (!kelasEdit || kelasEdit.instrukturId !== user.id) {
+          alert('Kelas tidak ditemukan atau bukan milik Anda.');
+          window.location.href = 'daftar-kelas.html';
+        } else {
+          document.getElementById('page-title').textContent = 'Edit Kelas';
+          document.getElementById('page-subtitle').textContent = 'Perbarui detail kelas: ' + kelasEdit.judul;
+          document.getElementById('btn-simpan').textContent = 'Simpan Perubahan';
+          document.title = 'Edit Kelas — Platform E-Learning';
+        }
+      }
+
+      isiDropdownKategori();
+
+      if (mode === 'edit' && kelasEdit) {
+        prefillForm(kelasEdit);
+      }
+
+      document.getElementById('form-kelas').addEventListener('submit', function (e) {
+        e.preventDefault();
+        simpanKelas();
+      });
+    }
+
+    // isi dropdown kategori dari storage
+    function isiDropdownKategori() {
+      var select = document.getElementById('kategori');
+      var categories = getAll('categories');
+      if (categories.length === 0) categories = SEED_CATEGORIES;
+
+      categories.forEach(function (cat) {
+        var opt = document.createElement('option');
+        opt.value = String(cat.id);
+        opt.textContent = cat.nama;
+        select.appendChild(opt);
+      });
+    }
+
+    // isi form saat mode edit
+    function prefillForm(kelas) {
+      document.getElementById('judul').value = kelas.judul || '';
+      document.getElementById('deskripsi').value = kelas.deskripsi || '';
+      document.getElementById('kategori').value = String(kelas.kategoriId || '');
+      document.getElementById('level').value = kelas.level || 'Pemula';
+      document.getElementById('harga').value = kelas.harga !== undefined ? kelas.harga : 0;
+      document.getElementById('gambar').value = kelas.gambar || '';
+    }
+
+    // ambil nilai semua input form
+    function ambilDataForm() {
+      var kategoriSelect = document.getElementById('kategori');
+      var kategoriId = parseInt(kategoriSelect.value, 10);
+      var kategoriNama = kategoriSelect.options[kategoriSelect.selectedIndex].text;
+
+      return {
+        judul: document.getElementById('judul').value.trim(),
+        deskripsi: document.getElementById('deskripsi').value.trim(),
+        kategoriId: kategoriId,
+        kategoriNama: kategoriNama,
+        level: document.getElementById('level').value,
+        harga: parseInt(document.getElementById('harga').value, 10) || 0,
+        gambar: document.getElementById('gambar').value.trim() || 'assets/images/placeholder.jpg'
+      };
+    }
+
+    // simpan kelas baru atau perbarui lalu redirect
+    function simpanKelas() {
+      var form = ambilDataForm();
+      if (!form.judul || !form.deskripsi || !form.kategoriId) {
+        alert('Mohon lengkapi semua field wajib.');
+        return;
+      }
+
+      if (mode === 'edit') {
+        updateItem('kelas', editId, form);
+        window.location.href = 'daftar-kelas.html';
+        return;
+      }
+
+      var newKelasId = generateId('k');
+      createItem('kelas', {
+        id: newKelasId,
+        judul: form.judul,
+        deskripsi: form.deskripsi,
+        kategoriId: form.kategoriId,
+        kategoriNama: form.kategoriNama,
+        level: form.level,
+        harga: form.harga,
+        gambar: form.gambar,
+        instrukturId: user.id,
+        instrukturNama: user.nama,
+        status: 'pending',
+        rating: 0,
+        totalSiswa: 0,
+        silabus: []
+      });
+      window.location.href = 'kurikulum.html?id=' + encodeURIComponent(newKelasId);
+    }
+  </script>
+</body>
+</html>

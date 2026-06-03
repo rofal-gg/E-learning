@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Instruktur — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
+  <script src="../../components/components.js"></script>
+</head>
+
+<body class="public-layout">
+
+  <!-- Navbar (dirender via komponen) -->
+  <div id="navbar-placeholder"></div>
+
+  <main class="section catalog-main">
+    <div class="container">
+      <div class="page-header-flex">
+        <h1>Daftar Instruktur</h1>
+        <p class="page-meta"><span id="total-instruktur">0</span> instruktur terdaftar</p>
+      </div>
+
+      <div id="grid-instruktur" class="grid-3"></div>
+    </div>
+  </main>
+
+  <!-- Footer (dirender via komponen) -->
+  <div id="footer-placeholder"></div>
+
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script>
+    initStorage();
+    renderNavbarPublik({ basePath: '../../' });
+    renderFooter({ basePath: '../../' });
+
+    function hitungKelas(instrukturId) {
+      return getAll('kelas').filter(function (k) {
+        return k.instrukturId === instrukturId && k.status === 'published';
+      }).length;
+    }
+
+    function renderInstruktur() {
+      var container = document.getElementById('grid-instruktur');
+      var instrukturList = getAll('users').filter(function (u) {
+        return u.role === 'instruktur';
+      });
+
+      document.getElementById('total-instruktur').textContent = instrukturList.length;
+
+      if (instrukturList.length === 0) {
+        container.innerHTML =
+          '<div class="empty-state grid-empty-msg">' +
+          '<p>Belum ada instruktur terdaftar.</p>' +
+          '</div>';
+        return;
+      }
+
+      container.innerHTML = instrukturList.map(function (ins) {
+        var foto = ins.foto ? '../../' + ins.foto : '../../assets/images/placeholder.jpg';
+        var keahlian = ins.keahlian || 'Belum diisi';
+        var jumlahKelas = hitungKelas(ins.id);
+        var profilHref = '../instruktur/profil-publik.html?id=' + encodeURIComponent(ins.id);
+
+        return `
+          <a href="${profilHref}" class="card instruktur-card">
+            <img class="instruktur-avatar" src="${foto}" alt="${ins.nama}" onerror="this.src='../../assets/images/placeholder.jpg'">
+            <h3>${ins.nama}</h3>
+            <p class="text-gray instruktur-keahlian">${keahlian}</p>
+            <p class="instruktur-meta"><span class="badge badge-primary">${jumlahKelas} kelas</span></p>
+          </a>
+        `;
+      }).join('');
+    }
+
+    renderInstruktur();
+  </script>
+</body>
+
+</html>

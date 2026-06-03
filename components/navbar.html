@@ -1,0 +1,22 @@
+<!-- navbar.html — Navbar Publik (Template Referensi) -->
+<!-- Dirender via JS: renderNavbarPublik({ basePath: '', activeLink: '' }) -->
+<!-- Tempatkan <div id="navbar-placeholder"></div> di HTML halaman -->
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="navbar-logo">EduKita</a>
+    <ul class="navbar-menu">
+      <li><a href="pages/siswa/katalog.html">Katalog</a></li>
+      <li><a href="pages/siswa/daftar-instruktur.html">Instruktur</a></li>
+      <li><a href="pages/auth/faq.html">FAQ</a></li>
+      <li id="nav-dashboard-item" style="display:none;">
+        <a href="pages/siswa/dashboard.html">Dashboard</a>
+      </li>
+    </ul>
+    <div class="navbar-actions" id="navbar-actions">
+      <!-- Diisi dinamis oleh renderNavbarPublik() -->
+      <a href="pages/auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>
+      <a href="pages/auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>
+    </div>
+  </div>
+</nav>
