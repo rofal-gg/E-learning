@@ -276,7 +276,7 @@ function buatCardKelas(k, options) {
 
   return `
     <div class="card-kelas">
-      <img src="${base}${k.gambar}" alt="${k.judul}" onerror="this.src='${base}assets/images/placeholder.jpg'">
+      // <img src="${base}${k.gambar}" alt="${k.judul}" onerror="this.src='${base}assets/images/placeholder.jpg'">
       <div class="card-body">
         <span class="badge badge-primary">${k.kategoriNama}</span>
         ${showLevel ? `<span class="badge badge-warning badge-gap">${k.level}</span>` : ''}
