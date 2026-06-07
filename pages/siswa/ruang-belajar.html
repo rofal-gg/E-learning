@@ -76,6 +76,7 @@
           userId: user.id,
           kelasId: dataKelas.id,
           babSelesai: [],
+          kuisSelesai: [],
           persen: 0
         };
         createItem('progres', dataProgres);
@@ -89,33 +90,49 @@
       return (progres.babSelesai || []).indexOf(babKe) !== -1;
     }
 
+    function babKuisSelesai(babKe) {
+      return (progres.kuisSelesai || []).indexOf(babKe) !== -1;
+    }
+
+    function isBabUnlocked(babKe) {
+      if (babKe === 1) return true;
+      var prev = babKe - 1;
+      return babSudahSelesai(prev) && babKuisSelesai(prev);
+    }
+
     // update teks progres di bawah video
     function updateTeksProgres() {
       var total = silabus.length;
       var selesai = (progres.babSelesai || []).length;
+      var kuisDone = (progres.kuisSelesai || []).length;
       var persen = total > 0 ? Math.round((selesai / total) * 100) : 0;
       document.getElementById('progres-text').textContent =
-        'Progres: ' + persen + '% (' + selesai + '/' + total + ' bab)';
+        'Progres: ' + persen + '% (' + selesai + '/' + total + ' bab, ' + kuisDone + ' kuis)';
     }
 
     // render daftar bab di panel kanan
     function renderDaftarBab() {
       document.getElementById('bab-list').innerHTML = silabus.map(function (bab, idx) {
         var selesai = babSudahSelesai(bab.babKe);
+        var kuisDone = babKuisSelesai(bab.babKe);
+        var unlocked = isBabUnlocked(bab.babKe);
         var kelasAktif = idx === babAktif ? ' active' : '';
         var kelasDone = selesai ? ' done' : '';
+        var kelasLocked = !unlocked ? ' locked' : '';
+        var lockIcon = unlocked ? (selesai ? '<img src="../../assets/icons/check.svg" width="14" alt="selesai">' : '') : '<img src="../../assets/icons/lock.svg" width="14" alt="terkunci">';
+        var kuisBadge = selesai && !kuisDone ? '<span class="bab-item-kuis-badge">Kuis</span>' : '';
         return `
-          <li class="bab-item${kelasAktif}${kelasDone}" data-idx="${idx}">
-            <span class="bab-item-check">${selesai ? '✓' : ''}</span>
+          <li class="bab-item${kelasAktif}${kelasDone}${kelasLocked}" data-idx="${idx}" data-bab="${bab.babKe}">
+            <span class="bab-item-check">${lockIcon}</span>
             <div class="bab-item-info">
               <p class="bab-item-title">Bab ${bab.babKe}: ${bab.judul}</p>
-              <p class="bab-item-durasi">${bab.durasi}</p>
+              <p class="bab-item-durasi">${bab.durasi}${kuisBadge}</p>
             </div>
           </li>
         `;
       }).join('');
 
-      document.querySelectorAll('.bab-item').forEach(function (item) {
+      document.querySelectorAll('.bab-item:not(.locked)').forEach(function (item) {
         item.addEventListener('click', function () {
           gantiBab(parseInt(this.getAttribute('data-idx'), 10));
         });
@@ -124,12 +141,17 @@
 
     // ganti bab aktif: video + highlight
     function gantiBab(idx) {
+      var targetBab = silabus[idx];
+      if (targetBab && !isBabUnlocked(targetBab.babKe)) {
+        return;
+      }
       babAktif = idx;
       var bab = silabus[babAktif];
       document.getElementById('bab-judul-aktif').textContent = 'Bab ' + bab.babKe + ': ' + bab.judul;
       document.getElementById('video-frame').src = bab.videoUrl;
 
       var selesai = babSudahSelesai(bab.babKe);
+      var kuisDone = babKuisSelesai(bab.babKe);
       var btnSelesai = document.getElementById('btn-selesai');
       var btnKuis = document.getElementById('btn-kuis');
 
@@ -138,7 +160,7 @@
         btnSelesai.disabled = true;
         btnSelesai.classList.remove('btn-primary');
         btnSelesai.classList.add('btn-secondary');
-        btnKuis.style.display = 'inline-block';
+        btnKuis.style.display = kuisDone ? 'none' : 'inline-block';
         btnKuis.href = 'kuis.html?kelasId=' + encodeURIComponent(kelas.id) + '&bab=' + bab.babKe;
       } else {
         btnSelesai.textContent = 'Tandai Selesai';

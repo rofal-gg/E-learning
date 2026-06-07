@@ -90,6 +90,22 @@
   margin-bottom: 10px;
 }
 
+.price-panel .btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.price-panel .btn-group .btn {
+  margin-bottom: 0;
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  box-sizing: border-box;
+}
+
 .cart-layout {
   display: grid;
   grid-template-columns: 1fr 320px;
@@ -184,6 +200,13 @@
   font-size: var(--font-size-sm);
   margin: 8px 0 20px;
 }
+
+.paket-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
+.paket-card { border: 2px solid var(--gray-300); border-radius: var(--radius); padding: 10px; cursor: pointer; text-align: center; transition: border-color 0.2s; }
+.paket-card.aktif { border-color: var(--primary); background: var(--primary-light); }
+.paket-card .paket-label { font-weight: 700; font-size: var(--font-size-sm); color: var(--gray-900); }
+.paket-card .paket-harga { font-size: var(--font-size-xs, 0.8rem); color: var(--gray-500); margin-top: 2px; }
+.paket-hemat { font-size: 0.7rem; background: var(--success); color: white; border-radius: 4px; padding: 1px 5px; display: inline-block; margin-top: 3px; }
 
 .checkout-back-link {
   margin-top: 10px;
@@ -468,6 +491,28 @@
 .bab-item.done .bab-item-check {
   background: var(--success);
   border-color: var(--success);
+}
+
+.bab-item.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.bab-item.locked .bab-item-title {
+  color: var(--gray-500);
+}
+
+.bab-item-kuis-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--warning);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  vertical-align: middle;
 }
 
 .bab-item-info {

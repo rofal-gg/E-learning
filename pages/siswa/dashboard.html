@@ -48,6 +48,11 @@
       </section>
 
       <section class="content-section">
+        <h2>Jadwal Sesi Tatap Muka</h2>
+        <div id="jadwal-tatap-muka"></div>
+      </section>
+
+      <section class="content-section">
         <h2>Kelas Terbaru di Katalog</h2>
         <div id="kelas-terbaru" class="grid-3"></div>
       </section>
@@ -97,14 +102,43 @@
       document.getElementById('kpi-diskusi').textContent = diskusi.length;
     }
 
+    // cari transaksi terakhir untuk sebuah kelas
+    function ambilTransaksiKelas(kelasId) {
+      var uid = String(user.id);
+      var kid = String(kelasId);
+      var semua = getAll('transaksi').filter(function (t) {
+        return sameUserId(t.userId, uid) && (t.items || []).some(function (id) { return String(id) === kid; });
+      });
+      if (semua.length === 0) return null;
+      return semua.sort(function (a, b) { return new Date(b.tanggal) - new Date(a.tanggal); })[0];
+    }
+
     // buat HTML satu card kelas lanjut belajar
     function buatCardLanjut(kelas, persen) {
+      var transaksi = ambilTransaksiKelas(kelas.id);
+      var infoPaket = '';
+      var kelasExtra = '';
+
+      if (transaksi && transaksi.tanggalBerakhir) {
+        var sisa = Math.ceil((new Date(transaksi.tanggalBerakhir) - new Date()) / (1000 * 60 * 60 * 24));
+        if (sisa > 0) {
+          infoPaket = 'Berakhir: ' + formatTanggal(transaksi.tanggalBerakhir) + ' (' + sisa + ' hari lagi)';
+          if (sisa <= 7) kelasExtra = 'paket-mau-habis';
+        } else {
+          infoPaket = 'Paket telah berakhir';
+          kelasExtra = 'paket-habis';
+        }
+      } else if (transaksi) {
+        infoPaket = 'Akses Seumur Hidup';
+      }
+
       return `
         <div class="card-lanjut">
           <h3>${kelas.judul}</h3>
           <p class="text-gray">${kelas.instrukturNama}</p>
           <p class="progress-text">Progres: ${persen}%</p>
           <div class="progress-bar"><div class="progress-fill" style="width:${persen}%"></div></div>
+          <p class="paket-info ${kelasExtra}">${infoPaket}</p>
           <a href="ruang-belajar.html?id=${kelas.id}" class="btn btn-primary btn-sm">Lanjutkan Belajar</a>
         </div>
       `;
@@ -151,6 +185,46 @@
       '</div>';
     }
 
+    // tampilkan jadwal tatap muka untuk kelas yang dimiliki
+    function tampilkanJadwalTatapMuka() {
+      var container = document.getElementById('jadwal-tatap-muka');
+      var sekarang = new Date();
+      var kelasIds = ambilKelasIds();
+      var semuaJadwal = getAll('jadwal_tatap_muka');
+      var jadwalRelevant = semuaJadwal.filter(function (j) {
+        var tglJadwal = new Date(j.tanggal + 'T' + (j.waktu || '00:00'));
+        var selisihHari = (tglJadwal - sekarang) / (1000 * 60 * 60 * 24);
+        var kelasMatch = kelasIds.indexOf(String(j.kelasId)) !== -1;
+        return kelasMatch && selisihHari > -1;
+      }).sort(function (a, b) {
+        return new Date(a.tanggal + 'T' + (a.waktu || '00:00')) - new Date(b.tanggal + 'T' + (b.waktu || '00:00'));
+      }).slice(0, 5);
+
+      if (jadwalRelevant.length === 0) {
+        container.innerHTML = '<p class="text-gray">Belum ada jadwal sesi tatap muka.</p>';
+        return;
+      }
+
+      container.innerHTML = jadwalRelevant.map(function (j) {
+        var tglFormatted = formatTanggal(j.tanggal);
+        var kelas = getById('kelas', j.kelasId);
+        var namaKelas = kelas ? kelas.judul : 'Kelas';
+        return `
+          <div class="jadwal-box">
+            <div class="jadwal-tanggal">
+              <span class="jadwal-tgl">${tglFormatted}</span>
+              <span class="jadwal-waktu">${j.waktu || '–'}</span>
+            </div>
+            <div class="jadwal-info">
+              <p class="jadwal-judul">${j.judul}</p>
+              <p class="jadwal-kelas-nama">${namaKelas}</p>
+            </div>
+            <a href="${j.linkGmeet}" target="_blank" rel="noopener" class="btn btn-primary btn-sm jadwal-btn">Ikuti Sesi</a>
+          </div>
+        `;
+      }).join('');
+    }
+
     // tampilkan 3 kelas terbaru dari katalog
     function tampilkanKelasTerbaru() {
       var container = document.getElementById('kelas-terbaru');
@@ -171,6 +245,7 @@
 
     tampilkanKPI();
     tampilkanLanjutBelajar();
+    tampilkanJadwalTatapMuka();
     tampilkanKelasTerbaru();
   </script>
 </body>

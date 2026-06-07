@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kuis Penempatan — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota2.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-siswa.js"></script>
+  <style>
+    .opsi-btn {
+      display: block;
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border: 2px solid var(--gray-300);
+      border-radius: var(--radius);
+      background: var(--white);
+      color: var(--gray-700);
+      font-size: var(--font-size-base);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+      font-family: var(--font-main);
+    }
+    .opsi-btn:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .opsi-btn.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="kuis-page">
+    <div class="kuis-container">
+      <div class="kuis-header">
+        <h1>Kuis Penempatan</h1>
+        <p class="kuis-meta">Tentukan tingkatan belajarmu</p>
+      </div>
+      <div id="alert-box" class="alert-box-wrap"></div>
+      <div id="kuis-content" class="card kuis-card"></div>
+      <div class="kuis-nav" id="kuis-nav">
+        <div></div>
+        <button type="button" class="btn btn-primary" id="btn-nav" disabled>Selanjutnya</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user.tingkatan && user.tingkatan !== 'belum_tes') {
+      window.location.href = 'dashboard.html';
+    }
+
+    var SOAL_PENEMPATAN = [
+      { pertanyaan: "Tag HTML untuk membuat paragraf adalah?", pilihan: ["<p>", "<para>", "<text>", "<div>"], jawaban: 0 },
+      { pertanyaan: "CSS property untuk mengubah warna teks?", pilihan: ["color", "font", "text-color", "background"], jawaban: 0 },
+      { pertanyaan: "Flexbox parent harus menggunakan display:?", pilihan: ["flex", "grid", "block", "inline"], jawaban: 0 },
+      { pertanyaan: "JavaScript method untuk menambah elemen ke array?", pilihan: ["push()", "add()", "append()", "insert()"], jawaban: 0 },
+      { pertanyaan: "Event listener untuk klik tombol adalah?", pilihan: ["click", "tap", "press", "touch"], jawaban: 0 },
+      { pertanyaan: "localStorage.getItem() mengembalikan tipe data?", pilihan: ["String", "Number", "Object", "Array"], jawaban: 0 },
+      { pertanyaan: "Apa itu Big O(n) dalam algoritma?", pilihan: ["Kompleksitas waktu linear", "Kompleksitas memori tetap", "Rekursi tanpa batas", "Loop bersarang"], jawaban: 0 },
+      { pertanyaan: "REST API menggunakan method HTTP untuk menghapus data?", pilihan: ["DELETE", "REMOVE", "DROP", "ERASE"], jawaban: 0 },
+      { pertanyaan: "Apa perbedaan SQL dan NoSQL?", pilihan: ["SQL relasional, NoSQL non-relasional", "SQL lebih cepat dari NoSQL", "NoSQL tidak bisa store data", "Keduanya sama saja"], jawaban: 0 }
+    ];
+
+    var soalList = SOAL_PENEMPATAN;
+    var indeksSoal = 0;
+    var jawabanUser = new Array(soalList.length);
+    for (var i = 0; i < jawabanUser.length; i++) jawabanUser[i] = null;
+
+    function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    var contentEl = document.getElementById('kuis-content');
+    var btnNav = document.getElementById('btn-nav');
+
+    function tampilkanSoal(nomor) {
+      var soal = soalList[nomor];
+
+      var opsiHtml = soal.pilihan.map(function (pil, idx) {
+        var selected = jawabanUser[nomor] === idx ? ' selected' : '';
+        return '<button type="button" class="opsi-btn' + selected + '" data-idx="' + idx + '">' + esc(pil) + '</button>';
+      }).join('');
+
+      contentEl.innerHTML = `
+        <p class="kuis-soal-nomor">Soal ${nomor + 1} dari ${soalList.length}</p>
+        <p class="kuis-pertanyaan">${esc(soal.pertanyaan)}</p>
+        <div class="kuis-pilihan">${opsiHtml}</div>
+      `;
+
+      contentEl.querySelectorAll('.opsi-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var idx = parseInt(this.getAttribute('data-idx'), 10);
+          jawabanUser[nomor] = idx;
+          contentEl.querySelectorAll('.opsi-btn').forEach(function (b) {
+            b.classList.remove('selected');
+          });
+          this.classList.add('selected');
+          btnNav.disabled = false;
+        });
+      });
+
+      var sudahDijawab = jawabanUser[nomor] !== null;
+      btnNav.disabled = !sudahDijawab;
+      btnNav.textContent = nomor === soalList.length - 1 ? 'Lihat Hasil' : 'Selanjutnya';
+    }
+
+    function hitungTingkatan(skor) {
+      if (skor >= 7) return 'mahir';
+      if (skor >= 4) return 'menengah';
+      return 'pemula';
+    }
+
+    btnNav.addEventListener('click', function () {
+      if (jawabanUser[indeksSoal] === null) return;
+
+      if (indeksSoal < soalList.length - 1) {
+        indeksSoal++;
+        tampilkanSoal(indeksSoal);
+        return;
+      }
+
+      var skor = 0;
+      soalList.forEach(function (soal, idx) {
+        if (jawabanUser[idx] === soal.jawaban) skor++;
+      });
+
+      var tingkatanHasil = hitungTingkatan(skor);
+
+      updateItem('users', user.id, { tingkatan: tingkatanHasil });
+      createItem('kuis_penempatan', {
+        id: generateId('qp'),
+        userId: user.id,
+        skor: skor,
+        tingkatan: tingkatanHasil,
+        tanggal: new Date().toISOString()
+      });
+
+      window.location.href = 'hasil-penempatan.html?tingkatan=' + encodeURIComponent(tingkatanHasil) + '&skor=' + skor;
+    });
+
+    tampilkanSoal(0);
+  </script>
+</body>
+</html>

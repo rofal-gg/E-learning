@@ -39,7 +39,24 @@
 
     renderSidebarSiswa('cart');
 
-    
+    var PAKET_DURASI = [
+      { id: 'p1', label: '1 Bulan', bulan: 1, multiplier: 1.0 },
+      { id: 'p3', label: '3 Bulan', bulan: 3, multiplier: 2.5 },
+      { id: 'p6', label: '6 Bulan', bulan: 6, multiplier: 4.0 },
+      { id: 'p12', label: '1 Tahun', bulan: 12, multiplier: 7.0 }
+    ];
+
+    var selectedPaket = PAKET_DURASI[0];
+
+    function hitungTanggalBerakhir(bulan) {
+      var tgl = new Date();
+      tgl.setMonth(tgl.getMonth() + bulan);
+      return tgl.toISOString();
+    }
+
+    function hitungTotalPaket(subtotal, diskon) {
+      return Math.max(0, subtotal * selectedPaket.multiplier - diskon);
+    }
 
     // ambil item keranjang user
     function ambilItemCart() {
@@ -83,15 +100,28 @@
         ? `<div class="summary-row summary-discount"><span>Diskon kupon</span><span>- ${formatRupiah(angka.diskon)}</span></div>`
         : '';
 
+      function buatPaketCard(paket) {
+        var aktif = paket.id === selectedPaket.id ? ' aktif' : '';
+        var hargaPaket = angka.subtotal * paket.multiplier;
+        var hemat = paket.bulan >= 3 ? '<div class="paket-hemat">Hemat ' + Math.round((1 - paket.multiplier / paket.bulan) * 100) + '%</div>' : '';
+        return '<div class="paket-card' + aktif + '" data-id="' + paket.id + '"><div class="paket-label">' + paket.label + '</div><div class="paket-harga">' + formatRupiah(hargaPaket) + '</div>' + hemat + '</div>';
+      }
+
+      var paketHtml = PAKET_DURASI.map(buatPaketCard).join('');
+
+      var totalPaket = hitungTotalPaket(angka.subtotal, angka.diskon);
+
       area.innerHTML = `
         <div class="cart-layout checkout-layout">
           <section class="card">
             <h2 class="checkout-section-title">Ringkasan Pesanan</h2>
             <ul class="checkout-order-list">${listItems}</ul>
             ${barisDiskon}
-            <div class="summary-row total"><span>Total Pembayaran</span><span id="checkout-total">${formatRupiah(angka.total)}</span></div>
+            <div class="summary-row total"><span>Total Pembayaran</span><span id="checkout-total">${formatRupiah(totalPaket)}</span></div>
           </section>
           <aside class="card checkout-payment-card">
+            <h2 class="checkout-section-title">Pilih Paket Akses</h2>
+            <div class="paket-grid" id="paket-grid">${paketHtml}</div>
             <h2 class="checkout-section-title">Metode Pembayaran</h2>
             <form id="form-checkout">
               <label class="payment-option">
@@ -103,6 +133,12 @@
               <label class="payment-option">
                 <input type="radio" name="metode" value="Dompet Digital"> Dompet Digital
               </label>
+              <div id="qris-container" style="display:none; text-align:center; margin: 12px 0;">
+                <p style="font-size: var(--font-size-sm); font-weight:600; color:var(--gray-700); margin-bottom:8px;">Scan QR Code berikut untuk membayar:</p>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=EduKita-Payment-Demo" alt="QR Code QRIS" width="180" height="180" style="border: 4px solid var(--gray-300); border-radius: var(--radius); display:block; margin:0 auto 8px;" onerror="this.style.display='none'; document.getElementById('qris-fallback').style.display='flex';">
+                <div id="qris-fallback" style="display:none; width:180px; height:180px; margin:0 auto; background:var(--gray-100); border-radius:var(--radius); align-items:center; justify-content:center;"><span style="color:var(--gray-500); font-size:var(--font-size-sm);">QR Code<br>(Simulasi)</span></div>
+                <p style="font-size:0.75rem; color:var(--gray-500); margin-top:6px;">Pembayaran bersifat simulasi — tidak ada transfer nyata.</p>
+              </div>
               <p class="text-gray payment-note">Pembayaran disimulasikan — transaksi langsung berstatus sukses.</p>
               <button type="submit" class="btn btn-primary btn-block" id="btn-bayar">Bayar Sekarang</button>
               <a href="cart.html" class="btn btn-secondary btn-block checkout-back-link">Kembali ke Keranjang</a>
@@ -111,9 +147,29 @@
         </div>
       `;
 
+      document.getElementById('paket-grid').querySelectorAll('.paket-card').forEach(function (card) {
+        card.addEventListener('click', function () {
+          var id = this.getAttribute('data-id');
+          selectedPaket = PAKET_DURASI.find(function (p) { return p.id === id; }) || PAKET_DURASI[0];
+          document.querySelectorAll('.paket-card').forEach(function (c) { c.classList.remove('aktif'); });
+          this.classList.add('aktif');
+          var totalBaru = hitungTotalPaket(angka.subtotal, angka.diskon);
+          document.getElementById('checkout-total').textContent = formatRupiah(totalBaru);
+        });
+      });
+
+      document.querySelectorAll('input[name="metode"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+          var qrisContainer = document.getElementById('qris-container');
+          if (qrisContainer) {
+            qrisContainer.style.display = this.value === 'QRIS' ? 'block' : 'none';
+          }
+        });
+      });
+
       document.getElementById('form-checkout').addEventListener('submit', function (e) {
         e.preventDefault();
-        prosesBayar(items, angka.total);
+        prosesBayar(items, hitungTotalPaket(angka.subtotal, angka.diskon));
       });
     }
 
@@ -135,7 +191,9 @@
         total: total,
         metode: metodeEl.value,
         status: 'sukses',
-        tanggal: new Date().toISOString()
+        tanggal: new Date().toISOString(),
+        paketDurasi: selectedPaket.bulan,
+        tanggalBerakhir: hitungTanggalBerakhir(selectedPaket.bulan)
       });
 
       kelasIds.forEach(function (kelasId) {

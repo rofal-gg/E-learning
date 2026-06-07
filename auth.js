@@ -68,6 +68,13 @@ function getLoginPath() {
   return 'pages/auth/login.html';
 }
 
+function getIndexPath() {
+  var area = getPageArea();
+  if (area === 'siswa' || area === 'instruktur' || area === 'admin') return '../../index.html';
+  if (area === 'auth') return '../../index.html';
+  return 'index.html';
+}
+
 function sameUserId(a, b) {
   return String(a) === String(b);
 }
@@ -160,7 +167,7 @@ function logout() {
   sessionStorage.removeItem('appliedKupon');
   window.__pageUser = null;
   document.documentElement.classList.remove('auth-ok');
-  window.location.replace(resolveAppPath(getLoginPath()));
+  window.location.replace(resolveAppPath(getIndexPath()));
 }
 
 function getCurrentUser() {
@@ -239,7 +246,10 @@ function register(data) {
     foto: data.foto || '',
     bio: data.bio || '',
     saldo: data.saldo !== undefined ? data.saldo : 0,
-    status: 'aktif'
+    status: 'aktif',
+    namaOrangTua: data.namaOrangTua || '',
+    tanggalLahir: data.tanggalLahir || '',
+    tingkatan: data.role === 'siswa' ? 'belum_tes' : ''
   };
   if (data.keahlian) newUser.keahlian = data.keahlian;
   createItem('users', newUser);
@@ -431,20 +441,6 @@ function bootGuard(allowedRoles) {
   if (typeof initStorage === 'function') initStorage();
 
   allowedRoles = allowedRoles || [];
-
-  /* Mode demo tugas: buka pages/siswa|instruktur|admin/* → sesi otomatis ke akun demo role itu */
-  if (allowedRoles.length === 1) {
-    var requiredRole = allowedRoles[0];
-    var current = getCurrentUser();
-    if (!current || current.role !== requiredRole) {
-      var demoUser = autoLoginDemoForRole(requiredRole);
-      if (demoUser) {
-        document.documentElement.classList.add('auth-ok');
-        window.__pageUser = demoUser;
-        return demoUser;
-      }
-    }
-  }
 
   var user = requireAuth(allowedRoles);
   if (!user) {

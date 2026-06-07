@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jadwal Tatap Muka — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../css/anggota1.css">
+  <link rel="stylesheet" href="../../css/anggota3.css">
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script src="../../boot-instruktur.js"></script>
+  <script src="../../components/components.js"></script>
+</head>
+<body>
+
+  <div class="layout-sidebar">
+    <!-- Sidebar (dirender via komponen) -->
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content">
+      <div class="page-header-flex">
+        <div>
+          <h1>Jadwal Tatap Muka</h1>
+          <p class="text-gray">Kelola sesi tatap muka (Google Meet) untuk kelas Anda</p>
+        </div>
+      </div>
+
+      <div id="alert-box" class="alert-box-wrap"></div>
+
+      <section class="content-section">
+        <h2>Tambah Jadwal Sesi</h2>
+        <div class="card" style="padding:20px">
+          <form id="form-tambah-jadwal">
+            <div class="form-group">
+              <label class="form-label" for="sel-kelas">Pilih Kelas</label>
+              <select id="sel-kelas" class="form-input" required>
+                <option value="">— Pilih Kelas —</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="judul-sesi">Judul Sesi</label>
+              <input type="text" id="judul-sesi" class="form-input" placeholder="Contoh: Review Bab 3 - Flexbox" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="tgl-sesi">Tanggal</label>
+              <input type="date" id="tgl-sesi" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="waktu-sesi">Waktu</label>
+              <input type="time" id="waktu-sesi" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="link-gmeet">Link GMeet</label>
+              <input type="url" id="link-gmeet" class="form-input" placeholder="https://meet.google.com/xxx-xxxx-xxx" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Tambah Jadwal</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <h2>Jadwal Saya</h2>
+        <div class="card table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Kelas</th>
+                <th>Judul Sesi</th>
+                <th>Tanggal &amp; Waktu</th>
+                <th>Link</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tabel-jadwal-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    var user = window.__pageUser;
+
+    if (user) {
+      renderSidebarInstruktur('jadwal-tatap-muka');
+
+      var kelasSaya = getAll('kelas').filter(function (k) { return k.instrukturId === user.id; });
+      var selKelas = document.getElementById('sel-kelas');
+
+      kelasSaya.forEach(function (k) {
+        var opt = document.createElement('option');
+        opt.value = k.id;
+        opt.textContent = k.judul;
+        selKelas.appendChild(opt);
+      });
+
+      function tampilkanDaftarJadwal() {
+        var tbody = document.getElementById('tabel-jadwal-body');
+        var list = getAll('jadwal_tatap_muka')
+          .filter(function (j) { return sameUserId(j.instrukturId, user.id); })
+          .sort(function (a, b) { return a.tanggal.localeCompare(b.tanggal) || a.waktu.localeCompare(b.waktu); });
+
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray">Belum ada jadwal.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = list.map(function (j) {
+          var kelas = getById('kelas', j.kelasId);
+          var namaKelas = kelas ? kelas.judul : '(kelas dihapus)';
+          return '<tr>' +
+            '<td>' + namaKelas + '</td>' +
+            '<td><strong>' + j.judul + '</strong></td>' +
+            '<td>' + formatTanggal(j.tanggal) + ' ' + (j.waktu || '–') + '</td>' +
+            '<td><a href="' + j.linkGmeet + '" target="_blank" rel="noopener">Buka Link</a></td>' +
+            '<td><button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="' + j.id + '">Hapus</button></td>' +
+            '</tr>';
+        }).join('');
+
+        tbody.querySelectorAll('.btn-hapus').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            hapusJadwal(this.getAttribute('data-id'));
+          });
+        });
+      }
+
+      document.getElementById('form-tambah-jadwal').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        var kelasId = selKelas.value;
+        var judul = document.getElementById('judul-sesi').value.trim();
+        var tanggal = document.getElementById('tgl-sesi').value;
+        var waktu = document.getElementById('waktu-sesi').value;
+        var link = document.getElementById('link-gmeet').value.trim();
+
+        if (!kelasId || !judul || !tanggal || !waktu || !link) {
+          showAlert('alert-box', 'Semua field harus diisi.', 'danger');
+          return;
+        }
+
+        if (link.indexOf('https://') !== 0) {
+          showAlert('alert-box', 'Link GMeet harus diawali https://', 'danger');
+          return;
+        }
+
+        createItem('jadwal_tatap_muka', {
+          id: generateId('jd'),
+          instrukturId: user.id,
+          kelasId: kelasId,
+          judul: judul,
+          tanggal: tanggal,
+          waktu: waktu,
+          linkGmeet: link,
+          dibuatPada: new Date().toISOString()
+        });
+
+        showAlert('alert-box', 'Jadwal berhasil ditambahkan.', 'success');
+        this.reset();
+        tampilkanDaftarJadwal();
+      });
+
+      function hapusJadwal(jadwalId) {
+        if (!confirm('Hapus jadwal ini?')) return;
+        deleteItem('jadwal_tatap_muka', jadwalId);
+        tampilkanDaftarJadwal();
+      }
+
+      tampilkanDaftarJadwal();
+    }
+  </script>
+</body>
+</html>

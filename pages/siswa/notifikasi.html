@@ -91,7 +91,7 @@
         var unread = !n.dibaca;
         return `
           <div class="notif-item card${unread ? ' notif-unread' : ''}" data-id="${n.id}" role="button" tabindex="0">
-            <span class="notif-icon" aria-hidden="true">🔔</span>
+            <span class="notif-icon" aria-hidden="true"><img src="../../assets/icons/notifikasi_card.png" width="22" alt="notifikasi" style="vertical-align:middle;"></span>
             <div class="notif-body">
               <p class="notif-pesan">${n.pesan}</p>
               <p class="notif-tanggal text-gray">${formatTanggalWaktu(n.tanggal)}</p>

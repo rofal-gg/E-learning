@@ -38,6 +38,8 @@
     var indeksSoal = 0;
     var jawabanUser = [];
 
+    function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
     var contentEl = document.getElementById('kuis-content');
     var btnNav = document.getElementById('btn-nav');
     var linkKembali = document.getElementById('link-kembali');
@@ -72,14 +74,14 @@
         return `
           <label>
             <input type="radio" name="jawaban" value="${idx}"${checked}>
-            <span>${pilihan}</span>
+            <span>${esc(pilihan)}</span>
           </label>
         `;
       }).join('');
 
       contentEl.innerHTML = `
         <p class="kuis-soal-nomor">Soal ${nomor + 1} dari ${soalList.length}</p>
-        <p class="kuis-pertanyaan">${soal.pertanyaan}</p>
+        <p class="kuis-pertanyaan">${esc(soal.pertanyaan)}</p>
         <div class="kuis-pilihan">${pilihanHtml}</div>
       `;
 

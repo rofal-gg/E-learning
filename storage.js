@@ -44,6 +44,8 @@ function initStorage() {
   if (!localStorage.getItem('wishlist'))     localStorage.setItem('wishlist', JSON.stringify([]));
   if (!localStorage.getItem('kupon'))        localStorage.setItem('kupon', JSON.stringify(SEED_KUPON));
   if (!localStorage.getItem('penarikan'))    localStorage.setItem('penarikan', JSON.stringify([]));
+  if (!localStorage.getItem('jadwal_tatap_muka')) localStorage.setItem('jadwal_tatap_muka', JSON.stringify([]));
+  if (!localStorage.getItem('kuis_penempatan'))   localStorage.setItem('kuis_penempatan', JSON.stringify([]));
   if (!localStorage.getItem('banner'))       localStorage.setItem('banner', JSON.stringify({ teks: "Belajar itu Menyenangkan! Diskon 30% Kursus Pilihan", link: "#" }));
   if (!localStorage.getItem('categories'))   localStorage.setItem('categories', JSON.stringify(SEED_CATEGORIES));
 

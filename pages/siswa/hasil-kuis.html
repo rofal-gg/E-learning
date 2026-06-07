@@ -25,6 +25,8 @@
   </main>
 
   <script>
+    function esc(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
     var user = window.__pageUser;
     var raw = sessionStorage.getItem('hasilKuisData');
     var container = document.getElementById('hasil-content');
@@ -43,13 +45,13 @@
       return soalList.map(function (soal, idx) {
         var idxUser = jawabanUser[idx];
         var teksUser = idxUser !== null && idxUser !== undefined
-          ? soal.pilihan[idxUser]
+          ? esc(soal.pilihan[idxUser])
           : '(tidak dijawab)';
-        var teksBenar = soal.pilihan[soal.jawaban];
+        var teksBenar = esc(soal.pilihan[soal.jawaban]);
         var isBenar = idxUser === soal.jawaban;
         return `
           <div class="card pembahasan-item ${isBenar ? 'benar' : 'salah'}">
-            <h3>Soal ${idx + 1}: ${soal.pertanyaan}</h3>
+            <h3>Soal ${idx + 1}: ${esc(soal.pertanyaan)}</h3>
             <p class="pembahasan-row">Jawaban Anda: <strong>${teksUser}</strong></p>
             <p class="pembahasan-row">Jawaban Benar: <strong>${teksBenar}</strong></p>
             <p class="pembahasan-status ${isBenar ? 'benar' : 'salah'}">${isBenar ? '✓ Benar' : '✗ Salah'}</p>
@@ -59,6 +61,18 @@
     }
 
     // tampilkan skor dan pembahasan
+    function simpanKuisSelesai(kelasId, babKe) {
+      var progres = getAll('progres').find(function (p) {
+        return sameUserId(p.userId, user.id) && String(p.kelasId) === String(kelasId);
+      });
+      if (!progres) return;
+      var kuisSelesai = (progres.kuisSelesai || []).slice();
+      if (kuisSelesai.indexOf(babKe) === -1) {
+        kuisSelesai.push(babKe);
+        updateItem('progres', progres.id, { kuisSelesai: kuisSelesai });
+      }
+    }
+
     function tampilkanHasil(data) {
       var soalList = data.soal || [];
       var jawabanUser = data.jawabanUser || [];
@@ -70,6 +84,8 @@
       document.getElementById('hasil-meta').textContent =
         (data.judulKelas || 'Kelas') + ' — Bab ' + (data.babKe || '-');
       document.title = 'Hasil Kuis — ' + (data.judulKelas || 'Platform E-Learning');
+
+      if (lulus) simpanKuisSelesai(data.kelasId, data.babKe);
 
       var progres = getAll('progres').find(function (p) {
         return sameUserId(p.userId, user.id) && String(p.kelasId) === String(data.kelasId);

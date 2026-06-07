@@ -88,12 +88,19 @@
     renderNavbarPublik({ basePath: '' });
     renderFooter({ basePath: '' });
 
-    var KATEGORI_EMOJI = {
-      1: '💻',
-      2: '🎨',
-      3: '📊',
-      4: '📱',
-      5: '💼'
+    var KATEGORI_ICON = {
+      1:  'assets/icons/web.png',
+      2:  'assets/icons/uiux.png',
+      3:  'assets/icons/data_science.png',
+      4:  'assets/icons/mobile_dev.png',
+      5:  'assets/icons/bisnis_digital.png',
+      6:  'assets/icons/devops_cloud.svg',
+      7:  'assets/icons/cyber_security.svg',
+      8:  'assets/icons/iot.svg',
+      9:  'assets/icons/artificial_intelligence.svg',
+      10: 'assets/icons/game_development.svg',
+      11: 'assets/icons/digital_marketing.svg',
+      12: 'assets/icons/product_management.svg'
     };
 
     // ambil daftar kategori dari storage
@@ -106,14 +113,16 @@
       var container = document.getElementById('grid-kategori');
       var kategori = ambilKategori();
       container.innerHTML = kategori.map(function (k) {
+        var iconSrc = KATEGORI_ICON[k.id] || 'assets/icons/default_kategori.svg';
         return `
           <div class="card-kategori">
-            <span class="emoji">${KATEGORI_EMOJI[k.id] || '📚'}</span>
+            <img src="${iconSrc}" width="36" height="36" alt="${k.nama}" class="kategori-icon">
             <h3>${k.nama}</h3>
           </div>
         `;
       }).join('');
     }
+
 
     // ambil 3 kelas published untuk unggulan
     function ambilKelasUnggulan() {

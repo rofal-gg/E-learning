@@ -122,16 +122,42 @@
       }
     }
 
+    // cek apakah tingkatan user cukup untuk level kelas ini
+    function cekTingkatan(user, kelas) {
+      if (!user || user.role !== 'siswa') return { ok: true };
+      if (user && userOwnsKelas(user.id, kelas.id)) return { ok: true };
+      var t = user.tingkatan;
+      var lvl = kelas.level;
+      if (!t || t === 'belum_tes') {
+        return { ok: false, pesan: 'Ikuti <a href="kuis-penempatan.html">kuis penempatan</a> untuk mengetahui tingkatan belajarmu.' };
+      }
+      var bisa = false;
+      if (t === 'mahir') bisa = true;
+      else if (t === 'menengah') bisa = (lvl === 'Pemula' || lvl === 'Menengah');
+      else if (t === 'pemula') bisa = (lvl === 'Pemula');
+      if (!bisa) {
+        return { ok: false, pesan: 'Kelas ini untuk tingkatan <strong>' + lvl + '</strong>. Tingkatan kamu saat ini: <strong>' + t.charAt(0).toUpperCase() + t.slice(1) + '</strong>. <a href="kuis-penempatan.html">Ikuti kuis penempatan ulang</a>' };
+      }
+      return { ok: true };
+    }
+
     // tampilkan halaman detail kelas
     function tampilkanDetail(kelas) {
       var user = getCurrentUser();
       var sudahBeli = user && userOwnsKelas(user.id, kelas.id);
 
+      var cek = cekTingkatan(user, kelas);
+      var bannerTingkatan = cek.ok ? '' : '<div class="alert alert-danger" style="margin-bottom:14px">' + cek.pesan + '</div>';
+
       var panelButtons = sudahBeli
-        ? `<a href="ruang-belajar.html?id=${kelas.id}" class="btn btn-primary btn-block">Lanjutkan Belajar</a>
-           <a href="diskusi.html?kelasId=${kelas.id}" class="btn btn-secondary btn-block">Forum Diskusi</a>`
-        : `<button type="button" id="btn-cart" class="btn btn-primary btn-block">Tambah ke Keranjang</button>
-           <button type="button" id="btn-wishlist" class="btn btn-secondary btn-block">Simpan ke Wishlist</button>`;
+        ? `<div class="btn-group">
+             <a href="ruang-belajar.html?id=${kelas.id}" class="btn btn-primary">Lanjutkan Belajar</a>
+             <a href="diskusi.html?kelasId=${kelas.id}" class="btn btn-secondary">Forum Diskusi</a>
+           </div>`
+        : `<div class="btn-group">
+             <button type="button" id="btn-cart" class="btn btn-primary">Tambah ke Keranjang</button>
+             <button type="button" id="btn-wishlist" class="btn btn-secondary">Simpan ke Wishlist</button>
+           </div>`;
 
       document.getElementById('detail-content').innerHTML = `
         <div class="detail-layout">
@@ -152,6 +178,7 @@
           <aside class="price-panel card">
             <h3 class="price-panel-title">Harga Kelas</h3>
             <p class="price-big">${formatRupiah(kelas.harga)}</p>
+            ${bannerTingkatan}
             ${panelButtons}
           </aside>
         </div>
