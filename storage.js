@@ -11,7 +11,21 @@ function ensureSeedUsers() {
       users.push(Object.assign({ status: 'aktif' }, seed));
       changed = true;
     } else if (demoEmails.indexOf(seed.email) !== -1) {
-      users[idx] = Object.assign({}, users[idx], seed, { status: users[idx].status || 'aktif' });
+      var merged = Object.assign({}, users[idx], seed, { status: users[idx].status || 'aktif' });
+      merged.poin = users[idx].poin !== undefined ? users[idx].poin : 0;
+      merged.tingkatan = users[idx].tingkatan !== undefined ? users[idx].tingkatan : seed.tingkatan;
+      merged.saldo = users[idx].saldo !== undefined ? users[idx].saldo : 0;
+      users[idx] = merged;
+      changed = true;
+    }
+  });
+
+  users.forEach(function (u) {
+    if (u.role !== 'siswa' || !u.tingkatan) return;
+    var minPoin = u.tingkatan === 'mahir' ? 201 : (u.tingkatan === 'menengah' ? 101 : 0);
+    var poinSekarang = u.poin !== undefined ? u.poin : 0;
+    if (poinSekarang < minPoin) {
+      u.poin = minPoin;
       changed = true;
     }
   });

@@ -61,7 +61,7 @@ function renderNavbarPublik(options) {
   } else {
     navActions.innerHTML = `
       <a href="${base}pages/auth/login.html" class="btn btn-secondary btn-sm">Masuk</a>
-      <a href="${base}pages/auth/register-siswa.html" class="btn btn-primary btn-sm">Daftar</a>
+      <a href="${base}pages/auth/register.html" class="btn btn-primary btn-sm">Daftar</a>
     `;
   }
 }

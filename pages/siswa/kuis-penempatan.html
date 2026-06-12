@@ -57,8 +57,10 @@
 
   <script>
     var user = window.__pageUser;
+    var freshUser = getById('users', user.id) || user;
+    window.__pageUser = freshUser;
 
-    if (user.tingkatan && user.tingkatan !== 'belum_tes') {
+    if (freshUser.tingkatan && freshUser.tingkatan !== 'belum_tes') {
       window.location.href = 'dashboard.html';
     }
 
@@ -146,7 +148,9 @@
         tanggal: new Date().toISOString()
       });
 
-      window.location.href = 'hasil-penempatan.html?tingkatan=' + encodeURIComponent(tingkatanHasil) + '&skor=' + skor;
+      var updatedUser = getById('users', user.id);
+      if (updatedUser) persistSession(updatedUser);
+      window.location.href = 'katalog.html?placement=' + encodeURIComponent(tingkatanHasil) + '&skor=' + skor;
     });
 
     tampilkanSoal(0);

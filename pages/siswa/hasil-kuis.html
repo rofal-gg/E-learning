@@ -85,7 +85,15 @@
         (data.judulKelas || 'Kelas') + ' — Bab ' + (data.babKe || '-');
       document.title = 'Hasil Kuis — ' + (data.judulKelas || 'Platform E-Learning');
 
-      if (lulus) simpanKuisSelesai(data.kelasId, data.babKe);
+      if (lulus) {
+        simpanKuisSelesai(data.kelasId, data.babKe);
+        var freshUser = getById('users', user.id);
+        if (freshUser) {
+          var poinBaru = (freshUser.poin || 0) + 10;
+          updateItem('users', user.id, { poin: poinBaru });
+          cekNaikTingkatan(freshUser, poinBaru);
+        }
+      }
 
       var progres = getAll('progres').find(function (p) {
         return sameUserId(p.userId, user.id) && String(p.kelasId) === String(data.kelasId);

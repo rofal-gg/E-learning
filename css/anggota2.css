@@ -151,6 +151,35 @@
   }
 }
 
+/* Restriction Card */
+.restriction-card {
+  background: #fff8e6;
+  border: 2px solid #f59e0b;
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  margin-top: 4px;
+}
+.restriction-card .restriction-icon {
+  font-size: 1.5rem;
+  margin-bottom: 6px;
+  display: block;
+}
+.restriction-card .restriction-title {
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  color: #92400e;
+  margin-bottom: 6px;
+}
+.restriction-card .restriction-body {
+  font-size: var(--font-size-xs, 0.8rem);
+  color: #b45309;
+  line-height: 1.5;
+}
+.restriction-card .restriction-body strong {
+  color: #92400e;
+}
+
 /* Checkout */
 .checkout-section-title {
   margin: 0 0 16px;

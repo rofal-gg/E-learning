@@ -23,7 +23,7 @@
         <h1 id="greeting">Halo, Siswa!</h1>
       </div>
 
-      <div class="grid-4" id="kpi-grid">
+      <div class="grid-5" id="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-value" id="kpi-kelas-dibeli">0</div>
           <div class="kpi-label">Total Kelas Dibeli</div>
@@ -37,8 +37,12 @@
           <div class="kpi-label">Total Diskusi</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-value">120</div>
+          <div class="kpi-value" id="kpi-poin">0</div>
           <div class="kpi-label">Poin</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-tingkatan">-</div>
+          <div class="kpi-label">Tingkatan</div>
         </div>
       </div>
 
@@ -100,6 +104,12 @@
       document.getElementById('kpi-kelas-dibeli').textContent = ids.length;
       document.getElementById('kpi-kelas-selesai').textContent = selesai.length;
       document.getElementById('kpi-diskusi').textContent = diskusi.length;
+      var freshUser = getById('users', user.id);
+      document.getElementById('kpi-poin').textContent = (freshUser && freshUser.poin) || 0;
+      var t = freshUser && freshUser.tingkatan;
+      document.getElementById('kpi-tingkatan').textContent = t && t !== 'belum_tes'
+        ? t.charAt(0).toUpperCase() + t.slice(1)
+        : 'Belum Tes';
     }
 
     // cari transaksi terakhir untuk sebuah kelas

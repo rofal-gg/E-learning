@@ -99,6 +99,7 @@ body {
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
 
 /* Sidebar Layout */
 .layout-sidebar { display: flex; min-height: 100vh; }
@@ -249,7 +250,7 @@ body {
 
 
 @media (max-width: 768px) {
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
   .layout-sidebar { flex-direction: column; }
   .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--gray-100); }
   .sidebar nav {
@@ -271,7 +272,7 @@ body {
 
 /* Responsive bersama */
 @media (max-width: 768px) {
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
   .layout-sidebar { flex-direction: column; }
   .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--gray-100); }
   .sidebar nav { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 12px; }

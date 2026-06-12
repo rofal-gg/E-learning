@@ -37,8 +37,6 @@
       try { appliedKupon = JSON.parse(savedKupon); } catch (e) { appliedKupon = null; }
     }
 
-    renderSidebarSiswa('cart');
-
     var PAKET_DURASI = [
       { id: 'p1', label: '1 Bulan', bulan: 1, multiplier: 1.0 },
       { id: 'p3', label: '3 Bulan', bulan: 3, multiplier: 2.5 },
@@ -47,15 +45,17 @@
     ];
 
     var selectedPaket = PAKET_DURASI[0];
+    var savedPaket = sessionStorage.getItem('selectedPaket');
+    if (savedPaket) {
+      try { selectedPaket = JSON.parse(savedPaket); } catch (e) { selectedPaket = PAKET_DURASI[0]; }
+    }
+
+    renderSidebarSiswa('cart');
 
     function hitungTanggalBerakhir(bulan) {
       var tgl = new Date();
       tgl.setMonth(tgl.getMonth() + bulan);
       return tgl.toISOString();
-    }
-
-    function hitungTotalPaket(subtotal, diskon) {
-      return Math.max(0, subtotal * selectedPaket.multiplier - diskon);
     }
 
     // ambil item keranjang user
@@ -100,28 +100,18 @@
         ? `<div class="summary-row summary-discount"><span>Diskon kupon</span><span>- ${formatRupiah(angka.diskon)}</span></div>`
         : '';
 
-      function buatPaketCard(paket) {
-        var aktif = paket.id === selectedPaket.id ? ' aktif' : '';
-        var hargaPaket = angka.subtotal * paket.multiplier;
-        var hemat = paket.bulan >= 3 ? '<div class="paket-hemat">Hemat ' + Math.round((1 - paket.multiplier / paket.bulan) * 100) + '%</div>' : '';
-        return '<div class="paket-card' + aktif + '" data-id="' + paket.id + '"><div class="paket-label">' + paket.label + '</div><div class="paket-harga">' + formatRupiah(hargaPaket) + '</div>' + hemat + '</div>';
-      }
-
-      var paketHtml = PAKET_DURASI.map(buatPaketCard).join('');
-
-      var totalPaket = hitungTotalPaket(angka.subtotal, angka.diskon);
+      var totalPaket = Math.max(0, angka.subtotal * selectedPaket.multiplier - angka.diskon);
 
       area.innerHTML = `
         <div class="cart-layout checkout-layout">
           <section class="card">
             <h2 class="checkout-section-title">Ringkasan Pesanan</h2>
             <ul class="checkout-order-list">${listItems}</ul>
+            <div class="summary-row"><span>Paket Akses</span><span><strong>${selectedPaket.label}</strong> (${selectedPaket.multiplier}x)</span></div>
             ${barisDiskon}
             <div class="summary-row total"><span>Total Pembayaran</span><span id="checkout-total">${formatRupiah(totalPaket)}</span></div>
           </section>
           <aside class="card checkout-payment-card">
-            <h2 class="checkout-section-title">Pilih Paket Akses</h2>
-            <div class="paket-grid" id="paket-grid">${paketHtml}</div>
             <h2 class="checkout-section-title">Metode Pembayaran</h2>
             <form id="form-checkout">
               <label class="payment-option">
@@ -147,17 +137,6 @@
         </div>
       `;
 
-      document.getElementById('paket-grid').querySelectorAll('.paket-card').forEach(function (card) {
-        card.addEventListener('click', function () {
-          var id = this.getAttribute('data-id');
-          selectedPaket = PAKET_DURASI.find(function (p) { return p.id === id; }) || PAKET_DURASI[0];
-          document.querySelectorAll('.paket-card').forEach(function (c) { c.classList.remove('aktif'); });
-          this.classList.add('aktif');
-          var totalBaru = hitungTotalPaket(angka.subtotal, angka.diskon);
-          document.getElementById('checkout-total').textContent = formatRupiah(totalBaru);
-        });
-      });
-
       document.querySelectorAll('input[name="metode"]').forEach(function (radio) {
         radio.addEventListener('change', function () {
           var qrisContainer = document.getElementById('qris-container');
@@ -169,7 +148,7 @@
 
       document.getElementById('form-checkout').addEventListener('submit', function (e) {
         e.preventDefault();
-        prosesBayar(items, hitungTotalPaket(angka.subtotal, angka.diskon));
+        prosesBayar(items, totalPaket);
       });
     }
 
@@ -196,11 +175,14 @@
         tanggalBerakhir: hitungTanggalBerakhir(selectedPaket.bulan)
       });
 
+      var subtotal = items.reduce(function (sum, item) { return sum + item.kelas.harga; }, 0);
+
       kelasIds.forEach(function (kelasId) {
         var kelas = getById('kelas', kelasId);
         if (kelas) {
           updateItem('kelas', kelasId, { totalSiswa: (kelas.totalSiswa || 0) + 1 });
-          var share = Math.round((kelas.harga || 0) * 0.7);
+          var proporsi = subtotal > 0 ? (kelas.harga / subtotal) : 0;
+          var share = Math.round(proporsi * total * 0.7);
           if (share > 0 && kelas.instrukturId) {
             var instruktur = getById('users', kelas.instrukturId);
             if (instruktur) {
@@ -209,7 +191,7 @@
               });
             }
           }
-          notifyInstrukturKelasTerjual(kelas, user.nama, transaksiId);
+          notifyInstrukturKelasTerjual(kelas, user.nama, transaksiId, share);
         }
 
         var sudahAda = getAll('progres').some(function (p) {
@@ -228,6 +210,7 @@
 
       clearUserCart(user.id);
       sessionStorage.removeItem('appliedKupon');
+      sessionStorage.removeItem('selectedPaket');
       createNotifikasi(user.id, 'Pembelian berhasil! Kelas sudah bisa diakses.');
       window.location.href = 'invoice.html?id=' + encodeURIComponent(transaksiId);
     }

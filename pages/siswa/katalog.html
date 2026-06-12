@@ -37,6 +37,7 @@
         <input type="text" id="filter-search" class="form-input filter-search" placeholder="Cari judul kelas...">
       </div>
 
+      <div id="alert-katalog" class="alert-box-wrap"></div>
       <div id="grid-kelas" class="grid-3"></div>
     </div>
   </main>
@@ -50,6 +51,22 @@
   <script src="../../components/components.js"></script>
   <script>
     initStorage();
+
+    // notifikasi hasil kuis penempatan
+    (function() {
+      var placement = getQueryParam('placement');
+      var skor = getQueryParam('skor');
+      if (placement && skor) {
+        var badgeClass = { pemula: 'badge-warning', menengah: 'badge-primary', mahir: 'badge-success' };
+        var badge = badgeClass[placement] || 'badge-primary';
+        document.getElementById('alert-katalog').innerHTML =
+          '<div class="alert alert-success" style="margin-bottom:16px">' +
+            '✅ Kuis penempatan selesai! Kamu mendapatkan tingkatan ' +
+            '<span class="badge ' + badge + '">' + placement.charAt(0).toUpperCase() + placement.slice(1) + '</span> ' +
+            '(Skor: ' + skor + '/9). Mulai jelajahi kelas yang sesuai!' +
+          '</div>';
+      }
+    })();
 
     // render navbar dan footer
     renderNavbarPublik({ basePath: '../../', activeLink: 'katalog' });

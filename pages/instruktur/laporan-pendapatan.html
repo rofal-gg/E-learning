@@ -54,7 +54,7 @@
       </div>
 
       <p class="catatan-platform">
-        Pendapatan = 70% dari harga kelas (simulasi potongan platform 30%)
+        Pendapatan = 70% dari total pembayaran siswa (setelah paket akses &amp; diskon), dibagi proporsional per kelas
       </p>
     </main>
   </div>
@@ -114,11 +114,16 @@
         if (myItems.length === 0) return;
 
         totalTransaksi++;
+        var subtotalTrans = myItems.reduce(function (sum, kelasId) {
+          var k2 = kelasMap[kelasId];
+          return sum + (k2 ? (k2.harga || 0) : 0);
+        }, 0);
         myItems.forEach(function (kelasId) {
           var k = kelasMap[kelasId];
           if (!k) return;
           perKelas[kelasId].terjual++;
-          var share = Math.round((k.harga || 0) * 0.7);
+          var proporsi = subtotalTrans > 0 ? (k.harga / subtotalTrans) : 0;
+          var share = Math.round(proporsi * (t.total || 0) * 0.7);
           perKelas[kelasId].pendapatan += share;
           totalPendapatan += share;
         });

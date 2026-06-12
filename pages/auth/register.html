@@ -114,7 +114,7 @@
 
       <div class="form-group">
         <label class="form-label" for="no-hp">Nomor HP</label>
-        <input type="tel" id="no-hp" class="form-input" placeholder="08xx-xxxx-xxxx">
+        <input type="tel" id="no-hp" class="form-input" placeholder="08xx-xxxx-xxxx" required>
       </div>
 
       <button type="submit" class="btn btn-primary btn-block">Daftar</button>
@@ -162,7 +162,7 @@
       var tanggalLahir = document.getElementById('tanggal-lahir').value;
       var noHp = document.getElementById('no-hp').value.trim();
 
-      if (!nama || !email || !password || !konfirmasi || !namaOrtu || !tanggalLahir) {
+      if (!nama || !email || !password || !konfirmasi || !namaOrtu || !tanggalLahir || !noHp) {
         showAlert('alert-box', 'Semua field wajib diisi.', 'danger');
         return;
       }
@@ -191,7 +191,11 @@
 
       if (hasil.sukses) {
         persistSession(hasil.user);
-        redirectByRole(role);
+        if (role === 'siswa') {
+          window.location.href = resolveAppPath('../siswa/kuis-penempatan.html');
+        } else {
+          redirectByRole(role);
+        }
       } else {
         showAlert('alert-box', hasil.pesan, 'danger');
       }

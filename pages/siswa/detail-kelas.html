@@ -89,6 +89,7 @@
       var sudahBeli = user && userOwnsKelas(user.id, kelasId);
 
       if (sudahBeli) return;
+      if (user && !cekTingkatan(user, kelas).ok) return;
 
       var btnCart = document.getElementById('btn-cart');
       var btnWishlist = document.getElementById('btn-wishlist');
@@ -136,7 +137,8 @@
       else if (t === 'menengah') bisa = (lvl === 'Pemula' || lvl === 'Menengah');
       else if (t === 'pemula') bisa = (lvl === 'Pemula');
       if (!bisa) {
-        return { ok: false, pesan: 'Kelas ini untuk tingkatan <strong>' + lvl + '</strong>. Tingkatan kamu saat ini: <strong>' + t.charAt(0).toUpperCase() + t.slice(1) + '</strong>. <a href="kuis-penempatan.html">Ikuti kuis penempatan ulang</a>' };
+        var poinDibutuhkan = lvl === 'Mahir' ? 201 : 101;
+        return { ok: false, pesan: 'Tingkatan kamu saat ini: <strong>' + t.charAt(0).toUpperCase() + t.slice(1) + '</strong>. Kelas ini untuk tingkatan <strong>' + lvl + '</strong>. Kumpulkan minimal ' + poinDibutuhkan + ' poin untuk naik tingkatan.' };
       }
       return { ok: true };
     }
@@ -147,17 +149,22 @@
       var sudahBeli = user && userOwnsKelas(user.id, kelas.id);
 
       var cek = cekTingkatan(user, kelas);
-      var bannerTingkatan = cek.ok ? '' : '<div class="alert alert-danger" style="margin-bottom:14px">' + cek.pesan + '</div>';
 
       var panelButtons = sudahBeli
         ? `<div class="btn-group">
              <a href="ruang-belajar.html?id=${kelas.id}" class="btn btn-primary">Lanjutkan Belajar</a>
              <a href="diskusi.html?kelasId=${kelas.id}" class="btn btn-secondary">Forum Diskusi</a>
            </div>`
-        : `<div class="btn-group">
-             <button type="button" id="btn-cart" class="btn btn-primary">Tambah ke Keranjang</button>
-             <button type="button" id="btn-wishlist" class="btn btn-secondary">Simpan ke Wishlist</button>
-           </div>`;
+        : cek.ok
+          ? `<div class="btn-group">
+               <button type="button" id="btn-cart" class="btn btn-primary">Tambah ke Keranjang</button>
+               <button type="button" id="btn-wishlist" class="btn btn-secondary">Simpan ke Wishlist</button>
+             </div>`
+          : `<div class="restriction-card">
+              <span class="restriction-icon">🔒</span>
+              <div class="restriction-title">Tingkatan Belum Mencukupi</div>
+              <div class="restriction-body">${cek.pesan}</div>
+            </div>`;
 
       document.getElementById('detail-content').innerHTML = `
         <div class="detail-layout">
@@ -178,7 +185,6 @@
           <aside class="price-panel card">
             <h3 class="price-panel-title">Harga Kelas</h3>
             <p class="price-big">${formatRupiah(kelas.harga)}</p>
-            ${bannerTingkatan}
             ${panelButtons}
           </aside>
         </div>

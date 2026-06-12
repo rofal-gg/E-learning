@@ -113,6 +113,23 @@ function redirectByRole(role) {
   window.location.replace(resolveAppPath(getRoleDashboardPath(role)));
 }
 
+function hitungTingkatanDariPoin(poin) {
+  if (poin >= 201) return 'mahir';
+  if (poin >= 101) return 'menengah';
+  return 'pemula';
+}
+
+function cekNaikTingkatan(user, poinBaru) {
+  if (!user || user.role !== 'siswa') return;
+  var urutan = { pemula: 0, menengah: 1, mahir: 2 };
+  var tierBaru = hitungTingkatanDariPoin(poinBaru);
+  var orderLama = urutan[user.tingkatan] !== undefined ? urutan[user.tingkatan] : -1;
+  var orderBaru = urutan[tierBaru] || 0;
+  if (orderBaru > orderLama) {
+    updateItem('users', user.id, { tingkatan: tierBaru });
+  }
+}
+
 function denyPageAccess() {
   var html =
     '<div style="padding:48px;text-align:center;font-family:Segoe UI,sans-serif;color:#374151">' +
@@ -249,6 +266,7 @@ function register(data) {
     status: 'aktif',
     namaOrangTua: data.namaOrangTua || '',
     tanggalLahir: data.tanggalLahir || '',
+    poin: 0,
     tingkatan: data.role === 'siswa' ? 'belum_tes' : ''
   };
   if (data.keahlian) newUser.keahlian = data.keahlian;
@@ -360,7 +378,7 @@ function createNotifikasi(userId, pesan, meta) {
 }
 
 /** Beri tahu instruktur saat kelasnya baru dibeli. */
-function notifyInstrukturKelasTerjual(kelas, pembeliNama, transaksiId) {
+function notifyInstrukturKelasTerjual(kelas, pembeliNama, transaksiId, share) {
   if (!kelas || !kelas.instrukturId) return;
 
   var sudahAda = getAll('notifikasi').some(function (n) {
@@ -373,10 +391,12 @@ function notifyInstrukturKelasTerjual(kelas, pembeliNama, transaksiId) {
   });
   if (sudahAda) return;
 
-  var share = Math.round((kelas.harga || 0) * 0.7);
+  if (share == null) {
+    share = Math.round((kelas.harga || 0) * 0.7);
+  }
   var pesan =
     'Kelas "' + kelas.judul + '" dibeli oleh ' + (pembeliNama || 'siswa') + '.' +
-    (share > 0 ? ' Pendapatan +Rp ' + share.toLocaleString('id-ID') + ' (70%).' : '');
+    (share > 0 ? ' Pendapatan +Rp ' + share.toLocaleString('id-ID') + '.' : '');
 
   createNotifikasi(kelas.instrukturId, pesan, {
     tipe: 'penjualan',
@@ -411,7 +431,13 @@ function syncNotifikasiPenjualanInstruktur(instrukturId) {
     var pembeli = getById('users', t.userId);
     var namaPembeli = pembeli ? pembeli.nama : 'Siswa';
 
-    (t.items || []).forEach(function (kelasId) {
+    var semuaItems = t.items || [];
+    var subtotalTrans = semuaItems.reduce(function (sum, kId) {
+      var k2 = getById('kelas', kId);
+      return sum + (k2 ? (k2.harga || 0) : 0);
+    }, 0);
+
+    semuaItems.forEach(function (kelasId) {
       if (kelasIds.indexOf(String(kelasId)) === -1) return;
       var key = String(t.id) + ':' + String(kelasId);
       if (existing[key]) return;
@@ -419,7 +445,9 @@ function syncNotifikasiPenjualanInstruktur(instrukturId) {
       var kelas = getById('kelas', kelasId);
       if (!kelas) return;
 
-      notifyInstrukturKelasTerjual(kelas, namaPembeli, t.id);
+      var proporsi = subtotalTrans > 0 ? (kelas.harga / subtotalTrans) : 0;
+      var actualShare = Math.round(proporsi * (t.total || 0) * 0.7);
+      notifyInstrukturKelasTerjual(kelas, namaPembeli, t.id, actualShare);
       existing[key] = true;
     });
   });

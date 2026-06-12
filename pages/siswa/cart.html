@@ -33,6 +33,19 @@
     var user = window.__pageUser;
     var appliedKupon = null;
 
+    var PAKET_DURASI = [
+      { id: 'p1', label: '1 Bulan', bulan: 1, multiplier: 1.0 },
+      { id: 'p3', label: '3 Bulan', bulan: 3, multiplier: 2.5 },
+      { id: 'p6', label: '6 Bulan', bulan: 6, multiplier: 4.0 },
+      { id: 'p12', label: '1 Tahun', bulan: 12, multiplier: 7.0 }
+    ];
+    var selectedPaket = PAKET_DURASI[0];
+
+    var savedPaket = sessionStorage.getItem('selectedPaket');
+    if (savedPaket) {
+      try { selectedPaket = JSON.parse(savedPaket); } catch (e) { selectedPaket = PAKET_DURASI[0]; }
+    }
+
     // render sidebar siswa
     renderSidebarSiswa('cart');
 
@@ -73,11 +86,20 @@
         return sum + item.kelas.harga;
       }, 0);
       var diskon = hitungDiskonKupon(subtotal, items, appliedKupon);
-      var total = Math.max(0, subtotal - diskon);
+      var totalPaket = Math.max(0, subtotal * selectedPaket.multiplier - diskon);
 
       var barisDiskon = diskon > 0 && appliedKupon
         ? `<div class="summary-row summary-discount"><span>Diskon (${appliedKupon.diskon}%)</span><span>- ${formatRupiah(diskon)}</span></div>`
         : '';
+
+      function buatPaketCard(paket) {
+        var aktif = paket.id === selectedPaket.id ? ' aktif' : '';
+        var hargaPaket = subtotal * paket.multiplier;
+        var hemat = paket.bulan >= 3 ? '<div class="paket-hemat">Hemat ' + Math.round((1 - paket.multiplier / paket.bulan) * 100) + '%</div>' : '';
+        return '<div class="paket-card' + aktif + '" data-id="' + paket.id + '"><div class="paket-label">' + paket.label + '</div><div class="paket-harga">' + formatRupiah(hargaPaket) + '</div>' + hemat + '</div>';
+      }
+
+      var paketHtml = PAKET_DURASI.map(buatPaketCard).join('');
 
       var tableRows = items.map(function (item) {
         return `
@@ -101,8 +123,12 @@
           <aside class="card cart-summary">
             <h3 class="cart-summary-title">Ringkasan</h3>
             <div class="summary-row"><span>Subtotal</span><span>${formatRupiah(subtotal)}</span></div>
+            <div class="paket-section" style="margin:12px 0; padding-top:12px; border-top:1px solid var(--gray-200);">
+              <label style="font-weight:600; font-size:0.85rem; margin-bottom:8px; display:block;">Pilih Paket Akses</label>
+              <div class="paket-grid" id="cart-paket-grid">${paketHtml}</div>
+            </div>
             ${barisDiskon}
-            <div class="summary-row total"><span>Total</span><span id="total-harga">${formatRupiah(total)}</span></div>
+            <div class="summary-row total"><span>Total</span><span id="total-harga">${formatRupiah(totalPaket)}</span></div>
             <div class="form-group kupon-form-group">
               <label class="form-label" for="input-kupon">Kode Kupon</label>
               <div class="kupon-input-row">
@@ -151,6 +177,17 @@
           sessionStorage.setItem('appliedKupon', JSON.stringify(kupon));
           showAlert('alert-box', 'Kupon berhasil diterapkan! Diskon ' + kupon.diskon + '%', 'success');
           tampilkanKeranjang();
+        });
+
+        document.getElementById('cart-paket-grid').querySelectorAll('.paket-card').forEach(function (card) {
+          card.addEventListener('click', function () {
+            var id = this.getAttribute('data-id');
+            selectedPaket = PAKET_DURASI.find(function (p) { return p.id === id; }) || PAKET_DURASI[0];
+            document.querySelectorAll('.paket-card').forEach(function (c) { c.classList.remove('aktif'); });
+            this.classList.add('aktif');
+            sessionStorage.setItem('selectedPaket', JSON.stringify(selectedPaket));
+            tampilkanKeranjang();
+          });
         });
 
         if (appliedKupon) {

@@ -22,7 +22,8 @@ const SEED_USERS = [
     foto: "assets/images/avatar-1.jpg", bio: "",
     namaOrangTua: "Bapak Wijaya",
     tanggalLahir: "2003-01-01",
-    tingkatan: "mahir"
+    tingkatan: "mahir",
+    poin: 201
   },
   {
     id: "u002", nama: "Jefri Sutrisno", email: "jefri@email.com",
@@ -47,7 +48,8 @@ const SEED_USERS = [
     foto: "assets/images/avatar-1.jpg", bio: "",
     namaOrangTua: "Bapak Saryono",
     tanggalLahir: "2003-01-01",
-    tingkatan: "pemula"
+    tingkatan: "pemula",
+    poin: 0
   },
   {
     id: "u005", nama: "Rizky Ramadhan", email: "rizky@email.com",
@@ -55,7 +57,8 @@ const SEED_USERS = [
     foto: "assets/images/avatar-1.jpg", bio: "",
     namaOrangTua: "Bapak Ramadhan",
     tanggalLahir: "2004-01-01",
-    tingkatan: "pemula"
+    tingkatan: "pemula",
+    poin: 0
   },
   {
     id: "u006", nama: "Andi Prasetyo", email: "andi@email.com",
@@ -63,7 +66,8 @@ const SEED_USERS = [
     foto: "assets/images/avatar-1.jpg", bio: "",
     namaOrangTua: "Bapak Prasetyo",
     tanggalLahir: "2005-01-01",
-    tingkatan: "pemula"
+    tingkatan: "pemula",
+    poin: 0
   },
   {
     id: "u007", nama: "Budi Santoso", email: "budi@email.com",
@@ -71,7 +75,8 @@ const SEED_USERS = [
     foto: "assets/images/avatar-1.jpg", bio: "",
     namaOrangTua: "Bapak Santoso",
     tanggalLahir: "2003-01-01",
-    tingkatan: "pemula"
+    tingkatan: "pemula",
+    poin: 0
   },
   {
     id: "u008", nama: "Sari Delianti", email: "sariD@email.com",
@@ -115,7 +120,8 @@ const SEED_USERS = [
     foto: "assets/images/avatar-1.jpg", bio: "",
     namaOrangTua: "Ibu Handayani",
     tanggalLahir: "2004-07-12",
-    tingkatan: "menengah"
+    tingkatan: "menengah",
+    poin: 101
   },
   {
     id: "u013", nama: "Dimas Prayoga", email: "dimas@email.com",
@@ -123,7 +129,8 @@ const SEED_USERS = [
     foto: "assets/images/avatar-1.jpg", bio: "",
     namaOrangTua: "Bapak Prayoga",
     tanggalLahir: "2004-09-05",
-    tingkatan: "pemula"
+    tingkatan: "pemula",
+    poin: 0
   },
   {
     id: "u014", nama: "Mega Wulandari", email: "mega@email.com",
