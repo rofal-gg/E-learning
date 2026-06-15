@@ -52,6 +52,11 @@
       </section>
 
       <section class="content-section">
+        <h2>Kelas Selesai</h2>
+        <div id="kelas-selesai"></div>
+      </section>
+
+      <section class="content-section">
         <h2>Jadwal Sesi Tatap Muka</h2>
         <div id="jadwal-tatap-muka"></div>
       </section>
@@ -235,6 +240,45 @@
       }).join('');
     }
 
+    // tampilkan kelas selesai dengan tombol ulasan
+    function tampilkanKelasSelesai() {
+      var container = document.getElementById('kelas-selesai');
+      var ids = ambilKelasIds();
+
+      var selesai = ids.map(function (id) {
+        return { kelas: getById('kelas', id), progres: ambilProgres(id) };
+      }).filter(function (item) {
+        return item.kelas && item.progres.persen >= 100;
+      });
+
+      if (selesai.length === 0) {
+        container.innerHTML = '<p class="text-gray">Belum ada kelas yang selesai. Tetap semangat belajar!</p>';
+        return;
+      }
+
+      var semuaUlasan = getAll('ulasan');
+
+      container.innerHTML = '<div class="grid-3">' +
+        selesai.map(function (item) {
+          var sudahUlas = semuaUlasan.some(function (u) {
+            return String(u.kelasId) === String(item.kelas.id) && sameUserId(u.userId, user.id);
+          });
+          var btnUlas = sudahUlas
+            ? '<span class="badge badge-primary">Ulasan sudah diberikan</span>'
+            : '<a href="ulasan.html?kelasId=' + item.kelas.id + '" class="btn btn-primary btn-sm">Beri Ulasan</a>';
+          return '' +
+            '<div class="card-lanjut">' +
+              '<h3>' + item.kelas.judul + '</h3>' +
+              '<p class="text-gray">' + item.kelas.instrukturNama + '</p>' +
+              '<p class="progress-text">Progres: 100%</p>' +
+              '<div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>' +
+              '<p class="paket-info">Selesai</p>' +
+              '<div style="margin-top:12px">' + btnUlas + '</div>' +
+            '</div>';
+        }).join('') +
+      '</div>';
+    }
+
     // tampilkan 3 kelas terbaru dari katalog
     function tampilkanKelasTerbaru() {
       var container = document.getElementById('kelas-terbaru');
@@ -255,6 +299,7 @@
 
     tampilkanKPI();
     tampilkanLanjutBelajar();
+    tampilkanKelasSelesai();
     tampilkanJadwalTatapMuka();
     tampilkanKelasTerbaru();
   </script>

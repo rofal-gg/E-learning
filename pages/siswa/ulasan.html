@@ -77,6 +77,19 @@
         return;
       }
 
+      var progres = getAll('progres').find(function (p) {
+        return String(p.kelasId) === String(kelasId) && sameUserId(p.userId, user.id);
+      });
+      if (!progres || progres.persen < 100) {
+        area.innerHTML = `
+          <div class="empty-state">
+            <p>Kamu harus menyelesaikan seluruh materi kelas ini terlebih dahulu sebelum dapat memberi ulasan.</p>
+            <a href="ruang-belajar.html?id=${encodeURIComponent(kelasId)}" class="btn btn-primary">Lanjutkan Belajar</a>
+          </div>
+        `;
+        return;
+      }
+
       var ulasanLama = getAll('ulasan').find(function (u) {
         return String(u.kelasId) === String(kelasId) && sameUserId(u.userId, user.id);
       });
@@ -185,6 +198,14 @@
         });
         showAlert('alert-box', 'Ulasan berhasil dikirim!', 'success');
       }
+
+      // perbarui rating rata-rata kelas
+      var semuaUlasanKelas = getAll('ulasan').filter(function (u) {
+        return String(u.kelasId) === String(kelas.id);
+      });
+      var totalRating = semuaUlasanKelas.reduce(function (sum, u) { return sum + u.rating; }, 0);
+      var rataRata = Math.round((totalRating / semuaUlasanKelas.length) * 10) / 10;
+      updateItem('kelas', kelas.id, { rating: rataRata });
 
       var updated = getAll('ulasan').find(function (u) {
         return String(u.kelasId) === String(kelas.id) && sameUserId(u.userId, user.id);

@@ -2181,31 +2181,11 @@ const SEED_KUIS =
   ]
   ;
 const SEED_ULASAN = [
-  { id: "ul001", kelasId: "k001", userId: "u001", userName: "Budi Santoso", rating: 5, komentar: "Sangat mudah dipahami, materinya lengkap!", tanggal: "2025-01-10" },
-  { id: "ul002", kelasId: "k001", userId: "u004", userName: "Andi Prasetyo", rating: 4, komentar: "Bagus, tapi ada beberapa bagian yang kurang detail.", tanggal: "2025-01-15" },
-  { id: "ul003", kelasId: "k002", userId: "u001", userName: "Budi Santoso", rating: 5, komentar: "Materi JavaScript-nya mantap, langsung bisa dipraktikkan.", tanggal: "2025-02-01" },
-  { id: "ul004", kelasId: "k002", userId: "u004", userName: "Andi Prasetyo", rating: 4, komentar: "Penjelasan tentang closure sangat jelas.", tanggal: "2025-02-05" },
-  { id: "ul005", kelasId: "k003", userId: "u001", userName: "Budi Santoso", rating: 4, komentar: "Figma ternyata seru, tutorial auto layout-nya membantu.", tanggal: "2025-02-10" },
-  { id: "ul006", kelasId: "k004", userId: "u004", userName: "Andi Prasetyo", rating: 5, komentar: "React jadi lebih mudah dipahami dengan kursus ini.", tanggal: "2025-03-01" },
-  { id: "ul007", kelasId: "k005", userId: "u001", userName: "Budi Santoso", rating: 4, komentar: "Pandas dan NumPy dijelaskan dengan praktik langsung.", tanggal: "2025-03-10" },
-  { id: "ul008", kelasId: "k005", userId: "u004", userName: "Andi Prasetyo", rating: 5, komentar: "Machine learning jadi tidak serumit yang dibayangkan.", tanggal: "2025-03-12" },
-  { id: "ul009", kelasId: "k008", userId: "u001", userName: "Budi Santoso", rating: 5, komentar: "Materi ethical hacking sangat lengkap dan praktis!", tanggal: "2025-03-20" },
-  { id: "ul010", kelasId: "k010", userId: "u004", userName: "Andi Prasetyo", rating: 3, komentar: "Materi dasar bagus, tapi kurang studi kasus nyata.", tanggal: "2025-04-01" },
-  { id: "ul011", kelasId: "k011", userId: "u001", userName: "Budi Santoso", rating: 4, komentar: "Node.js dijelaskan step by step, cocok untuk backend pemula.", tanggal: "2025-04-05" },
-  { id: "ul012", kelasId: "k017", userId: "u004", userName: "Andi Prasetyo", rating: 5, komentar: "Database design course terbaik yang pernah saya ambil!", tanggal: "2025-04-10" },
-  { id: "ul013", kelasId: "k018", userId: "u001", userName: "Budi Santoso", rating: 4, komentar: "Gratis tapi kualitasnya premium, recommended!", tanggal: "2025-04-15" },
-  { id: "ul014", kelasId: "k009", userId: "u004", userName: "Andi Prasetyo", rating: 5, komentar: "TensorFlow course-nya intensif dan menantang.", tanggal: "2025-04-20" },
-  { id: "ul015", kelasId: "k013", userId: "u001", userName: "Budi Santoso", rating: 3, komentar: "Materi cukup baik untuk pengenalan product management.", tanggal: "2025-05-01" },
-  { id: "ul016", kelasId: "k007", userId: "u004", userName: "Andi Prasetyo", rating: 4, komentar: "Docker & K8s dijelaskan dengan analogi yang mudah dipahami.", tanggal: "2025-05-05" },
-  { id: "ul017", kelasId: "k006", userId: "u001", userName: "Budi Santoso", rating: 5, komentar: "Flutter course keren, langsung bisa bikin app pertama!", tanggal: "2025-05-10" },
-  { id: "ul018", kelasId: "k012", userId: "u004", userName: "Andi Prasetyo", rating: 4, komentar: "Unity game dev course-nya seru, banyak praktikum.", tanggal: "2025-05-12" },
-  { id: "ul019", kelasId: "k019", userId: "u001", userName: "Budi Santoso", rating: 5, komentar: "Vue 3 Composition API dijelaskan dengan sangat jelas!", tanggal: "2025-05-15" },
-  { id: "ul020", kelasId: "k020", userId: "u004", userName: "Andi Prasetyo", rating: 4, komentar: "Prinsip desain UI/UX disampaikan dengan contoh nyata.", tanggal: "2025-05-18" },
-  { id: "ul021", kelasId: "k001", userId: "u005", userName: "Rina Wulandari", rating: 5, komentar: "Pertama kali belajar coding dan langsung paham!", tanggal: "2025-01-20" },
-  { id: "ul022", kelasId: "k002", userId: "u005", userName: "Rina Wulandari", rating: 4, komentar: "DOM manipulation dijelaskan dengan proyek mini yang seru.", tanggal: "2025-02-15" },
-  { id: "ul023", kelasId: "k003", userId: "u005", userName: "Rina Wulandari", rating: 5, komentar: "Figma jadi tools favoritku setelah ikut kelas ini.", tanggal: "2025-03-05" },
-  { id: "ul024", kelasId: "k010", userId: "u005", userName: "Rina Wulandari", rating: 4, komentar: "SEO section-nya sangat aplikatif untuk bisnis online.", tanggal: "2025-03-15" },
-  { id: "ul025", kelasId: "k017", userId: "u005", userName: "Rina Wulandari", rating: 5, komentar: "JOIN query dan subquery jadi mudah setelah praktik langsung.", tanggal: "2025-04-08" }
+  { id: "ul001", kelasId: "k001", userId: "u001", userName: "Geget Wijaya", rating: 5, komentar: "Sangat mudah dipahami, materinya lengkap!", tanggal: "2025-01-10" },
+  { id: "ul002", kelasId: "k002", userId: "u004", userName: "Budi Saryono", rating: 4, komentar: "Penjelasan tentang closure sangat jelas.", tanggal: "2025-02-05" },
+  { id: "ul003", kelasId: "k003", userId: "u005", userName: "Rizky Ramadhan", rating: 5, komentar: "Figma jadi tools favoritku setelah ikut kelas ini.", tanggal: "2025-03-05" },
+  { id: "ul004", kelasId: "k004", userId: "u006", userName: "Andi Prasetyo", rating: 4, komentar: "React jadi lebih mudah dipahami dengan kursus ini.", tanggal: "2025-03-01" },
+  { id: "ul005", kelasId: "k005", userId: "u007", userName: "Budi Santoso", rating: 5, komentar: "Pandas dan NumPy dijelaskan dengan praktik langsung.", tanggal: "2025-03-10" }
 ];
 
 const SEED_NOTIFIKASI = [
