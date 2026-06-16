@@ -1,0 +1,132 @@
+/* Reset dasar */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body */
+body{
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7fb;
+    color: #333;
+    line-height: 1.8;
+    padding: 30px;
+    max-width: 1000px;
+    margin: auto;
+}
+
+/* Judul utama */
+h1{
+    color: #4a7dff;
+    margin-bottom: 25px;
+    font-size: 42px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Biodata */
+div:first-of-type{
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    margin-bottom: 30px;
+}
+
+/* Foto */
+img{
+    border-radius: 15px;
+    border: 5px solid #dbe8ff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    transition: 0.3s;
+}
+
+img:hover{
+    transform: scale(1.03);
+}
+
+/* Biodata */
+div:first-of-type p{
+    font-size: 17px;
+    margin: 6px 0;
+}
+
+/* Tombol Instagram */
+a{
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 25px;
+    background: #4a7dff;
+    color: white;
+    text-decoration: none;
+    border-radius: 30px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+a:hover{
+    background: #3568e5;
+    transform: translateY(-2px);
+}
+
+/* Garis */
+hr{
+    border: none;
+    height: 2px;
+    background: #d9e5ff;
+    margin: 35px 0;
+}
+
+/* Judul Project */
+h2{
+    color: #4a7dff;
+    font-size: 35px;
+    margin-bottom: 20px;
+}
+
+/* Bagian Project */
+body > p{
+    background: white;
+    padding: 15px 25px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+
+/* Semua paragraf isi */
+p{
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+/* Penomoran project */
+p p{
+    margin-left: 20px;
+}
+
+/* Efek hover pada daftar */
+p:hover{
+    transition: 0.3s;
+}
+
+/* Responsive */
+@media (max-width: 768px){
+
+    body{
+        padding: 15px;
+    }
+
+    h1{
+        font-size: 30px;
+    }
+
+    h2{
+        font-size: 26px;
+    }
+
+    img{
+        width: 130px;
+        height: 190px;
+    }
+}
