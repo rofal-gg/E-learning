@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Pribadi</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+
+    <h1>SELAMAT DATANG DI BLOG PRIBADI SAYA</h1>
+
+    <div class="layout">
+
+      <!-- KOLOM KIRI: Foto & Identitas -->
+      <aside class="sidebar">
+        <div class="profile-img-wrapper">
+          <img src="dhamm.png" alt="Foto Profil">
+        </div>
+
+        <h2>Identitas Diri</h2>
+        <ul>
+          <li><b>Nama:</b> Idham Kholid Abidin</li>
+          <li><b>NIM:</b> 250411100013</li>
+          <li><b>Kelas:</b> <i>DPW-2B</i></li>
+          <li><b>Program Studi:</b> Teknik Informatika</li>
+          <li><b>Universitas:</b> Universitas Trunojoyo Madura</li>
+          <li>Contact: <a href="https://www.instagram.com/dhamkholab/" target="_blank">Instagram</a></li>
+        </ul>
+      </aside>
+
+      <!-- KOLOM KANAN: Informasi Project & Interface -->
+      <main class="content">
+
+        <h2>Informasi Project</h2>
+        <p>
+          <strong>Judul Project:</strong> Edukita<br>
+          <strong>Deskripsi Singkat:</strong>
+        </p>
+        <blockquote>
+          "Edukita adalah platform e-learning yang memudahkan siswa untuk belajar
+          secara online, mulai dari memilih kelas, mengikuti materi, mengerjakan
+          kuis, hingga mendapatkan sertifikat kelulusan."
+        </blockquote>
+
+        <h3>Tugas Pada Project:</h3>
+        <p>
+          Tugas saya adalah membuat halaman-halaman untuk sisi <strong>Siswa</strong>
+          pada platform e-learning <strong>Edukita</strong>, mencakup alur dari pemilihan
+          kelas, pembayaran, proses belajar, kuis, diskusi, hingga sertifikat kelulusan.
+        </p>
+
+        <hr>
+
+        <h2>Penjelasan Interface pada Project</h2>
+
+        <h3><b>1. Detail Kelas</b></h3>
+        <p>
+          Halaman ini menampilkan informasi lengkap suatu kelas, seperti judul kelas,
+          kategori, tingkat kesulitan, rating, jumlah siswa, dan nama instruktur.
+          Terdapat deskripsi singkat kelas, silabus berupa daftar bab yang bisa
+          di-expand, harga kelas, serta dua tombol aksi yaitu <em>Tambah ke Keranjang</em>
+          dan <em>Simpan ke Wishlist</em>.
+        </p>
+
+        <h3><b>2. Keranjang (Cart)</b></h3>
+        <p>
+          Halaman keranjang belanja menampilkan daftar kelas yang telah dipilih siswa
+          beserta harga dan tombol hapus. Di sisi kanan terdapat ringkasan pesanan
+          dengan pilihan paket akses (1 Bulan, 3 Bulan, 6 Bulan, 1 Tahun) lengkap
+          dengan info hemat/diskon, input kode kupon, total harga, dan tombol
+          <em>Lanjut ke Checkout</em>.
+        </p>
+
+        <h3><b>3. Checkout</b></h3>
+        <p>
+          Halaman konfirmasi pesanan yang menampilkan ringkasan pesanan (nama kelas,
+          harga, paket akses, total pembayaran) dan pilihan metode pembayaran yaitu
+          Transfer Bank, QRIS, dan Dompet Digital. Saat memilih QRIS, QR Code
+          langsung muncul untuk di-scan. Terdapat tombol <em>Bayar Sekarang</em>
+          dan <em>Kembali ke Keranjang</em>.
+        </p>
+
+        <h3><b>4. Invoice</b></h3>
+        <p>
+          Halaman bukti pembayaran yang menampilkan status transaksi (LUNAS),
+          nomor transaksi, tanggal, metode pembayaran, nama pembeli, serta rincian
+          kelas yang dibeli beserta total harga. Di bagian bawah terdapat tiga tombol:
+          <em>Mulai Belajar</em>, <em>Cetak Invoice</em>, dan <em>Riwayat Transaksi</em>.
+        </p>
+
+        <h3><b>5. Ruang Belajar</b></h3>
+        <p>
+          Halaman belajar utama dengan video player embed YouTube di bagian kiri
+          dan sidebar <em>Daftar Bab</em> di sebelah kanan yang menampilkan seluruh
+          bab beserta durasi tiap bab. Bagian bawah terdapat tombol <em>Tandai Selesai</em>
+          dan <em>Diskusi Kelas</em>, serta indikator progres belajar siswa
+          (persentase bab dan kuis yang telah diselesaikan).
+        </p>
+
+        <h3><b>6. Kuis</b></h3>
+        <p>
+          Halaman kuis per bab yang menampilkan soal pilihan ganda satu per satu.
+          Terdapat indikator nomor soal (contoh: "Soal 5 dari 5"), empat pilihan jawaban
+          berbentuk radio button, serta dua tombol di bagian bawah yaitu
+          <em>Kembali ke Ruang Belajar</em> dan <em>Selesai</em> untuk mengumpulkan jawaban.
+        </p>
+
+        <h3><b>7. Hasil Kuis</b></h3>
+        <p>
+          Halaman hasil kuis menampilkan skor akhir dalam format besar (contoh: "5 / 5"),
+          persentase jawaban benar, dan badge status <em>Lulus</em> atau <em>Tidak Lulus</em>.
+          Di bawahnya terdapat bagian <em>Pembahasan</em> berisi review tiap soal
+          yang menampilkan jawaban siswa, jawaban benar, dan keterangan Benar/Salah
+          untuk setiap nomor soal.
+        </p>
+
+        <h3><b>8. Diskusi</b></h3>
+        <p>
+          Halaman diskusi per kelas yang menampilkan judul kelas dan nama instruktur
+          sebagai header. Siswa dapat melihat komentar atau pertanyaan yang sudah
+          dikirim beserta nama dan tanggal pengirimnya. Terdapat form
+          <em>Kirim Pertanyaan</em> dengan textarea untuk menulis pertanyaan dan
+          tombol kirim untuk berinteraksi seputar materi kelas.
+        </p>
+
+        <h3><b>9. Sertifikat</b></h3>
+        <p>
+          Halaman sertifikat kelulusan yang menampilkan kartu sertifikat formal
+          berisi nama platform (EduKita), nama penerima, nama kelas yang diselesaikan,
+          tanggal kelulusan, dan nama instruktur. Terdapat dua tombol di bawah
+          sertifikat yaitu <em>Unduh Sertifikat</em> dan <em>Kembali ke Kelas</em>.
+        </p>
+
+        <h3><b>10. Profil Siswa</b></h3>
+        <p>
+          Halaman profil pribadi siswa yang terbagi dua bagian: sebelah kiri
+          menampilkan avatar inisial, nama, dan email siswa; sebelah kanan
+          terdapat form <em>Edit Profil</em> dengan field Nama, Email (read-only),
+          Bio, dan Password Baru, serta tombol <em>Simpan Perubahan</em> untuk
+          memperbarui data akun.
+        </p>
+
+      </main>
+    </div>
+
+  </body>
+</html>
