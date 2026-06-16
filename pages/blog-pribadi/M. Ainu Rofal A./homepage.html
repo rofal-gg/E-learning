@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homepage Pribadi</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <h1 class="page-title">HOMEPAGE PRIBADI</h1>
+  <hr class="divider">
+
+  <div class="avatar">
+    <img src="foto_profile.jpeg" alt="Foto Profil">
+  </div>
+
+  <p class="intro">
+    Halo! Selamat datang di halaman profil sederhana saya. Halaman ini disusun untuk mendemonstrasikan berbagai tag dasar.
+  </p>
+
+  <div class="quote-box">
+    <q>Di luar sana ada orang dengan setengah bakatmu, setengah kepintaranmu, setengah skill-mu. Tapi mereka bisa sepuluh kali lebih sukses. Kenapa? Karena mereka berani percaya diri dan berani mencoba. Kamu sudah cukup pintar. Kamu sudah cukup bagus. Berhenti overthinking. Mulai bergerak. Dunia ini taman bermainmu. Berani jadi hebat.</q>
+    <span class="quote-author">— Bigmo</span>
+  </div>
+
+  <h2 class="section-title">Data Identitas Diri</h2>
+  <div class="data-block">
+NAMA   : MUHAMMAD AINUR ROFAL ACHSONY
+NIM    : 250411100015
+KELAS  : DPW 2B
+  </div>
+
+  <h2 class="section-title">Data Project Akhir</h2>
+  <p class="project-desc">
+    <span class="project-label">Judul Project</span>
+    <span class="project-title">EduKita — Platform E-Learning</span>
+  </p>
+  <p class="project-desc-full">
+    EduKita adalah platform E-Learning berbasis web yang menyediakan berbagai kursus online dalam berbagai kategori seperti Pemrograman Web, Data Science, Desain, Digital Marketing, dan lainnya. Platform ini mendukung tiga peran pengguna yaitu siswa, instruktur, dan admin, dengan fitur seperti katalog kelas, sistem pembelian, progres belajar, kuis interaktif, sertifikat, forum diskusi, sesi tatap muka, manajemen pengguna, dan moderasi ulasan. Dibangun menggunakan HTML, CSS, dan JavaScript murni dengan penyimpanan data berbasis localStorage.
+  </p>
+
+  <h2 class="section-title">Jobdesk</h2>
+  <ul class="jobdesk-list">
+    <li>
+      <span class="job-file">1. index.html</span>
+      <span class="job-desc">Landing page utama platform EduKita. Saya mengerjakan seluruh struktur halaman mulai dari navbar responsif, hero section dengan latar gradien dan ajakan mendaftar, grid kategori belajar yang menampilkan 12 kategori dalam bentuk card interaktif, section testimoni dari siswa, serta footer yang informatif. Halaman ini menjadi pintu gerbang utama pengunjung sebelum mereka mendaftar atau masuk ke platform.</span>
+    </li>
+    <li>
+      <span class="job-file">2. auth/login.html</span>
+      <span class="job-desc">Halaman login untuk siswa dan instruktur. Saya mengerjakan form login dengan dua input (email dan password), tombol toggle untuk menampilkan atau menyembunyikan password, tombol "Lupa Password" yang mengarah ke halaman reset, serta sistem validasi yang membedakan role pengguna (siswa vs instruktur) dan mengarahkan mereka ke dashboard masing-masing setelah berhasil login.</span>
+    </li>
+    <li>
+      <span class="job-file">3. auth/register.html</span>
+      <span class="job-desc">Halaman pendaftaran akun baru untuk siswa dan instruktur. Saya mengerjakan form registrasi yang mencakup input nama lengkap, email, password, konfirmasi password, serta pilihan role. Terdapat toggle password, validasi panjang password minimal 6 karakter, pengecekan apakah email sudah terdaftar, dan notifikasi error atau sukses. Setelah registrasi berhasil, pengguna langsung diarahkan ke halaman login.</span>
+    </li>
+    <li>
+      <span class="job-file">4. auth/lupa-password.html</span>
+      <span class="job-desc">Halaman reset password dengan sistem verifikasi 3 tahap untuk keamanan. Saya mengerjakan tahap pertama berupa form pencarian akun berdasarkan email, tahap kedua verifikasi identitas dengan mencocokkan nama orang tua dan tanggal lahir sesuai data pendaftaran, dan tahap ketiga berupa form input password baru beserta konfirmasinya. Setelah semua tahap berhasil, password pengguna diperbarui dan diarahkan kembali ke halaman login.</span>
+    </li>
+    <li>
+      <span class="job-file">5. auth/syarat-ketentuan.html</span>
+      <span class="job-desc">Halaman statis yang berisi syarat dan ketentuan penggunaan platform EduKita. Saya mengerjakan layout halaman dengan tipografi yang rapi dan mudah dibaca, mencakup berbagai section seperti ketentuan umum, hak dan kewajiban pengguna, kebijakan privasi, aturan transaksi, serta pembatasan tanggung jawab. Halaman ini menggunakan gaya yang konsisten dengan halaman auth lainnya.</span>
+    </li>
+    <li>
+      <span class="job-file">6. auth/faq.html</span>
+      <span class="job-desc">Halaman Frequently Asked Questions yang menampilkan daftar pertanyaan umum beserta jawabannya. Saya mengerjakan seluruh komponen accordion interaktif di mana pengguna dapat mengklik pertanyaan untuk membuka atau menutup jawaban dengan animasi transisi. Setiap item accordion memiliki ikon plus/minus sebagai indikator status buka-tutup. Pertanyaan mencakup topik pendaftaran, kelas, pembayaran, sertifikat, dan teknis lainnya.</span>
+    </li>
+    <li>
+      <span class="job-file">7. siswa/dashboard.html</span>
+      <span class="job-desc">Dashboard utama siswa setelah login. Saya mengerjakan layout sidebar yang menampilkan menu navigasi lengkap, greeting personalisasi dengan nama siswa, grid KPI yang menampilkan total kelas dibeli, kelas selesai, total diskusi, poin, dan tingkatan siswa. Terdapat section "Lanjutkan Belajar" yang menampilkan kartu kelas dengan progress bar persentase, section "Kelas Selesai" dengan tombol ulasan, jadwal sesi tatap muka, serta rekomendasi kelas terbaru dari katalog.</span>
+    </li>
+    <li>
+      <span class="job-file">8. siswa/katalog.html</span>
+      <span class="job-desc">Halaman katalog kelas yang menampilkan semua kelas yang tersedia di platform. Saya mengerjakan filter bar yang lengkap dengan pencarian berdasarkan kata kunci, filter kategori, filter level (Pemula/Menengah/Mahir), filter harga (Gratis/Berbayar), dan tombol reset. Kelas ditampilkan dalam bentuk card grid yang masing-masing berisi gambar, badge kategori, judul, nama instruktur, dan harga. Setiap card bisa diklik untuk melihat detail kelas.</span>
+    </li>
+    <li>
+      <span class="job-file">9. siswa/kuis-penempatan.html</span>
+      <span class="job-desc">Halaman kuis penempatan yang menentukan tingkatan siswa (Pemula/Menengah/Mahir) berdasarkan jawaban mereka. Saya mengerjakan tampilan soal dengan opsi pilihan ganda, navigasi antar soal menggunakan tombol Sebelumnya/Selanjutnya, indikator progress soal, dan tombol "Selesai" untuk mengirimkan jawaban. Setelah kuis selesai, sistem menghitung skor dan menentukan tingkatan yang sesuai, kemudian menyimpannya ke data pengguna dan menampilkan hasilnya.</span>
+    </li>
+    <li>
+      <span class="job-file">10. anggota.html</span>
+      <span class="job-desc">Halaman tim pengembang yang menampilkan profil anggota Kelompok 4. Saya mengerjakan layout grid yang menampilkan kartu masing-masing anggota lengkap dengan foto profil berbentuk lingkaran, nama lengkap, NIM, badge peran (Koordinator Tim/Anggota), dan daftar jobdesk yang mereka kerjakan dalam proyek ini. Setiap kartu memiliki desain yang konsisten dengan bayangan halus dan efek hover pada foto profil yang membesar.</span>
+    </li>
+  </ul>
+
+  <div class="github-link">
+    <a href="https://github.com/rofal-gg" target="_blank" rel="noopener">
+      GitHub &rarr; Klik di sini untuk selengkapnya
+    </a>
+  </div>
+
+  <p class="footer-note">
+    <i>Tugas Mata Kuliah Dasar Pemrograman Web</i>
+  </p>
+</div>
+
+</body>
+</html>

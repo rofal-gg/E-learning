@@ -1,0 +1,193 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f8f9fa;
+  color: #2d3436;
+  line-height: 1.7;
+  padding: 40px 20px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  padding: 48px 40px;
+}
+
+.page-title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.divider {
+  border: none;
+  border-top: 3px solid #6c5ce7;
+  width: 60px;
+  margin: 16px auto 32px;
+  border-radius: 2px;
+}
+
+.avatar {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.avatar img {
+  width: 150px;
+  height: 200px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 4px solid #e8e8e8;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.intro {
+  text-align: center;
+  font-size: 1.05rem;
+  color: #636e72;
+  max-width: 600px;
+  margin: 0 auto 32px;
+}
+
+.quote-box {
+  background: #f0edff;
+  border-left: 4px solid #6c5ce7;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.quote-box q {
+  font-style: italic;
+  color: #2d3436;
+  font-size: 1rem;
+}
+
+.quote-author {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #6c5ce7;
+  font-weight: 600;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0edff;
+}
+
+.data-block {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  margin-bottom: 28px;
+  color: #2d3436;
+  white-space: pre-wrap;
+}
+
+.jobdesk-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 28px;
+}
+
+.jobdesk-list li {
+  padding: 12px 0 12px 20px;
+  border-left: 3px solid #e8e8e8;
+  margin-bottom: 4px;
+  transition: border-color 0.2s;
+}
+
+.jobdesk-list li:hover {
+  border-left-color: #6c5ce7;
+}
+
+.job-file {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1a1a2e;
+  margin-bottom: 2px;
+}
+
+.job-desc {
+  display: block;
+  font-size: 0.88rem;
+  color: #636e72;
+  line-height: 1.6;
+}
+
+.project-desc {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6c5ce7;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.project-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  line-height: 1.3;
+}
+
+.project-desc-full {
+  margin-bottom: 24px;
+  color: #636e72;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.github-link {
+  text-align: center;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.github-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6c5ce7;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.github-link a:hover {
+  color: #4834d4;
+  text-decoration: underline;
+}
+
+.footer-note {
+  text-align: center;
+  margin-top: 28px;
+  font-size: 0.85rem;
+  color: #b2bec3;
+}
