@@ -1,0 +1,214 @@
+/* RESET */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* BODY */
+body{
+    font-family: 'Segoe UI', sans-serif;
+    background: #f8f6f1;
+    color: #444;
+    padding: 30px;
+    line-height: 1.7;
+}
+
+/* JUDUL */
+.judul-utama{
+    text-align: center;
+    color: #4b5d67;
+    font-size: 42px;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+.subjudul{
+    text-align: center;
+    color: #7c9d96;
+    margin-bottom: 20px;
+}
+
+.judul-web{
+    text-align: center;
+    color: #4b5d67;
+    margin-top: 40px;
+}
+
+.judul-interface{
+    text-align: center;
+    color: #7c9d96;
+    margin-top: 40px;
+    margin-bottom: 25px;
+}
+
+/* GARIS */
+hr{
+    border: none;
+    height: 3px;
+    width: 70%;
+    margin: 20px auto;
+    background: #7c9d96;
+    border-radius: 10px;
+}
+
+/* FOTO */
+.foto-container{
+    text-align: center;
+    margin: 30px 0;
+}
+
+.foto-profil{
+    width: 180px;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 5px solid #7c9d96;
+    box-shadow: 0 5px 20px rgba(124,157,150,0.3);
+    transition: 0.3s;
+}
+
+.foto-profil:hover{
+    transform: scale(1.05);
+}
+
+/* QUOTE */
+.quote{
+    max-width: 900px;
+    margin: auto;
+    background: #ffffff;
+    border-left: 6px solid #7c9d96;
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    font-size: 18px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+/* BIODATA */
+.data-pribadi{
+    max-width: 650px;
+    margin: 30px auto;
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.data-pribadi h3{
+    text-align: center;
+    color: #4b5d67;
+    margin-bottom: 20px;
+}
+
+.biodata-item{
+    display: flex;
+    padding: 12px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.biodata-item:last-child{
+    border-bottom: none;
+}
+
+.label{
+    width: 100px;
+    font-weight: bold;
+    color: #7c9d96;
+}
+
+.titikdua{
+    width: 20px;
+    text-align: center;
+}
+
+.value{
+    flex: 1;
+}
+
+/* DESKRIPSI WEBSITE */
+.deskripsi{
+    text-align: center;
+    max-width: 1000px;
+    margin: 20px auto 40px;
+    color: #555;
+}
+
+/* CARD INTERFACE */
+.interface-card{
+    max-width: 1000px;
+    margin: 20px auto;
+    background: #ffffff;
+    border-left: 6px solid #7c9d96;
+    border-radius: 15px;
+    padding: 20px;
+    cursor: pointer;
+
+    transition: all 0.35s ease;
+
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.interface-card h3{
+    color: #4b5d67;
+    margin-bottom: 10px;
+    transition: color 0.35s ease;
+}
+
+.interface-card p{
+    text-align: justify;
+    color: #555;
+    transition: color 0.35s ease;
+}
+
+/* EFEK HOVER */
+.interface-card:hover{
+    background: linear-gradient(
+        135deg,
+        #7c9d96,
+        #9bb5af
+    );
+
+    transform: translateY(-8px) scale(1.02);
+
+    border-left: 10px solid #4b5d67;
+
+    box-shadow: 0 15px 35px rgba(124,157,150,0.35);
+}
+
+/* UBAH WARNA TEKS SAAT HOVER */
+.interface-card:hover h3,
+.interface-card:hover p{
+    color: white;
+}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+
+    body{
+        padding: 15px;
+    }
+
+    .judul-utama{
+        font-size: 30px;
+    }
+
+    .foto-profil{
+        width: 140px;
+        height: 140px;
+    }
+
+    .quote,
+    .data-pribadi,
+    .interface-card{
+        width: 100%;
+    }
+
+    .biodata-item{
+        flex-wrap: wrap;
+    }
+
+    .label{
+        width: 80px;
+    }
+}
