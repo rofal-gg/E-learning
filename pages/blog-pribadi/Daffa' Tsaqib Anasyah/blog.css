@@ -1,0 +1,194 @@
+/* Reset dasar */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Latar belakang biru keabu-abuan yang sangat lembut */
+body {
+    background-color: #f0f4f8;
+    color: #334155;
+    line-height: 1.7;
+    display: flex;
+    justify-content: center;
+    padding: 3rem 1rem;
+}
+
+.container {
+    max-width: 900px;
+    /* Diperlebar agar ruang teks presentasi lebih lega */
+    width: 100%;
+}
+
+/* --- Gaya Kartu Profil Atas --- */
+.profile-card {
+    background: white;
+    padding: 3rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.08);
+    text-align: center;
+    margin-bottom: 3rem;
+    /* Jarak menuju section jobdesk */
+}
+
+/* WADAH FOTO PROFIL KOTAK SMOOTH */
+.profile-image-wrapper {
+    width: 130px;
+    height: 170px;
+    margin: 0 auto 1.5rem auto;
+    border-radius: 28px;
+    /* Ini yang membuat efek kotak bersudut mulus (squircle) */
+    overflow: hidden;
+    /* Memastikan foto tidak keluar dari sudut membulat */
+    background-color: #e2e8f0;
+    /* Warna fallback jika foto gagal dimuat */
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
+}
+
+.profile-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Memastikan rasio foto tetap proporsional tanpa gepeng */
+    display: block;
+}
+
+.profile-header h1 {
+    font-size: 2.2rem;
+    color: #0f172a;
+    margin-bottom: 0.3rem;
+}
+
+.subtitle {
+    font-size: 1.05rem;
+    color: #64748b;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+}
+
+.highlight-badge {
+    display: inline-block;
+    background-color: #dbeafe;
+    color: #1e40af;
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    margin-top: 0.5rem;
+}
+
+.about-content p {
+    margin-bottom: 1.2rem;
+    text-align: justify;
+    color: #475569;
+}
+
+/* Gaya Tombol Biru */
+.contact-links {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 28px;
+    background-color: #2563eb;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #1d4ed8;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(29, 78, 216, 0.3);
+}
+
+/* --- Gaya Khusus Jobdesk Project (Format Detail & Panjang) --- */
+.jobdesk-section {
+    width: 100%;
+}
+
+.jobdesk-title {
+    text-align: center;
+    color: #1e3a8a;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.jobdesk-intro {
+    text-align: center;
+    color: #475569;
+    margin-bottom: 2.5rem;
+    font-size: 1.05rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Card Jobdesk */
+.jobdesk-card {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    text-align: left;
+    border-top: 5px solid #3b82f6;
+    /* Garis aksen biru di atas card */
+}
+
+.jobdesk-card h3 {
+    color: #0f172a;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.jobdesk-card p {
+    margin-bottom: 1.2rem;
+    color: #334155;
+}
+
+/* Styling untuk list angka (Alur Penggunaan) */
+.jobdesk-card ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #475569;
+}
+
+.jobdesk-card ol li {
+    margin-bottom: 0.8rem;
+    padding-left: 0.5rem;
+}
+
+/* Teks kesimpulan di bawah card */
+.card-footer-text {
+    background-color: #f8fafc;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #64748b !important;
+    border-left: 3px solid #cbd5e1;
+    margin-bottom: 0 !important;
+}
+
+/* Format monospace untuk nama file agar terlihat teknis */
+code {
+    background-color: #e0e7ff;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #4338ca;
+    font-size: 0.9em;
+    font-weight: bold;
+}

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tentang Saya | Daffa' Tsaqib Anasyah</title>
+    <link rel="stylesheet" href="blog.css">
+</head>
+
+<body>
+
+    <main class="container">
+        <section class="profile-card">
+
+            <div class="profile-image-wrapper">
+                <img src="daffa'red.jpg" alt="Foto Profil Daffa">
+            </div>
+
+            <div class="profile-header">
+                <h1>Daffa' Tsaqib Anasyah</h1>
+                <h2 class="subtitle">Mahasiswa Teknik Informatika & Creative Enthusiast</h2>
+                <h2 class="subtitle highlight-badge">250411100163 | DPW 2B</h2>
+            </div>
+
+            <div class="about-content">
+                <p>Perkenalkan, saya adalah mahasiswa Teknik Informatika di Universitas Trunojoyo Madura. Saya memiliki ketertarikan pada dunia pemrograman dan seni visual.</p>
+
+                <p>Saya juga aktif dalam kegiatan organisasi kampus, Creative Computer Club (Triple C). Fokus saya mencakup berbagai bidang kreatif digital: mulai dari eksplorasi <em>web development</em> dan CSS, fotografi, videografi, desain grafis, hingga pemanfaatan AI untuk proses kreatif.</p>
+
+                <p>Saat ini saya sedang mengerjakan tugas project dari mata kuliah Dasar Pemrograman Web (DPW). Project ini bertemakan E-learning untuk semua kalangan. Untuk lebih detailnya, berikut adalah jobdesk yang saya kerjakan untuk project E-learning ini:</p>
+            </div>
+
+            <div class="contact-links">
+                <h3>Hubungi Saya Di:</h3>
+                <a href="https://wa.me/qr/LYNY43IMO5ULE1" class="btn">WhatsApp</a>
+                <a href="https://www.instagram.com/dappa_eta?igsh=MTJmcm04NmFmemg5aA==" class="btn">Instagram</a>
+            </div>
+
+        </section>
+
+        <section class="jobdesk-section">
+            <h2 class="jobdesk-title">Jobdesk Project E-Learning</h2>
+            <p class="jobdesk-intro">Sebagai <strong>Anggota 3 (Ekstra Siswa & Core Kreator Kelas)</strong>, saya memegang peran krusial dalam merancang alur interaksi pengguna. Tugas saya dibagi menjadi 10 modul utama yang mencakup panel kontrol pengajar dan fitur keterlibatan siswa. Berikut adalah rincian sistem yang saya kembangkan:</p>
+
+            <h2 style="color: #1e3a8a; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 2px solid #cbd5e1; padding-bottom: 0.5rem;">A. Panel Instruktur (Core Kreator Kelas)</h2>
+
+            <div class="jobdesk-card">
+                <h3>1. Pusat Kendali Instruktur (Dashboard)</h3>
+                <p>Halaman <code>instruktur/dashboard.html</code> bertindak sebagai "ruang kemudi" utama. Halaman ini memberikan ringkasan (<em>helicopter view</em>) atas seluruh performa akun instruktur agar mereka dapat mengambil keputusan berbasis data dengan cepat.</p>
+                <p><strong>Alur Penggunaan:</strong></p>
+                <ol>
+                    <li>Instruktur berhasil <em>login</em> dan langsung diarahkan ke halaman Dashboard.</li>
+                    <li>Sistem menampilkan kartu metrik utama: Total Pendapatan, Total Siswa Aktif, dan Rata-rata Rating.</li>
+                    <li>Instruktur dapat melihat grafik sederhana tentang pendaftaran siswa dalam 30 hari terakhir.</li>
+                    <li>Instruktur menggunakan tombol "Aksi Cepat" untuk melompat ke pembuatan kelas baru atau membalas ulasan terbaru yang masuk di panel bawah.</li>
+                </ol>
+                <p class="card-footer-text">Fokus desain halaman ini adalah kejelasan visual data. Instruktur tidak perlu mencari ke berbagai menu untuk mengetahui performa kelas mereka hari ini.</p>
+            </div>
+
+            <div class="jobdesk-card">
+                <h3>2. Manajemen Inventaris Kelas</h3>
+                <p>Halaman <code>instruktur/daftar-kelas.html</code> adalah tempat instruktur mengelola seluruh aset digital (kursus) yang telah mereka buat di platform. Halaman ini menggunakan tampilan tabel atau <em>grid</em> kartu yang informatif.</p>
+                <p><strong>Alur Penggunaan:</strong></p>
+                <ol>
+                    <li>Instruktur memilih menu "Kelas Saya" dari bilah navigasi.</li>
+                    <li>Halaman memuat daftar semua kelas yang dimiliki instruktur.</li>
+                    <li>Instruktur menggunakan fitur <em>tab filter</em> untuk memilah kelas berdasarkan status: "Draf" (belum rilis), "Dipublikasikan" (aktif), atau "Diarsipkan" (ditutup).</li>
+                    <li>Instruktur menekan tombol opsi (titik tiga) pada sebuah kelas untuk mengedit info, menambah kurikulum, atau memantau progres siswa spesifik di kelas tersebut.</li>
+                </ol>
+                <p class="card-footer-text">Halaman ini mengedepankan navigasi yang mudah. Semakin banyak kelas yang dimiliki instruktur, halaman ini memastikan pengelolaan tetap rapi dan tidak membingungkan.</p>
+            </div>
+
+            <div class="jobdesk-card">
+                <h3>3. Inisiasi Pembuatan Kelas Baru</h3>
+                <p>Halaman <code>instruktur/buat-kelas.html</code> merupakan langkah pertama (<em>step one</em>) bagi instruktur untuk membuka kursus baru. Saya merancang formulir yang mendetail namun tidak mengintimidasi.</p>
+                <p><strong>Alur Penggunaan:</strong></p>
+                <ol>
+                    <li>Instruktur menekan tombol "Buat Kelas Baru".</li>
+                    <li>Sistem menampilkan form yang harus diisi: Judul Kelas (maksimal karakter), Kategori (<em>dropdown</em>), dan Deskripsi menggunakan <em>Rich Text Editor</em>.</li>
+                    <li>Instruktur memilih model harga: Gratis, Berbayar Normal, atau Berbayar dengan Harga Coret (Diskon).</li>
+                    <li>Instruktur mengunggah <em>thumbnail</em> sampul kelas. Sistem akan menampilkan pratinjau langsung agar gambar dipastikan proporsional.</li>
+                    <li>Menekan "Simpan dan Lanjutkan". Data tersimpan sebagai draf.</li>
+                </ol>
+                <p class="card-footer-text">Halaman ini dilengkapi validasi ketat (harus diisi) untuk memastikan setiap kelas di platform memiliki informasi dasar yang standar sebelum dilempar ke pasar.</p>
+            </div>
+
+            <div class="jobdesk-card">
+                <h3>4. Penyusunan Struktur Kurikulum</h3>
+                <p>Setelah informasi dasar dibuat, halaman <code>instruktur/kurikulum.html</code> digunakan untuk merancang kerangka silabus atau urutan pembelajaran (Bab dan Sub-bab).</p>
+                <p><strong>Alur Penggunaan:</strong></p>
+                <ol>
+                    <li>Instruktur masuk ke mode edit kelas dan memilih tab "Kurikulum".</li>
+                    <li>Instruktur menekan tombol "Tambah Bab Baru" (misal: "Bab 1: Pengenalan Dasar").</li>
+                    <li>Di dalam Bab tersebut, instruktur menekan "Tambah Sub-bab / Materi" (misal: "1.1 Apa itu HTML?").</li>
+                    <li>Instruktur mengulangi proses tersebut hingga kerangka silabus terbentuk dari awal hingga akhir.</li>
+                    <li>Instruktur menggunakan fitur <em>Drag-and-Drop</em> (geser dan lepas) jika ingin menukar urutan materi yang salah urut tanpa harus menghapus dan membuat ulang.</li>
+                </ol>
+                <p class="card-footer-text">Ini adalah fitur paling teknis di sisi antarmuka. Saya memastikan interaksi menambah baris silabus terasa instan tanpa harus memuat ulang (<em>reload</em>) halaman terus menerus.</p>
+            </div>
+
+            <div class="jobdesk-card">
+                <h3>5. Sistem Injeksi Materi Pembelajaran</h3>
+                <p>Halaman <code>instruktur/unggah-materi.html</code> adalah tempat di mana instruktur mengisi kerangka silabus yang dibuat sebelumnya dengan konten ajar yang sebenarnya (video, teks, atau PDF).</p>
+                <p><strong>Alur Penggunaan:</strong></p>
+                <ol>
+                    <li>Instruktur menekan ikon "Edit Materi" pada salah satu Sub-bab di kurikulum.</li>
+                    <li>Sistem membuka panel/modal unggah materi.</li>
+                    <li>Instruktur memilih tipe konten: "Video Tautan", "Video Unggah", "Artikel/Teks", atau "Dokumen PDF".</li>
+                    <li>Jika video tautan, instruktur cukup menempelkan URL YouTube/Drive. Jika teks, instruktur mengetik langsung di kolom editor.</li>
+                    <li>Instruktur mencentang opsi "Jadikan Preview Gratis" jika materi tersebut boleh ditonton publik sebagai promosi kelas.</li>
+                    <li>Materi disimpan dan siap diakses oleh siswa.</li>
+                </ol>
+                <p class="card-footer-text">Fleksibilitas adalah kunci di halaman ini. Karena metode mengajar instruktur berbeda-beda, sistem ini harus bisa mengakomodasi berbagai format media pembelajaran.</p>
+            </div>
+
+            <h2 style="color: #1e3a8a; margin-top: 3rem; margin-bottom: 1rem; border-bottom: 2px solid #cbd5e1; padding-bottom: 0.5rem;">B. Panel Siswa (Ekstra Siswa)</h2>
+
+            <div class="jobdesk-card">
+                <h3>6. Pelacakan Riwayat Transaksi</h3>
+                <p>Beralih ke sisi pengguna, halaman <code>siswa/riwayat-transaksi.html</code> memberikan transparansi finansial kepada siswa atas setiap pembelian yang mereka lakukan di platform.</p>
+                <p><strong>Alur Penggunaan:</strong></p>
+                <ol>
+                    <li>Siswa masuk ke profil pengaturan dan memilih "Riwayat Pembelian".</li>
+                    <li>Sistem menampilkan tabel interaktif berisi: Nomor Invoice, Tanggal, Nama Kelas, dan Nominal Harga.</li>
+                    <li>Siswa melihat kolom "Status". Jika status "Menunggu", tersedia tombol "Bayar Sekarang" yang mengarah ke <em>payment gateway</em>.</li>
+                    <li>Jika status "Berhasil" (berwarna hijau), siswa dapat menekan tombol unduh untuk mendapatkan struk/invoice dalam bentuk PDF.</li>
+                </ol>
+                <p class="card-footer-text">Tata letak halaman ini sengaja dibuat bersih dan formal karena berurusan dengan data keuangan, memastikan siswa merasa platform ini aman dan kredibel.</p>
+            </div>
+
+            <div class="jobdesk-card">
+                <h3>7. Katalog Kelas Impian (Wishlist)</h3>
+                <p>Halaman <code>siswa/wishlist.html</code> berfungsi sebagai keranjang penyimpanan pribadi bagi siswa yang tertarik pada sebuah kelas namun belum siap membelinya saat itu.</p>
+                <p><strong>Alur Penggunaan:</strong></p>
+                <ol>
+                    <li>Saat menjelajahi katalog kelas umum, siswa menekan ikon "Hati" (Love) pada sebuah kelas.</li>
+                    <li>Siswa membuka halaman menu "Wishlist Saya".</li>
+                    <li>Halaman menampilkan seluruh kartu kelas yang pernah disandikan (<em>bookmarked</em>) oleh siswa tersebut.</li>
+                    <li>Siswa dapat melihat apakah kelas di wishlist sedang diskon, lalu menekan tombol "Beli Kelas" langsung dari halaman tersebut.</li>
+                    <li>Siswa dapat menghapus kelas dari wishlist jika sudah tidak tertarik.</li>
+                </ol>
+                <p class="card-footer-text">Fitur ini merupakan strategi psikologis untuk meningkatkan retensi. Siswa tidak kehilangan jejak kelas yang mereka taksir sehingga probabilitas konversi (pembelian) di masa depan tetap tinggi.</p>
+            </div>
+
+            <div class="jobdesk-card">
+                <h3>8. Sistem Evaluasi & Ulasan</h3>
+                <p>Halaman <code>siswa/ulasan.html</code> adalah ruang bagi siswa untuk memberikan <em>feedback</em> terhadap kualitas materi dan penyampaian instruktur, menciptakan <em>social proof</em> untuk platform.</p>
+                <p><strong>Alur Penggunaan:</strong></p>
+                <ol>
+                    <li>Siswa menyelesaikan presentase materi kelas hingga 100%.</li>
+                    <li>Sistem mengirimkan prompt/notifikasi meminta siswa memberikan ulasan kelas.</li>
+                    <li>Siswa membuka halaman form ulasan khusus untuk kelas tersebut.</li>
+                    <li>Siswa memberikan <em>Rating</em> Bintang (1 hingga 5).</li>
+                    <li>Siswa menuliskan ulasan tekstual (Kelebihan dan Kekurangan kelas).</li>
+                    <li>Ulasan dikirim dan akan muncul di halaman publik kelas tersebut setelah melewati proses moderasi (jika diperlukan).</li>
+                </ol>
+                <p class="card-footer-text">Sistem ini dibatasi secara logika: hanya siswa yang sudah membeli dan mengikuti kelas tersebut yang diizinkan menulis ulasan, untuk mencegah manipulasi rating.</p>
+            </div>
+
+            <div class="jobdesk-card">
+                <h3>9. Direktori & Profil Instruktur</h3>
+                <p>Halaman <code>siswa/daftar-instruktur.html</code> memungkinkan siswa untuk menelusuri pakar-pakar yang mengajar di platform, layaknya mencari mentor yang pas untuk gaya belajar mereka.</p>
+                <p><strong>Alur Penggunaan:</strong></p>
+                <ol>
+                    <li>Siswa membuka menu "Cari Instruktur".</li>
+                    <li>Halaman menampilkan direktori kartu instruktur lengkap dengan foto profil, nama, keahlian utama (misal: "Web Developer" atau "Graphic Designer"), dan rating rata-rata mereka.</li>
+                    <li>Siswa menggunakan kolom pencarian untuk mengetik nama instruktur spesifik.</li>
+                    <li>Siswa mengklik salah satu kartu untuk masuk ke halaman detail, yang berisi biografi instruktur dan daftar seluruh kelas yang mereka ajarkan.</li>
+                </ol>
+                <p class="card-footer-text">Fitur ini membangun ikatan antara pengajar dan murid. Terkadang, siswa membeli kelas bukan hanya karena materinya, tapi karena otoritas dan reputasi dari instrukturnya.</p>
+            </div>
+
+            <div class="jobdesk-card">
+                <h3>10. Pusat Peringatan & Notifikasi</h3>
+                <p>Halaman <code>siswa/notifikasi.html</code> adalah sistem <em>alert</em> terpusat yang menjaga keterlibatan (<em>engagement</em>) siswa agar terus aktif menggunakan platform.</p>
+                <p><strong>Alur Penggunaan:</strong></p>
+                <ol>
+                    <li>Siswa melihat indikator merah pada ikon lonceng di bilah navigasi atas.</li>
+                    <li>Siswa menekan ikon tersebut dan masuk ke daftar notifikasi penuh.</li>
+                    <li>Halaman memisahkan notifikasi menjadi dua: "Belum Dibaca" (di-<em>highlight</em> tebal) dan "Semua Notifikasi".</li>
+                    <li>Siswa melihat berbagai jenis pesan: Pengingat jatuh tempo pembayaran, pengumuman materi baru dari instruktur, atau diskon promosi platform.</li>
+                    <li>Siswa menekan sebuah notifikasi, dan sistem akan mengarahkannya langsung ke halaman yang relevan (misal: klik notif pembayaran, langsung diarahkan ke riwayat transaksi).</li>
+                </ol>
+                <p class="card-footer-text">Fokus UI/UX di sini adalah kebersihan antarmuka. Saya merancangnya agar notifikasi penting tidak tertumpuk, serta menyediakan fitur "Tandai Semua Sudah Dibaca" agar kotak masuk tetap rapi.</p>
+            </div>
+        </section>
+    </main>
+
+</body>
+
+</html>
