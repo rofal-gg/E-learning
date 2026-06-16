@@ -50,7 +50,7 @@ function initStorage() {
   if (!localStorage.getItem('kelas'))        localStorage.setItem('kelas', JSON.stringify(SEED_KELAS));
   if (!localStorage.getItem('kuis'))         localStorage.setItem('kuis', JSON.stringify(SEED_KUIS));
   if (!localStorage.getItem('ulasan'))       localStorage.setItem('ulasan', JSON.stringify(SEED_ULASAN));
-  if (!localStorage.getItem('transaksi'))    localStorage.setItem('transaksi', JSON.stringify([]));
+  if (!localStorage.getItem('transaksi'))    localStorage.setItem('transaksi', JSON.stringify(SEED_TRANSAKSI));
   if (!localStorage.getItem('cart'))         localStorage.setItem('cart', JSON.stringify([]));
   if (!localStorage.getItem('progres'))      localStorage.setItem('progres', JSON.stringify([]));
   if (!localStorage.getItem('diskusi'))      localStorage.setItem('diskusi', JSON.stringify([]));

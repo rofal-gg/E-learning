@@ -2188,6 +2188,14 @@ const SEED_ULASAN = [
   { id: "ul005", kelasId: "k005", userId: "u007", userName: "Budi Santoso", rating: 5, komentar: "Pandas dan NumPy dijelaskan dengan praktik langsung.", tanggal: "2025-03-10" }
 ];
 
+const SEED_TRANSAKSI = [
+  { id: "t001", userId: "u001", items: ["k001"], total: 150000, metode: "transfer", status: "sukses", tanggal: "2025-01-05", paketDurasi: 12, tanggalBerakhir: "2026-01-05T00:00:00.000Z" },
+  { id: "t002", userId: "u004", items: ["k002"], total: 200000, metode: "transfer", status: "sukses", tanggal: "2025-01-20", paketDurasi: 12, tanggalBerakhir: "2026-01-20T00:00:00.000Z" },
+  { id: "t003", userId: "u005", items: ["k003"], total: 0, metode: "gratis", status: "sukses", tanggal: "2025-02-01", paketDurasi: 12, tanggalBerakhir: "2026-02-01T00:00:00.000Z" },
+  { id: "t004", userId: "u006", items: ["k004"], total: 350000, metode: "transfer", status: "sukses", tanggal: "2025-02-10", paketDurasi: 12, tanggalBerakhir: "2026-02-10T00:00:00.000Z" },
+  { id: "t005", userId: "u007", items: ["k005"], total: 250000, metode: "transfer", status: "sukses", tanggal: "2025-02-15", paketDurasi: 12, tanggalBerakhir: "2026-02-15T00:00:00.000Z" }
+];
+
 const SEED_NOTIFIKASI = [
   { id: "n001", userId: "u001", pesan: "Selamat datang di Platform E-Learning! Mulai perjalanan belajarmu sekarang.", dibaca: false, tanggal: "2025-01-01" },
   { id: "n002", userId: "u001", pesan: "Kelas 'Belajar HTML & CSS dari Nol' berhasil dibeli. Selamat belajar!", dibaca: false, tanggal: "2025-01-10" },
