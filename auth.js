@@ -81,10 +81,12 @@ function sameUserId(a, b) {
 
 function getRoleDashboardPath(role) {
   var area = getPageArea();
-  if (area === role) return 'dashboard.html';
-  if (area === 'root') return 'pages/' + role + '/dashboard.html';
-  if (area === 'auth') return '../' + role + '/dashboard.html';
-  return '../' + role + '/dashboard.html';
+  // super_admin pake folder admin
+  var folder = (role === 'super_admin') ? 'admin' : role;
+  if (area === folder || (role === 'super_admin' && area === 'admin')) return 'dashboard.html';
+  if (area === 'root') return 'pages/' + folder + '/dashboard.html';
+  if (area === 'auth') return '../' + folder + '/dashboard.html';
+  return '../' + folder + '/dashboard.html';
 }
 
 function buildLoginUrl() {
@@ -111,6 +113,11 @@ function redirectByRole(role) {
     return;
   }
   window.location.replace(resolveAppPath(getRoleDashboardPath(role)));
+}
+
+// khusus super_admin — arahkan ke halaman admin
+function isSuperAdmin(user) {
+  return user && user.role === 'super_admin';
 }
 
 function hitungTingkatanDariPoin(poin) {
@@ -174,8 +181,18 @@ function login(email, password) {
   if (user.status === 'blokir') {
     return { sukses: false, pesan: 'Akun Anda diblokir. Hubungi admin.' };
   }
-
   return { sukses: true, user: persistSession(user) };
+}
+
+// kirim OTP verifikasi email (simulasi)
+function kirimOtpVerifEmail(userId) {
+  var user = getById('users', userId);
+  if (!user) return null;
+  var kodeOTP = String(Math.floor(100000 + Math.random() * 900000));
+  sessionStorage.setItem('verif_otp', kodeOTP);
+  sessionStorage.setItem('verif_user_id', userId);
+  sessionStorage.setItem('verif_email', user.email);
+  return kodeOTP;
 }
 
 function logout() {
@@ -264,6 +281,7 @@ function register(data) {
     bio: data.bio || '',
     saldo: data.saldo !== undefined ? data.saldo : 0,
     status: 'aktif',
+    email_verified: data.email_verified || false,
     namaOrangTua: data.namaOrangTua || '',
     tanggalLahir: data.tanggalLahir || '',
     poin: 0,

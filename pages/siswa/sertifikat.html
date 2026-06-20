@@ -120,6 +120,11 @@
       }
 
       var tanggalLulus = formatTanggalSertifikat(new Date().toISOString());
+      var noSertifikat = 'SERT-' + user.id + '-' + kelas.id + '-' + Date.now().toString(36).toUpperCase();
+      var freshUser = getById('users', user.id) || user;
+      var tingkatanTeks = freshUser && freshUser.tingkatan
+        ? (freshUser.tingkatan.charAt(0).toUpperCase() + freshUser.tingkatan.slice(1))
+        : 'Pemula';
 
       area.innerHTML = `
         <div class="page-header no-print">
@@ -134,9 +139,13 @@
                 <p class="sertifikat-label">Sertifikat Penyelesaian</p>
                 <p class="sertifikat-sub">Diberikan kepada</p>
                 <h2 class="sertifikat-nama">${user.nama}</h2>
+                <div class="sertifikat-tingkatan">
+                  <span class="badge badge-primary">Tingkat ${tingkatanTeks}</span>
+                </div>
                 <p class="sertifikat-sub">telah menyelesaikan kelas</p>
                 <h3 class="sertifikat-kelas">${kelas.judul}</h3>
                 <div class="sertifikat-meta">
+                  <div><span>No. Sertifikat</span><strong>${noSertifikat}</strong></div>
                   <div><span>Tanggal</span><strong>${tanggalLulus}</strong></div>
                   <div><span>Instruktur</span><strong>${kelas.instrukturNama}</strong></div>
                 </div>

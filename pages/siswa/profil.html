@@ -27,7 +27,10 @@
 
       <div class="profil-layout">
         <section class="card profil-preview">
-          <div class="profil-avatar" id="profil-avatar">?</div>
+          <div id="profil-foto-container">
+            <img id="profil-foto-img" class="profil-foto" src="" alt="Foto Profil" style="display:none;">
+            <div class="profil-avatar" id="profil-avatar">?</div>
+          </div>
           <h2 id="profil-nama-display">—</h2>
           <p class="text-gray" id="profil-email-display">—</p>
         </section>
@@ -42,11 +45,23 @@
             <div class="form-group">
               <label class="form-label" for="input-email">Email</label>
               <input type="email" id="input-email" class="form-input" disabled>
-              <p class="form-hint">Email tidak dapat diubah.</p>
+              <div id="email-verif-status" class="email-verif-status" style="margin-top:6px;">
+                <span id="verif-badge" class="badge badge-success">Terverifikasi</span>
+                <button type="button" id="btn-verif-email" class="btn btn-primary btn-sm" style="display:none;">Verifikasi Email</button>
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label" for="input-bio">Bio</label>
               <textarea id="input-bio" class="form-input" rows="4" placeholder="Ceritakan sedikit tentang diri Anda..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-foto">Foto Profil</label>
+              <input type="file" id="input-foto" class="form-input" accept="image/*">
+              <p class="form-hint">Pilih file gambar untuk foto profil Anda (maks 2MB)</p>
+              <div id="foto-preview-container" style="display:none; margin-top:8px;">
+                <img id="foto-preview" class="foto-preview-img" src="" alt="Preview">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-hapus-foto" style="margin-top:4px;">Hapus Foto</button>
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label" for="input-password">Password Baru</label>
@@ -72,16 +87,109 @@
       return nama.split(' ').map(function (n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
     }
 
+    // tampilkan foto profil atau fallback inisial
+    function tampilkanFoto(data) {
+      var img = document.getElementById('profil-foto-img');
+      var fallback = document.getElementById('profil-avatar');
+      if (data.foto && data.foto.indexOf('data:image') === 0) {
+        img.src = data.foto;
+        img.style.display = 'block';
+        fallback.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        fallback.style.display = 'flex';
+        fallback.textContent = ambilInisial(data.nama);
+      }
+    }
+
+    // tampilkan status verifikasi email
+    function tampilkanStatusEmail(data) {
+      var badge = document.getElementById('verif-badge');
+      var btn = document.getElementById('btn-verif-email');
+
+      if (data.email_verified) {
+        badge.textContent = 'Email sudah terverifikasi';
+        badge.className = 'badge badge-success';
+        btn.style.display = 'none';
+      } else {
+        badge.textContent = 'Belum diverifikasi';
+        badge.className = 'badge badge-warning';
+        btn.style.display = 'inline-block';
+      }
+    }
+
     // isi form dan preview profil
     function muatProfil() {
       var data = getById('users', user.id) || user;
-      document.getElementById('profil-avatar').textContent = ambilInisial(data.nama);
+      tampilkanFoto(data);
       document.getElementById('profil-nama-display').textContent = data.nama;
       document.getElementById('profil-email-display').textContent = data.email;
       document.getElementById('input-nama').value = data.nama || '';
       document.getElementById('input-email').value = data.email || '';
       document.getElementById('input-bio').value = data.bio || '';
+      tampilkanStatusEmail(data);
+      if (data.foto && data.foto.indexOf('data:image') === 0) {
+        document.getElementById('foto-preview').src = data.foto;
+        document.getElementById('foto-preview-container').style.display = 'block';
+      }
     }
+
+    // proses verifikasi email dari profil
+    document.getElementById('btn-verif-email').addEventListener('click', function () {
+      var dataSiswa = getById('users', user.id) || user;
+      if (dataSiswa.email_verified) {
+        showAlert('alert-profil', 'Email sudah terverifikasi.', 'success');
+        return;
+      }
+
+      // kirim OTP
+      if (typeof kirimOtpVerifEmail === 'function') {
+        var kode = kirimOtpVerifEmail(user.id);
+        if (!kode) {
+          showAlert('alert-profil', 'Gagal mengirim kode verifikasi.', 'danger');
+          return;
+        }
+
+        // tampilkan OTP di alert saja untuk simulasi
+        var otpMasukan = prompt('🔐 Kode OTP Simulasi: ' + kode + '\n\nMasukkan kode OTP untuk verifikasi email:');
+        if (otpMasukan === null) return;
+
+        if (otpMasukan.trim() === kode) {
+          updateItem('users', user.id, { email_verified: true });
+          var updatedUser = persistSession(getById('users', user.id) || user);
+          user = updatedUser;
+          muatProfil();
+          showAlert('alert-profil', 'Email berhasil diverifikasi!', 'success');
+        } else {
+          showAlert('alert-profil', 'Kode OTP salah. Silakan coba lagi.', 'danger');
+        }
+        sessionStorage.removeItem('verif_otp');
+        sessionStorage.removeItem('verif_user_id');
+        sessionStorage.removeItem('verif_email');
+      }
+    });
+
+    // preview foto sebelum upload
+    document.getElementById('input-foto').addEventListener('change', function () {
+      var file = this.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran file maksimal 2MB.');
+        this.value = '';
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        document.getElementById('foto-preview').src = e.target.result;
+        document.getElementById('foto-preview-container').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('btn-hapus-foto').addEventListener('click', function () {
+      document.getElementById('input-foto').value = '';
+      document.getElementById('foto-preview-container').style.display = 'none';
+    });
 
     muatProfil();
 
@@ -91,6 +199,7 @@
       var nama = document.getElementById('input-nama').value.trim();
       var bio = document.getElementById('input-bio').value.trim();
       var passwordBaru = document.getElementById('input-password').value;
+      var fileInput = document.getElementById('input-foto');
 
       if (!nama) {
         alert('Nama wajib diisi.');
@@ -102,13 +211,34 @@
         updates.password = passwordBaru;
       }
 
-      updateItem('users', user.id, updates);
+      // simpan foto base64 jika ada file baru
+      if (fileInput.files && fileInput.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          updates.foto = e.target.result;
+          simpanProfil(updates);
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        // cek apakah foto sudah dihapus
+        var dataLama = getById('users', user.id) || user;
+        var previewContainer = document.getElementById('foto-preview-container');
+        if (dataLama.foto && previewContainer.style.display === 'none') {
+          updates.foto = '';
+        } else if (dataLama.foto) {
+          updates.foto = dataLama.foto;
+        }
+        simpanProfil(updates);
+      }
+    });
 
+    function simpanProfil(updates) {
+      updateItem('users', user.id, updates);
       var updatedUser = persistSession(getById('users', user.id) || user);
       user = updatedUser;
-
       muatProfil();
       document.getElementById('input-password').value = '';
+      document.getElementById('input-foto').value = '';
 
       var alertEl = document.getElementById('alert-profil');
       alertEl.textContent = 'Profil berhasil disimpan.';
@@ -116,7 +246,7 @@
       setTimeout(function () {
         alertEl.style.display = 'none';
       }, 4000);
-    });
+    }
   </script>
 </body>
 </html>

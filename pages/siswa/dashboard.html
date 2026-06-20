@@ -62,6 +62,12 @@
       </section>
 
       <section class="content-section">
+        <h2>Kupon Tersedia</h2>
+        <p class="text-gray">Gunakan kupon di bawah untuk dapatkan diskon spesial!</p>
+        <div id="kupon-tersedia" class="grid-3"></div>
+      </section>
+
+      <section class="content-section">
         <h2>Kelas Terbaru di Katalog</h2>
         <div id="kelas-terbaru" class="grid-3"></div>
       </section>
@@ -279,6 +285,56 @@
       '</div>';
     }
 
+    // tampilkan kupon yang masih berlaku
+    function tampilkanKuponTersedia() {
+      var container = document.getElementById('kupon-tersedia');
+      var sekarang = new Date();
+      var semuaKupon = getAll('kupon').filter(function (k) {
+        return new Date(k.expired) >= sekarang;
+      }).slice(0, 6);
+
+      if (semuaKupon.length === 0) {
+        container.innerHTML = '<p class="text-gray">Belum ada kupon tersedia saat ini.</p>';
+        return;
+      }
+
+      container.innerHTML = semuaKupon.map(function (k) {
+        var namaKelas = '';
+        if (k.kelasId) {
+          var kelas = getById('kelas', k.kelasId);
+          namaKelas = kelas ? '<span class="badge badge-primary">' + kelas.judul + '</span>' : '';
+        } else {
+          namaKelas = '<span class="badge badge-success">Semua Kelas</span>';
+        }
+        var expiredDate = new Date(k.expired).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        return '' +
+          '<div class="card-kupon">' +
+            '<div class="kupon-diskon-badge">' + k.diskon + '% OFF</div>' +
+            '<div class="kupon-body">' +
+              '<div class="kupon-kode">' + k.kode + '</div>' +
+              namaKelas +
+              '<p class="kupon-expired">Berlaku s/d: ' + expiredDate + '</p>' +
+              '<button type="button" class="btn btn-primary btn-sm btn-salin-kupon" data-kode="' + k.kode + '">Salin Kode</button>' +
+            '</div>' +
+          '</div>';
+      }).join('');
+
+      // event copy kode kupon
+      container.querySelectorAll('.btn-salin-kupon').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var kode = this.getAttribute('data-kode');
+          navigator.clipboard.writeText(kode).then(function () {
+            var asli = this.textContent;
+            this.textContent = 'Tersalin!';
+            var self = this;
+            setTimeout(function () { self.textContent = asli; }, 2000);
+          }.bind(this)).catch(function () {
+            alert('Kode kupon: ' + kode);
+          });
+        });
+      });
+    }
+
     // tampilkan 3 kelas terbaru dari katalog
     function tampilkanKelasTerbaru() {
       var container = document.getElementById('kelas-terbaru');
@@ -301,6 +357,7 @@
     tampilkanLanjutBelajar();
     tampilkanKelasSelesai();
     tampilkanJadwalTatapMuka();
+    tampilkanKuponTersedia();
     tampilkanKelasTerbaru();
   </script>
 </body>

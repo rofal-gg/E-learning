@@ -35,6 +35,8 @@
         </div>
       </div>
 
+      <div id="alert-box" class="alert-box-wrap"></div>
+
       <div class="filter-bar">
         <div>
           <label class="form-label" for="filter-dari">Dari Tanggal</label>
@@ -149,6 +151,63 @@
       document.getElementById('kpi-pendapatan-platform').textContent = formatRupiahAdmin(pendapatanPlatform);
     }
 
+    function prosesVerif(transaksiId, aksi) {
+      var t = getById('transaksi', transaksiId);
+      if (!t) return;
+
+      if (aksi === 'approve') {
+        updateItem('transaksi', transaksiId, { status: 'sukses' });
+        var transaksi = getById('transaksi', transaksiId);
+        var subtotal = (transaksi.items || []).reduce(function (sum, kelasId) {
+          var k2 = getById('kelas', kelasId);
+          return sum + (k2 ? (k2.harga || 0) : 0);
+        }, 0);
+
+        (transaksi.items || []).forEach(function (kelasId) {
+          var kelas = getById('kelas', kelasId);
+          if (kelas) {
+            updateItem('kelas', kelasId, { totalSiswa: (kelas.totalSiswa || 0) + 1 });
+            var proporsi = subtotal > 0 ? (kelas.harga / subtotal) : 0;
+            var share = Math.round(proporsi * (transaksi.total || 0) * 0.7);
+            if (share > 0 && kelas.instrukturId) {
+              var instruktur = getById('users', kelas.instrukturId);
+              if (instruktur) {
+                updateItem('users', kelas.instrukturId, {
+                  saldo: (instruktur.saldo || 0) + share
+                });
+              }
+            }
+            if (typeof notifyInstrukturKelasTerjual === 'function') {
+              notifyInstrukturKelasTerjual(kelas, (getById('users', transaksi.userId) || {}).nama || 'Siswa', transaksiId, share);
+            }
+          }
+          var sudahAda = getAll('progres').some(function (p) {
+            return sameUserId(p.userId, transaksi.userId) && String(p.kelasId) === String(kelasId);
+          });
+          if (!sudahAda) {
+            createItem('progres', {
+              id: generateId('p'),
+              userId: transaksi.userId,
+              kelasId: kelasId,
+              babSelesai: [],
+              persen: 0
+            });
+          }
+        });
+        if (typeof createNotifikasi === 'function') {
+          createNotifikasi(transaksi.userId, 'Pembayaran Anda telah diverifikasi! Kelas sudah bisa diakses. Selamat belajar!');
+        }
+        showAlert('alert-box', 'Transaksi ' + transaksiId + ' telah disetujui.', 'success');
+      } else if (aksi === 'reject') {
+        updateItem('transaksi', transaksiId, { status: 'ditolak' });
+        if (typeof createNotifikasi === 'function') {
+          createNotifikasi(t.userId, 'Maaf, pembayaran Anda ditolak. Silakan hubungi admin untuk informasi lebih lanjut.');
+        }
+        showAlert('alert-box', 'Transaksi ' + transaksiId + ' ditolak.', 'danger');
+      }
+      renderSemua();
+    }
+
     function renderTabelTransaksi(list) {
       var area = document.getElementById('table-area');
 
@@ -163,6 +222,15 @@
       var rows = list.map(function (t) {
         var pembeli = getById('users', t.userId);
         var namaPembeli = pembeli ? pembeli.nama : 'User tidak ditemukan';
+        var aksiBtn = '';
+        if (t.status === 'pending') {
+          aksiBtn = `
+            <button type="button" class="btn btn-success btn-sm btn-verif" data-id="${t.id}" data-aksi="approve">Setujui</button>
+            <button type="button" class="btn btn-danger btn-sm btn-verif" data-id="${t.id}" data-aksi="reject">Tolak</button>
+          `;
+        } else {
+          aksiBtn = '<span class="text-gray" style="font-size:0.85rem;">Selesai</span>';
+        }
         return `
           <tr>
             <td><code class="transaksi-id">${t.id}</code></td>
@@ -172,6 +240,7 @@
             <td>${t.metode || '-'}</td>
             <td>${formatRupiahAdmin(t.total)}</td>
             <td>${badgeStatusTransaksi(t.status)}</td>
+            <td class="aksi-cell">${aksiBtn}</td>
           </tr>`;
       }).join('');
 
@@ -187,11 +256,22 @@
                 <th>Metode</th>
                 <th>Total</th>
                 <th>Status</th>
+                <th>Aksi</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
         </div>`;
+
+      area.querySelectorAll('.btn-verif').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-id');
+          var aksi = this.getAttribute('data-aksi');
+          if (aksi === 'reject' && !confirm('Tolak transaksi ini?')) return;
+          if (aksi === 'approve' && !confirm('Setujui transaksi ini? Kelas akan aktif untuk siswa.')) return;
+          prosesVerif(id, aksi);
+        });
+      });
     }
 
     function renderSemua() {

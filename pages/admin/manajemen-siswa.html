@@ -118,22 +118,51 @@
           : `<button type="button" class="btn btn-danger btn-sm btn-blokir" data-aksi="blokir" data-id="${u.id}">Blokir</button>`;
         var namaEsc = u.nama.replace(/"/g, '&quot;');
 
+        // hitung kelas selesai
+        var kelasSelesai = getAll('progres').filter(function (p) {
+          return sameUserId(p.userId, u.id) && p.persen >= 100;
+        });
+        var totalSelesai = kelasSelesai.length;
+
+        // nama kelas yang sudah selesai
+        var namaKelasSelesai = kelasSelesai.map(function (p) {
+          var k = getById('kelas', p.kelasId);
+          return k ? k.judul : null;
+        }).filter(Boolean).join(', ');
+
+        var tingkatanTeks = u.tingkatan && u.tingkatan !== 'belum_tes'
+          ? (u.tingkatan.charAt(0).toUpperCase() + u.tingkatan.slice(1))
+          : 'Belum Tes';
+
+        var namaOrtu = u.namaOrangTua || '-';
+        var tanggalLahir = u.tanggalLahir ? new Date(u.tanggalLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
+        var noHp = u.noHp || '-';
+        var namaOrtuEsc = namaOrtu.replace(/"/g, '&quot;');
+
         return `
           <tr>
             <td>${index + 1}</td>
             <td><strong>${u.nama}</strong></td>
             <td>${u.email}</td>
             <td>${tanggalDaftarDariId(u.id)}</td>
+            <td>${tanggalLahir}</td>
+            <td>${namaOrtu}</td>
             <td>${badgeStatus(status)}</td>
+            <td>
+              <span class="badge badge-primary">${tingkatanTeks}</span>
+            </td>
+            <td>${u.poin || 0}</td>
+            <td>${totalSelesai}</td>
             <td class="table-aksi action-cell">
               ${tombolStatus}
+              <button type="button" class="btn btn-info btn-sm btn-detail" data-id="${u.id}" data-nama="${namaEsc}" data-kelas="${namaKelasSelesai.replace(/"/g, '&quot;')}" data-tingkatan="${tingkatanTeks}" data-poin="${u.poin || 0}" data-ortu="${namaOrtuEsc}" data-tgl="${tanggalLahir}" data-nohp="${noHp}">Detail</button>
               <button type="button" class="btn btn-secondary btn-sm" data-aksi="hapus" data-id="${u.id}" data-nama="${namaEsc}">Hapus</button>
             </td>
           </tr>`;
       }).join('');
 
       area.innerHTML = `
-        <div class="card table-wrap">
+        <div class="card table-wrap" style="overflow-x:auto;">
           <table class="table">
             <thead>
               <tr>
@@ -141,12 +170,42 @@
                 <th>Nama</th>
                 <th>Email</th>
                 <th>Tanggal Daftar</th>
+                <th>Tanggal Lahir</th>
+                <th>Nama Orang Tua</th>
                 <th>Status</th>
+                <th>Tingkatan</th>
+                <th>Poin</th>
+                <th>Kelas Selesai</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
+        </div>
+
+        <!-- Modal Detail Siswa -->
+        <div id="modal-detail" class="modal-overlay" style="display:none;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 id="modal-siswa-nama">—</h2>
+              <button type="button" class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+              <table class="table detail-info-table">
+                <tr><td><strong>Nama Lengkap</strong></td><td id="modal-nama-lengkap">—</td></tr>
+                <tr><td><strong>Email</strong></td><td id="modal-email">—</td></tr>
+                <tr><td><strong>Nama Orang Tua</strong></td><td id="modal-ortu">—</td></tr>
+                <tr><td><strong>Tanggal Lahir</strong></td><td id="modal-tgl-lahir">—</td></tr>
+                <tr><td><strong>No. HP</strong></td><td id="modal-nohp">—</td></tr>
+                <tr><td><strong>Tingkatan</strong></td><td id="modal-tingkatan">—</td></tr>
+                <tr><td><strong>Poin</strong></td><td id="modal-poin">—</td></tr>
+              </table>
+              <h3 style="margin-top:20px;margin-bottom:12px;">Kelas yang Sudah Diselesaikan</h3>
+              <div id="modal-kelas-selesai">
+                <p class="text-gray">Belum ada kelas yang diselesaikan.</p>
+              </div>
+            </div>
+          </div>
         </div>`;
 
       area.querySelectorAll('button[data-aksi]').forEach(function (btn) {
@@ -167,7 +226,56 @@
           }
         });
       });
+
+      // tombol detail — tampilkan modal
+      area.querySelectorAll('.btn-detail').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var id = this.getAttribute('data-id');
+          var nama = this.getAttribute('data-nama');
+          var tingkatan = this.getAttribute('data-tingkatan');
+          var poin = this.getAttribute('data-poin');
+          var kelasStr = this.getAttribute('data-kelas');
+          var ortu = this.getAttribute('data-ortu');
+          var tglLahir = this.getAttribute('data-tgl');
+          var noHp = this.getAttribute('data-nohp');
+
+          document.getElementById('modal-siswa-nama').textContent = nama;
+          document.getElementById('modal-nama-lengkap').textContent = nama;
+          document.getElementById('modal-tingkatan').textContent = tingkatan;
+          document.getElementById('modal-poin').textContent = poin;
+          document.getElementById('modal-ortu').textContent = ortu;
+          document.getElementById('modal-tgl-lahir').textContent = tglLahir;
+          document.getElementById('modal-nohp').textContent = noHp;
+
+          // dapatkan email dari data user
+          var userData = getById('users', id);
+          document.getElementById('modal-email').textContent = userData ? userData.email : '-';
+
+          // kelas selesai
+          var kelasContainer = document.getElementById('modal-kelas-selesai');
+          if (kelasStr) {
+            var kelasList = kelasStr.split(', ');
+            kelasContainer.innerHTML = '<ul class="modal-kelas-list">' +
+              kelasList.map(function (k) { return '<li>' + k + '</li>'; }).join('') +
+              '</ul>';
+          } else {
+            kelasContainer.innerHTML = '<p class="text-gray">Belum ada kelas yang diselesaikan.</p>';
+          }
+
+          document.getElementById('modal-detail').style.display = 'flex';
+        });
+      });
     }
+
+    // close modal
+    document.getElementById('modal-close').addEventListener('click', function () {
+      document.getElementById('modal-detail').style.display = 'none';
+    });
+    document.getElementById('modal-detail').addEventListener('click', function (e) {
+      if (e.target === this) {
+        this.style.display = 'none';
+      }
+    });
   </script>
 </body>
 </html>

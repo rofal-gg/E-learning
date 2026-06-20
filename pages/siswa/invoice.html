@@ -85,6 +85,18 @@
         ? 'ruang-belajar.html?id=' + encodeURIComponent(firstKelasId)
         : 'katalog.html';
 
+      var badgeStatus = transaksi.status === 'sukses'
+        ? '<span class="badge badge-success invoice-status">LUNAS</span>'
+        : '<span class="badge badge-warning invoice-status">MENUNGGU VERIFIKASI</span>';
+
+      var actionButton = transaksi.status === 'sukses'
+        ? '<a href="' + belajarHref + '" class="btn btn-primary">Mulai Belajar</a>'
+        : '<a href="riwayat-transaksi.html" class="btn btn-primary">Cek Status Transaksi</a>';
+
+      var statusNote = transaksi.status !== 'sukses'
+        ? '<div class="alert alert-info" style="margin-top:16px;">Pembayaran Anda sedang menunggu verifikasi admin. Kami akan memberitahu Anda begitu status berubah.</div>'
+        : '';
+
       area.innerHTML = `
         <div class="invoice-card card" id="invoice-print">
           <div class="invoice-header">
@@ -92,7 +104,7 @@
               <h1 class="invoice-title">Invoice Pembayaran</h1>
               <p class="invoice-brand">Platform E-Learning EduKita</p>
             </div>
-            <span class="badge badge-success invoice-status">LUNAS</span>
+            ${badgeStatus}
           </div>
           <div class="invoice-meta grid-2">
             <div><strong>No. Transaksi</strong><br>${transaksi.id}</div>
@@ -113,9 +125,10 @@
             </table>
           </div>
           <p class="invoice-thanks">Terima kasih telah belajar bersama EduKita!</p>
+          ${statusNote}
         </div>
         <div class="invoice-actions no-print">
-          <a href="${belajarHref}" class="btn btn-primary">Mulai Belajar</a>
+          ${actionButton}
           <button type="button" class="btn btn-secondary" id="btn-cetak">Cetak Invoice</button>
           <a href="riwayat-transaksi.html" class="btn btn-secondary">Riwayat Transaksi</a>
         </div>

@@ -163,6 +163,14 @@ const SEED_USERS = [
     namaOrangTua: "Bapak Suprapto",
     tanggalLahir: "2001-01-14",
     tingkatan: ""
+  },
+  {
+    id: "u018", nama: "Super Admin", email: "super@email.com",
+    password: "super123", role: "super_admin",
+    foto: "", bio: "Super Administrator Platform",
+    namaOrangTua: "-",
+    tanggalLahir: "2000-01-01",
+    tingkatan: ""
   }
 ];
 

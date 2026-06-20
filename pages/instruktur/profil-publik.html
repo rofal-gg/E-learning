@@ -29,6 +29,7 @@
       <div class="profil-layout">
         <section class="card profil-preview">
           <div id="profil-foto-wrap">
+            <img id="profil-foto-img" class="profil-foto" src="" alt="Foto Profil" style="display:none;">
             <div id="profil-avatar-fallback" class="profil-avatar">?</div>
           </div>
           <h2 id="preview-nama">—</h2>
@@ -52,9 +53,13 @@
               <input type="text" id="input-keahlian" class="form-input" placeholder="HTML, CSS, JavaScript">
             </div>
             <div class="form-group">
-              <label class="form-label" for="input-foto">URL Foto</label>
-              <input type="text" id="input-foto" class="form-input" placeholder="assets/images/avatar-2.jpg">
-              <p class="form-hint">Path relatif dari root project, misalnya assets/images/avatar-2.jpg</p>
+              <label class="form-label" for="input-foto">Foto Profil</label>
+              <input type="file" id="input-foto" class="form-input" accept="image/*">
+              <p class="form-hint">Pilih file gambar untuk foto profil (maks 2MB)</p>
+              <div id="foto-preview-container" style="display:none; margin-top:8px;">
+                <img id="foto-preview" class="foto-preview-img" src="" alt="Preview">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-hapus-foto" style="margin-top:4px;">Hapus Foto</button>
+              </div>
             </div>
             <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
           </form>
@@ -100,21 +105,21 @@
     }
 
     function renderPreview(data) {
-      var fotoEl = document.getElementById('profil-foto');
+      var fotoEl = document.getElementById('profil-foto-img');
       var fallback = document.getElementById('profil-avatar-fallback');
 
       document.getElementById('preview-nama').textContent = data.nama || '—';
       document.getElementById('preview-keahlian').textContent = data.keahlian || 'Belum diisi';
       document.getElementById('preview-bio').textContent = data.bio || 'Belum ada bio.';
-      fallback.textContent = inisialNama(data.nama);
 
-      if (data.foto) {
-        fotoEl.src = '../../' + data.foto.replace(/^\//, '');
-        fotoEl.hidden = false;
+      if (data.foto && data.foto.indexOf('data:image') === 0) {
+        fotoEl.src = data.foto;
+        fotoEl.style.display = 'block';
         fallback.style.display = 'none';
       } else {
-        fotoEl.hidden = true;
+        fotoEl.style.display = 'none';
         fallback.style.display = 'flex';
+        fallback.textContent = inisialNama(data.nama);
       }
     }
 
@@ -123,27 +128,88 @@
       document.getElementById('input-nama').value = data.nama || '';
       document.getElementById('input-bio').value = data.bio || '';
       document.getElementById('input-keahlian').value = data.keahlian || '';
-      document.getElementById('input-foto').value = data.foto || '';
       renderPreview(data);
+      if (data.foto && data.foto.indexOf('data:image') === 0) {
+        document.getElementById('foto-preview').src = data.foto;
+        document.getElementById('foto-preview-container').style.display = 'block';
+      }
     }
+
+    // preview foto sebelum upload
+    document.getElementById('input-foto').addEventListener('change', function () {
+      var file = this.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        showAlert('alert-box', 'Ukuran file maksimal 2MB.', 'danger');
+        this.value = '';
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        document.getElementById('foto-preview').src = e.target.result;
+        document.getElementById('foto-preview-container').style.display = 'block';
+        // update preview realtime
+        var fotoEl = document.getElementById('profil-foto-img');
+        var fallback = document.getElementById('profil-avatar-fallback');
+        fotoEl.src = e.target.result;
+        fotoEl.style.display = 'block';
+        fallback.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('btn-hapus-foto').addEventListener('click', function () {
+      document.getElementById('input-foto').value = '';
+      document.getElementById('foto-preview-container').style.display = 'none';
+      var dataLama = getById('users', user.id) || user;
+      if (dataLama.foto && dataLama.foto.indexOf('data:image') === 0) {
+        // hapus foto dari storage
+        updateItem('users', user.id, { foto: '' });
+        var updatedUser = getById('users', user.id);
+        persistSession(updatedUser);
+        user = updatedUser;
+        muatProfil();
+      }
+    });
 
     function simpanProfil() {
       var nama = document.getElementById('input-nama').value.trim();
       var bio = document.getElementById('input-bio').value.trim();
       var keahlian = document.getElementById('input-keahlian').value.trim();
-      var foto = document.getElementById('input-foto').value.trim();
+      var fileInput = document.getElementById('input-foto');
 
       if (!nama) {
         showAlert('alert-box', 'Nama wajib diisi.', 'danger');
         return;
       }
 
-      updateItem('users', user.id, { nama: nama, bio: bio, keahlian: keahlian, foto: foto });
+      var updates = { nama: nama, bio: bio, keahlian: keahlian };
 
+      if (fileInput.files && fileInput.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          updates.foto = e.target.result;
+          simpanKeStorage(updates);
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        var dataLama = getById('users', user.id) || user;
+        var previewContainer = document.getElementById('foto-preview-container');
+        if (dataLama.foto && dataLama.foto.indexOf('data:image') === 0 && previewContainer.style.display === 'none') {
+          updates.foto = '';
+        } else if (dataLama.foto) {
+          // path biasa (non-base64) tetap dipertahankan
+          updates.foto = dataLama.foto;
+        }
+        simpanKeStorage(updates);
+      }
+    }
+
+    function simpanKeStorage(updates) {
+      updateItem('users', user.id, updates);
       var updatedUser = getById('users', user.id);
-      sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      persistSession(updatedUser);
       user = updatedUser;
-
       showAlert('alert-box', 'Profil berhasil disimpan.', 'success');
       muatProfil();
     }

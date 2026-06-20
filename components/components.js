@@ -181,6 +181,12 @@ function renderSidebarAdmin(activePage) {
   var el = document.getElementById('sidebar-placeholder');
   if (!el) return;
 
+  var currentUser = window.__pageUser || ((typeof getCurrentUser === 'function') ? getCurrentUser() : null);
+  var isSuper = currentUser && currentUser.role === 'super_admin';
+  var menuManajemenAdmin = isSuper
+    ? '<a href="manajemen-admin.html" class="sidebar-link" data-page="manajemen-admin"><img src="../../assets/icons/manajemen_admin.svg" width="20" alt=""> Manajemen Admin</a>'
+    : '';
+
   el.innerHTML = `
     <aside class="sidebar">
       <a href="dashboard.html" class="sidebar-brand">EduKita Admin</a>
@@ -212,9 +218,7 @@ function renderSidebarAdmin(activePage) {
         <a href="pengaturan-banner.html" class="sidebar-link" data-page="pengaturan-banner">
           <img src="../../assets/icons/banner.svg" width="20" alt=""> Banner
         </a>
-        <a href="manajemen-admin.html" class="sidebar-link" data-page="manajemen-admin">
-          <img src="../../assets/icons/manajemen_admin.svg" width="20" alt=""> Manajemen Admin
-        </a>
+        ${menuManajemenAdmin}
         <a href="#" class="sidebar-link logout" id="btn-logout">
           <img src="../../assets/icons/logout.png" width="20" alt=""> Logout
         </a>

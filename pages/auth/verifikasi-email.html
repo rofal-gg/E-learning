@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifikasi Email — Platform E-Learning</title>
+  <link rel="stylesheet" href="../../style.css">
+  <script src="../../components/components.js"></script>
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <p class="auth-logo">EduKita</p>
+    <h1 class="auth-title">Verifikasi Email</h1>
+    <p class="auth-subtitle">Kami telah mengirim kode OTP ke email Anda. Masukkan kode di bawah untuk verifikasi.</p>
+
+    <div id="alert-box"></div>
+
+    <!-- info email tujuan -->
+    <div id="email-info" class="verif-email-info" style="display:none;">
+      <p>Kode OTP dikirim ke: <strong id="email-display">—</strong></p>
+    </div>
+
+    <!-- OTP simulasi (untuk testing, tampilkan kode) -->
+    <div id="otp-display" class="verif-otp-simulasi" style="display:none;">
+      <p>🔐 Kode OTP Simulasi: <strong id="kode-otp">—</strong></p>
+      <p class="form-hint">Gunakan kode di atas untuk verifikasi (simulasi — tidak ada email sungguhan)</p>
+    </div>
+
+    <form id="form-verif">
+      <div class="form-group">
+        <label class="form-label" for="otp-input">Kode OTP</label>
+        <input type="text" id="otp-input" class="form-input" placeholder="Masukkan 6 digit kode" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Verifikasi Email</button>
+    </form>
+
+    <div class="auth-links" style="margin-top:16px; text-align:center;">
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-kirim-ulang">Kirim Ulang OTP</button>
+      <br><br>
+      <a href="login.html" class="text-link-sm">Sudah punya akun? Masuk</a>
+    </div>
+  </div>
+
+  <script src="../../data.js"></script>
+  <script src="../../storage.js"></script>
+  <script src="../../auth.js"></script>
+  <script>
+    initStorage();
+
+    var otpTersimpan = sessionStorage.getItem('verif_otp');
+    var userId = sessionStorage.getItem('verif_user_id');
+
+    if (!otpTersimpan || !userId) {
+      // coba cek dari user yang baru register (fallback)
+      document.getElementById('otp-display').style.display = 'none';
+      document.getElementById('alert-box').innerHTML =
+        '<div class="alert alert-danger">Sesi verifikasi tidak ditemukan. Silakan daftar ulang.</div>';
+    } else {
+      // tampilkan kode OTP simulasi untuk testing
+      document.getElementById('kode-otp').textContent = otpTersimpan;
+      document.getElementById('otp-display').style.display = 'block';
+
+      var userData = getById('users', userId);
+      if (userData) {
+        document.getElementById('email-display').textContent = userData.email;
+        document.getElementById('email-info').style.display = 'block';
+      }
+    }
+
+    document.getElementById('form-verif').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var inputOtp = document.getElementById('otp-input').value.trim();
+      var storedOtp = sessionStorage.getItem('verif_otp');
+      var userId = sessionStorage.getItem('verif_user_id');
+
+      if (!storedOtp || !userId) {
+        showAlert('alert-box', 'Sesi tidak valid. Silakan daftar ulang.', 'danger');
+        return;
+      }
+
+      if (inputOtp !== storedOtp) {
+        showAlert('alert-box', 'Kode OTP salah. Silakan coba lagi.', 'danger');
+        return;
+      }
+
+      // verifikasi berhasil
+      updateItem('users', userId, { email_verified: true });
+
+      // bersihkan session
+      sessionStorage.removeItem('verif_otp');
+      sessionStorage.removeItem('verif_user_id');
+
+      // login langsung
+      var user = getById('users', userId);
+      if (user) {
+        persistSession(user);
+        if (user.role === 'siswa') {
+          window.location.href = resolveAppPath('../siswa/kuis-penempatan.html');
+        } else {
+          redirectByRole(user.role);
+        }
+      } else {
+        window.location.href = 'login.html';
+      }
+    });
+
+    document.getElementById('btn-kirim-ulang').addEventListener('click', function () {
+      var newOtp = String(Math.floor(100000 + Math.random() * 900000));
+      sessionStorage.setItem('verif_otp', newOtp);
+      document.getElementById('kode-otp').textContent = newOtp;
+      document.getElementById('otp-input').value = '';
+      showAlert('alert-box', 'Kode OTP baru telah dikirim (simulasi).', 'success');
+    });
+  </script>
+
+  <style>
+    .verif-email-info {
+      background: var(--gray-50);
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      font-size: var(--font-size-sm);
+    }
+    .verif-otp-simulasi {
+      background: #FEF3C7;
+      border-left: 4px solid var(--warning);
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      font-size: var(--font-size-sm);
+    }
+    .verif-otp-simulasi strong {
+      font-size: var(--font-size-xl);
+      letter-spacing: 4px;
+      color: var(--gray-900);
+    }
+  </style>
+</body>
+</html>

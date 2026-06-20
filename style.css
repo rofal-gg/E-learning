@@ -59,6 +59,10 @@ body {
 .btn-primary:hover { background: var(--primary-dark); }
 .btn-secondary { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
 .btn-danger { background: var(--danger); color: var(--white); }
+.btn-success { background: var(--success); color: var(--white); }
+.btn-success:hover { background: #059669; }
+.btn-info { background: var(--info); color: var(--white); }
+.btn-info:hover { background: #2563EB; }
 .btn-sm { padding: 6px 14px; font-size: var(--font-size-sm); }
 .btn-block { width: 100%; }
 
@@ -90,6 +94,7 @@ body {
 
 /* Table */
 .table { width: 100%; border-collapse: collapse; font-size: var(--font-size-sm); }
+.aksi-cell { white-space: nowrap; display: flex; gap: 6px; align-items: center; }
 .table th { background: var(--gray-50); color: var(--gray-700); font-weight: 600; padding: 12px 16px; text-align: left; border-bottom: 2px solid var(--gray-300); }
 .table td { padding: 12px 16px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
 .table tr:hover td { background: var(--gray-50); }
@@ -301,4 +306,50 @@ body {
   font-size: var(--font-size-sm);
   color: var(--gray-500);
   margin: 0;
+}
+
+/* ── Kupon Card ── */
+.card-kupon {
+  background: linear-gradient(135deg, #EEF2FF 0%, #ffffff 100%);
+  border: 1px solid #E0E7FF;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s;
+}
+.card-kupon:hover {
+  box-shadow: var(--shadow);
+}
+.kupon-diskon-badge {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  padding: 16px 8px;
+  letter-spacing: 1px;
+}
+.kupon-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.kupon-kode {
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--gray-900);
+  letter-spacing: 2px;
+  background: var(--gray-100);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  text-align: center;
+}
+.kupon-expired {
+  font-size: var(--font-size-sm);
+  color: var(--gray-500);
+  margin: 4px 0;
 }

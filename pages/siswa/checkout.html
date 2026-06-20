@@ -152,7 +152,7 @@
       });
     }
 
-    // buat transaksi, progres, notifikasi, lalu redirect invoice
+    // buat transaksi (pending → diverifikasi admin), lalu redirect invoice
     function prosesBayar(items, total) {
       var metodeEl = document.querySelector('input[name="metode"]:checked');
       if (!metodeEl) {
@@ -169,49 +169,16 @@
         items: kelasIds,
         total: total,
         metode: metodeEl.value,
-        status: 'sukses',
+        status: 'pending',
         tanggal: new Date().toISOString(),
         paketDurasi: selectedPaket.bulan,
         tanggalBerakhir: hitungTanggalBerakhir(selectedPaket.bulan)
       });
 
-      var subtotal = items.reduce(function (sum, item) { return sum + item.kelas.harga; }, 0);
-
-      kelasIds.forEach(function (kelasId) {
-        var kelas = getById('kelas', kelasId);
-        if (kelas) {
-          updateItem('kelas', kelasId, { totalSiswa: (kelas.totalSiswa || 0) + 1 });
-          var proporsi = subtotal > 0 ? (kelas.harga / subtotal) : 0;
-          var share = Math.round(proporsi * total * 0.7);
-          if (share > 0 && kelas.instrukturId) {
-            var instruktur = getById('users', kelas.instrukturId);
-            if (instruktur) {
-              updateItem('users', kelas.instrukturId, {
-                saldo: (instruktur.saldo || 0) + share
-              });
-            }
-          }
-          notifyInstrukturKelasTerjual(kelas, user.nama, transaksiId, share);
-        }
-
-        var sudahAda = getAll('progres').some(function (p) {
-          return sameUserId(p.userId, user.id) && String(p.kelasId) === String(kelasId);
-        });
-        if (!sudahAda) {
-          createItem('progres', {
-            id: generateId('p'),
-            userId: user.id,
-            kelasId: kelasId,
-            babSelesai: [],
-            persen: 0
-          });
-        }
-      });
-
       clearUserCart(user.id);
       sessionStorage.removeItem('appliedKupon');
       sessionStorage.removeItem('selectedPaket');
-      createNotifikasi(user.id, 'Pembelian berhasil! Kelas sudah bisa diakses.');
+      createNotifikasi(user.id, 'Pembayaran sedang diproses. Tunggu verifikasi admin untuk mengakses kelas.');
       window.location.href = 'invoice.html?id=' + encodeURIComponent(transaksiId);
     }
 

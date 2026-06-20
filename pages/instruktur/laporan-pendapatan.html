@@ -140,8 +140,12 @@
     function renderTabelPendapatan(data) {
       var freshUser = getById('users', user.id) || user;
       var saldo = freshUser.saldo || 0;
+      // total penarikan yang sudah disetujui
+      var totalPenarikan = getAll('penarikan')
+        .filter(function (p) { return sameUserId(p.instrukturId, user.id) && p.status === 'approved'; })
+        .reduce(function (sum, p) { return sum + (p.nominal || 0); }, 0);
 
-      document.getElementById('kpi-total-pendapatan').textContent = formatSaldoTampil(data.totalPendapatan);
+      document.getElementById('kpi-total-pendapatan').textContent = formatSaldoTampil(saldo);
       document.getElementById('kpi-saldo').textContent = formatSaldoTampil(saldo);
       document.getElementById('kpi-transaksi').textContent = data.totalTransaksi;
 

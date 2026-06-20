@@ -294,20 +294,24 @@
   text-align: center;
 }
 
-.profil-foto-instruktur {
-  width: 96px;
-  height: 96px;
+#profil-foto-wrap {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 16px;
+}
+
+.profil-foto {
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   object-fit: cover;
-  margin: 0 auto 16px;
-  display: block;
   border: 3px solid var(--primary-light);
 }
 
 .profil-avatar {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto 16px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   background: var(--primary-light);
   color: var(--primary);
@@ -316,6 +320,15 @@
   justify-content: center;
   font-size: var(--font-size-2xl);
   font-weight: 700;
+  margin: 0 auto;
+}
+
+.foto-preview-img {
+  max-width: 150px;
+  max-height: 150px;
+  border-radius: var(--radius);
+  border: 2px solid var(--gray-300);
+  object-fit: cover;
 }
 
 .profil-preview h2 {

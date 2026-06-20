@@ -90,8 +90,16 @@
     function setujuiPenarikan(id) {
       var p = getById('penarikan', id);
       if (!p || p.status !== 'pending') return;
+
+      // kurangi saldo instruktur saat disetujui
+      var instruktur = getById('users', p.instrukturId);
+      if (instruktur) {
+        var saldoBaru = Math.max(0, (instruktur.saldo || 0) - (p.nominal || 0));
+        updateItem('users', p.instrukturId, { saldo: saldoBaru });
+      }
+
       updateItem('penarikan', id, { status: 'approved' });
-      createNotifikasi(p.instrukturId, 'Penarikan saldo kamu telah disetujui.');
+      createNotifikasi(p.instrukturId, 'Penarikan saldo Rp ' + Number(p.nominal || 0).toLocaleString('id-ID') + ' telah disetujui. Saldo kamu telah dikurangi.');
       renderTabelPenarikan(ambilPenarikan(filterStatus));
     }
 
@@ -108,15 +116,10 @@
 
       updateItem('penarikan', id, { status: 'rejected', alasanTolak: alasan });
 
-      var instruktur = getById('users', p.instrukturId);
-      if (instruktur) {
-        var saldoBaru = (instruktur.saldo || 0) + (p.nominal || 0);
-        updateItem('users', p.instrukturId, { saldo: saldoBaru });
-      }
-
+      // saldo TIDAK perlu dikembalikan karena belum dikurangi saat submit
       createNotifikasi(
         p.instrukturId,
-        'Penarikan saldo ditolak. Alasan: ' + alasan + '. Saldo telah dikembalikan.'
+        'Penarikan saldo ditolak. Alasan: ' + alasan + '. Silakan ajukan ulang.'
       );
       renderTabelPenarikan(ambilPenarikan(filterStatus));
     }

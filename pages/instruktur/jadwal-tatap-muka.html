@@ -131,6 +131,31 @@
         });
       }
 
+      // cek apakah jadwal bentrok dengan jadwal lain milik instruktur
+      function cekBentrok(tanggal, waktu) {
+        var semuaJadwal = getAll('jadwal_tatap_muka')
+          .filter(function (j) { return sameUserId(j.instrukturId, user.id); });
+
+        var menitInput = waktu ? waktu.split(':').reduce(function (h, m) { return parseInt(h) * 60 + parseInt(m); }) : 0;
+
+        for (var i = 0; i < semuaJadwal.length; i++) {
+          var j = semuaJadwal[i];
+          if (j.tanggal !== tanggal) continue;
+          var menitExisting = j.waktu ? j.waktu.split(':').reduce(function (h, m) { return parseInt(h) * 60 + parseInt(m); }) : 0;
+          var selisih = Math.abs(menitInput - menitExisting);
+          // anggap bentrok jika dalam rentang 60 menit (1 jam)
+          if (selisih < 60) {
+            return {
+              bentrok: true,
+              jadwal: j,
+              pesan: 'Jadwal bentrok dengan "' + j.judul + '" pada ' + formatTanggal(j.tanggal) + ' ' + (j.waktu || '') +
+                     ' (selisih ' + selisih + ' menit). Pilih waktu lain.'
+            };
+          }
+        }
+        return { bentrok: false };
+      }
+
       document.getElementById('form-tambah-jadwal').addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -147,6 +172,13 @@
 
         if (link.indexOf('https://') !== 0) {
           showAlert('alert-box', 'Link GMeet harus diawali https://', 'danger');
+          return;
+        }
+
+        // cek bentrok sebelum simpan
+        var hasilCek = cekBentrok(tanggal, waktu);
+        if (hasilCek.bentrok) {
+          showAlert('alert-box', hasilCek.pesan, 'danger');
           return;
         }
 

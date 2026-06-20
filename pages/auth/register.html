@@ -190,8 +190,9 @@
       });
 
       if (hasil.sukses) {
-        persistSession(hasil.user);
+        // siswa baru langsung login, verifikasi email nanti di profil
         if (role === 'siswa') {
+          persistSession(hasil.user);
           window.location.href = resolveAppPath('../siswa/kuis-penempatan.html');
         } else {
           redirectByRole(role);

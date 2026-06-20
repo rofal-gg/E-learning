@@ -105,7 +105,7 @@
       return true;
     }
 
-    // createItem penarikan + update saldo user
+    // createItem penarikan (tidak kurangi saldo — akan dikurangi saat admin approve)
     function prosesTarik() {
       var freshUser = getById('users', user.id) || user;
       var saldo = freshUser.saldo || 0;
@@ -125,13 +125,7 @@
         tanggal: new Date().toISOString()
       });
 
-      updateItem('users', user.id, { saldo: saldo - nominal });
-
-      var updatedUser = getById('users', user.id);
-      sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
-      user = updatedUser;
-
-      showAlert('alert-box', 'Permintaan penarikan berhasil diajukan. Status: menunggu verifikasi admin.', 'success');
+      showAlert('alert-box', 'Permintaan penarikan berhasil diajukan. Status: menunggu verifikasi admin. Saldo akan dikurangi setelah disetujui.', 'success');
       document.getElementById('form-tarik').reset();
       tampilkanSaldo();
     }
