@@ -81,7 +81,7 @@
         simpanProfil();
       });
 
-      ['input-nama', 'input-bio', 'input-keahlian', 'input-foto'].forEach(function (id) {
+      ['input-nama', 'input-bio', 'input-keahlian'].forEach(function (id) {
         document.getElementById(id).addEventListener('input', function () {
           renderPreview(ambilDataForm());
         });
@@ -96,11 +96,12 @@
     }
 
     function ambilDataForm() {
+      var dataUser = getById('users', user.id) || user;
       return {
         nama: document.getElementById('input-nama').value,
         bio: document.getElementById('input-bio').value,
         keahlian: document.getElementById('input-keahlian').value,
-        foto: document.getElementById('input-foto').value
+        foto: dataUser.foto || ''
       };
     }
 

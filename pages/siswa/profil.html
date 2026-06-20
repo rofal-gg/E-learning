@@ -23,7 +23,7 @@
         <h1>Profil Saya</h1>
       </div>
 
-      <div id="alert-profil" class="alert alert-success" style="display:none;"></div>
+      <div id="alert-box" class="alert-box-wrap"></div>
 
       <div class="profil-layout">
         <section class="card profil-preview">
@@ -138,7 +138,7 @@
     document.getElementById('btn-verif-email').addEventListener('click', function () {
       var dataSiswa = getById('users', user.id) || user;
       if (dataSiswa.email_verified) {
-        showAlert('alert-profil', 'Email sudah terverifikasi.', 'success');
+        showAlert('alert-box', 'Email sudah terverifikasi.', 'success');
         return;
       }
 
@@ -146,7 +146,7 @@
       if (typeof kirimOtpVerifEmail === 'function') {
         var kode = kirimOtpVerifEmail(user.id);
         if (!kode) {
-          showAlert('alert-profil', 'Gagal mengirim kode verifikasi.', 'danger');
+          showAlert('alert-box', 'Gagal mengirim kode verifikasi.', 'danger');
           return;
         }
 
@@ -159,9 +159,9 @@
           var updatedUser = persistSession(getById('users', user.id) || user);
           user = updatedUser;
           muatProfil();
-          showAlert('alert-profil', 'Email berhasil diverifikasi!', 'success');
+          showAlert('alert-box', 'Email berhasil diverifikasi!', 'success');
         } else {
-          showAlert('alert-profil', 'Kode OTP salah. Silakan coba lagi.', 'danger');
+          showAlert('alert-box', 'Kode OTP salah. Silakan coba lagi.', 'danger');
         }
         sessionStorage.removeItem('verif_otp');
         sessionStorage.removeItem('verif_user_id');
@@ -239,13 +239,7 @@
       muatProfil();
       document.getElementById('input-password').value = '';
       document.getElementById('input-foto').value = '';
-
-      var alertEl = document.getElementById('alert-profil');
-      alertEl.textContent = 'Profil berhasil disimpan.';
-      alertEl.style.display = 'block';
-      setTimeout(function () {
-        alertEl.style.display = 'none';
-      }, 4000);
+      showAlert('alert-box', 'Profil berhasil disimpan.', 'success');
     }
   </script>
 </body>
