@@ -179,7 +179,7 @@ EduKita/
 
 ---
 
-## 🧭 Fitur Berdasarkan Role
+## 🧭 Fitur Berdasarkan Aktor
 
 ### 🧑‍🎓 Siswa
 - 🔍 **Katalog Kelas** — jelajahi & cari kelas berdasarkan kategori
