@@ -10,7 +10,7 @@
 
 | Nama | NIM | Peran |
 |------|-----|-------|
-| Muhammad Ainur Rofal Achsony | 250411100015 | Koordinator Tim |
+| Muhammad Ainur Rofal Achsony | 250411100015 | Ketua Kelompok |
 | Daffa' Tsaqib Anasyah | 250411100030 | Anggota |
 | Idham Kholid Alauddin | 250411100025 | Anggota |
 | Risvaldo Iqbal Ardiansyah | 250411100001 | Anggota |
