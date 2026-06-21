@@ -87,6 +87,18 @@
         return;
       }
 
+      var cekEmail = cekEmailVerifikasi(user);
+      var emailWarning = '';
+      if (!cekEmail.verified) {
+        emailWarning = `
+          <div class="restriction-card" style="margin-bottom:16px;">
+            <span class="restriction-icon">✉️</span>
+            <div class="restriction-title">Email Belum Diverifikasi</div>
+            <div class="restriction-body">${cekEmail.pesan}</div>
+          </div>
+        `;
+      }
+
       var listItems = items.map(function (item) {
         return `
           <li class="checkout-order-item">
@@ -106,6 +118,7 @@
         <div class="cart-layout checkout-layout">
           <section class="card">
             <h2 class="checkout-section-title">Ringkasan Pesanan</h2>
+            ${emailWarning}
             <ul class="checkout-order-list">${listItems}</ul>
             <div class="summary-row"><span>Paket Akses</span><span><strong>${selectedPaket.label}</strong> (${selectedPaket.multiplier}x)</span></div>
             ${barisDiskon}
@@ -130,7 +143,7 @@
                 <p style="font-size:0.75rem; color:var(--gray-500); margin-top:6px;">Pembayaran bersifat simulasi — tidak ada transfer nyata.</p>
               </div>
               <p class="text-gray payment-note">Pembayaran disimulasikan — transaksi langsung berstatus sukses.</p>
-              <button type="submit" class="btn btn-primary btn-block" id="btn-bayar">Bayar Sekarang</button>
+              <button type="submit" class="btn btn-primary btn-block" id="btn-bayar" ${!cekEmail.verified ? 'disabled' : ''}>Bayar Sekarang</button>
               <a href="cart.html" class="btn btn-secondary btn-block checkout-back-link">Kembali ke Keranjang</a>
             </form>
           </aside>
@@ -154,6 +167,12 @@
 
     // buat transaksi (pending → diverifikasi admin), lalu redirect invoice
     function prosesBayar(items, total) {
+      var cekEmail = cekEmailVerifikasi(user);
+      if (!cekEmail.verified) {
+        showAlert('alert-box', 'Email belum diverifikasi. Silakan verifikasi di halaman Profil terlebih dahulu.', 'danger');
+        return;
+      }
+
       var metodeEl = document.querySelector('input[name="metode"]:checked');
       if (!metodeEl) {
         showAlert('alert-box', 'Pilih metode pembayaran terlebih dahulu.', 'danger');

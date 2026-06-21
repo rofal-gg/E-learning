@@ -149,22 +149,29 @@
       var sudahBeli = user && userOwnsKelas(user.id, kelas.id);
 
       var cek = cekTingkatan(user, kelas);
+      var cekEmail = cekEmailVerifikasi(user);
 
       var panelButtons = sudahBeli
         ? `<div class="btn-group">
              <a href="ruang-belajar.html?id=${kelas.id}" class="btn btn-primary">Lanjutkan Belajar</a>
              <a href="diskusi.html?kelasId=${kelas.id}" class="btn btn-secondary">Forum Diskusi</a>
            </div>`
-        : cek.ok
-          ? `<div class="btn-group">
-               <button type="button" id="btn-cart" class="btn btn-primary">Tambah ke Keranjang</button>
-               <button type="button" id="btn-wishlist" class="btn btn-secondary">Simpan ke Wishlist</button>
-             </div>`
-          : `<div class="restriction-card">
-              <span class="restriction-icon">🔒</span>
-              <div class="restriction-title">Tingkatan Belum Mencukupi</div>
-              <div class="restriction-body">${cek.pesan}</div>
-            </div>`;
+        : !cekEmail.verified
+          ? `<div class="restriction-card">
+              <span class="restriction-icon">✉️</span>
+              <div class="restriction-title">Email Belum Diverifikasi</div>
+              <div class="restriction-body">${cekEmail.pesan}</div>
+            </div>`
+          : cek.ok
+            ? `<div class="btn-group">
+                 <button type="button" id="btn-cart" class="btn btn-primary">Tambah ke Keranjang</button>
+                 <button type="button" id="btn-wishlist" class="btn btn-secondary">Simpan ke Wishlist</button>
+               </div>`
+            : `<div class="restriction-card">
+                <span class="restriction-icon">🔒</span>
+                <div class="restriction-title">Tingkatan Belum Mencukupi</div>
+                <div class="restriction-body">${cek.pesan}</div>
+              </div>`;
 
       document.getElementById('detail-content').innerHTML = `
         <div class="detail-layout">

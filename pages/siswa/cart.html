@@ -68,6 +68,17 @@
       document.getElementById('cart-subtitle').textContent =
         'Halo, ' + currentUser.nama + ' — ' + items.length + ' kelas di keranjang';
 
+      var cekEmail = cekEmailVerifikasi(currentUser);
+      if (!cekEmail.verified) {
+        document.getElementById('cart-subtitle').insertAdjacentHTML('afterend',
+          '<div class="restriction-card" style="margin-bottom:16px;">' +
+            '<span class="restriction-icon">✉️</span>' +
+            '<div class="restriction-title">Email Belum Diverifikasi</div>' +
+            '<div class="restriction-body">' + cekEmail.pesan + '</div>' +
+          '</div>'
+        );
+      }
+
       if (items.length === 0) {
         appliedKupon = null;
         sessionStorage.removeItem('appliedKupon');
@@ -136,7 +147,10 @@
                 <button type="button" id="btn-kupon" class="btn btn-secondary btn-sm">Pakai</button>
               </div>
             </div>
-            <a href="checkout.html" class="btn btn-primary btn-block checkout-link">Lanjut ke Checkout</a>
+            ${cekEmail.verified
+              ? '<a href="checkout.html" class="btn btn-primary btn-block checkout-link">Lanjut ke Checkout</a>'
+              : '<button type="button" class="btn btn-primary btn-block checkout-link" id="btn-checkout-verif" disabled>Lanjut ke Checkout</button>'
+            }
           </aside>
         </div>
       `;

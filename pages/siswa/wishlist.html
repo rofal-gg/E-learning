@@ -88,6 +88,12 @@
 
       document.querySelectorAll('.btn-beli').forEach(function (btn) {
         btn.addEventListener('click', function () {
+          var cekEmail = cekEmailVerifikasi(user);
+          if (!cekEmail.verified) {
+            showAlert('alert-box', 'Email belum diverifikasi. Silakan verifikasi di halaman Profil terlebih dahulu.', 'danger');
+            return;
+          }
+
           var kelasId = this.getAttribute('data-kelas-id');
           var hasil = addToCart(user.id, kelasId);
           if (!hasil.sukses && hasil.pesan !== 'Kelas sudah ada di keranjang') {

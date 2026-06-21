@@ -172,6 +172,20 @@ function persistSession(user) {
   return fresh;
 }
 
+/** Cek apakah email siswa sudah diverifikasi.
+ *  @param {Object} user - objek user dari getCurrentUser / getById
+ *  @returns {{ verified: boolean, pesan: string }}
+ */
+function cekEmailVerifikasi(user) {
+  if (!user) return { verified: false, pesan: 'Silakan login terlebih dahulu.' };
+  if (user.role !== 'siswa') return { verified: true, pesan: '' };
+  if (user.email_verified) return { verified: true, pesan: '' };
+  return {
+    verified: false,
+    pesan: 'Email belum diverifikasi. Silakan <a href="profil.html">verifikasi email</a> terlebih dahulu di halaman Profil.'
+  };
+}
+
 function login(email, password) {
   var users = getAll('users');
   var user = users.find(function (u) {
