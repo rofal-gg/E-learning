@@ -7,6 +7,111 @@
   <link rel="stylesheet" href="../../style.css">
   <link rel="stylesheet" href="../../css/anggota1.css">
   <link rel="stylesheet" href="../../css/anggota3.css">
+  <style>
+    /* ── Real-time conflict warning ── */
+    #conflict-warning {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    #conflict-warning.show {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    #conflict-warning.danger {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+    }
+    #conflict-warning.success {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      color: #166534;
+    }
+    #conflict-warning .icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Existing schedules on selected date ── */
+    #jadwal-hari-ini {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      display: none;
+    }
+    #jadwal-hari-ini.show {
+      display: block;
+    }
+    #jadwal-hari-ini h4 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: #475569;
+    }
+    #jadwal-hari-ini ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    #jadwal-hari-ini li {
+      padding: 6px 0;
+      font-size: 14px;
+      color: #334155;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    #jadwal-hari-ini li:last-child {
+      border-bottom: none;
+    }
+    .bentrok-badge {
+      display: inline-block;
+      background: #fef2f2;
+      color: #dc2626;
+      font-size: 12px;
+      padding: 1px 8px;
+      border-radius: 99px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    .aman-badge {
+      display: inline-block;
+      background: #f0fdf4;
+      color: #16a34a;
+      font-size: 12px;
+      padding: 1px 8px;
+      border-radius: 99px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    /* ── Row conflict highlight ── */
+    .row-bentrok {
+      background: #fef2f2 !important;
+    }
+    .row-bentrok td {
+      color: #991b1b;
+    }
+
+    /* ── Submit button state ── */
+    .btn[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ── Form durasi inline ── */
+    .form-row {
+      display: flex;
+      gap: 16px;
+    }
+    .form-row .form-group {
+      flex: 1;
+    }
+  </style>
   <script src="../../data.js"></script>
   <script src="../../storage.js"></script>
   <script src="../../auth.js"></script>
@@ -45,14 +150,19 @@
               <input type="text" id="judul-sesi" class="form-input" placeholder="Contoh: Review Bab 3 - Flexbox" required>
             </div>
 
-            <div class="form-group">
-              <label class="form-label" for="tgl-sesi">Tanggal</label>
-              <input type="date" id="tgl-sesi" class="form-input" required>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="waktu-sesi">Waktu</label>
-              <input type="time" id="waktu-sesi" class="form-input" required>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="tgl-sesi">Tanggal</label>
+                <input type="date" id="tgl-sesi" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="waktu-sesi">Waktu Mulai</label>
+                <input type="time" id="waktu-sesi" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="durasi-sesi">Durasi (menit)</label>
+                <input type="number" id="durasi-sesi" class="form-input" value="60" min="15" max="480" step="15" required>
+              </div>
             </div>
 
             <div class="form-group">
@@ -60,7 +170,13 @@
               <input type="url" id="link-gmeet" class="form-input" placeholder="https://meet.google.com/xxx-xxxx-xxx" required>
             </div>
 
-            <button type="submit" class="btn btn-primary">Tambah Jadwal</button>
+            <!-- Real-time conflict warning -->
+            <div id="conflict-warning"></div>
+
+            <!-- Existing schedules on selected date -->
+            <div id="jadwal-hari-ini"></div>
+
+            <button type="submit" class="btn btn-primary" id="btn-submit">Tambah Jadwal</button>
           </form>
         </div>
       </section>
@@ -74,6 +190,7 @@
                 <th>Kelas</th>
                 <th>Judul Sesi</th>
                 <th>Tanggal &amp; Waktu</th>
+                <th>Durasi</th>
                 <th>Link</th>
                 <th>Aksi</th>
               </tr>
@@ -91,6 +208,36 @@
     if (user) {
       renderSidebarInstruktur('jadwal-tatap-muka');
 
+      // ─── Helper: konversi "HH:mm" ke menit ───
+      function waktuKeMenit(waktu) {
+        if (!waktu || typeof waktu !== 'string') return 0;
+        var parts = waktu.split(':');
+        return parseInt(parts[0] || 0) * 60 + parseInt(parts[1] || 0);
+      }
+
+      // ─── Helper: format menit ke "X jam Y menit" ───
+      function formatDurasi(menit) {
+        if (!menit || menit <= 0) return '-';
+        var jam = Math.floor(menit / 60);
+        var sisa = menit % 60;
+        if (jam > 0 && sisa > 0) return jam + ' jam ' + sisa + ' menit';
+        if (jam > 0) return jam + ' jam';
+        return sisa + ' menit';
+      }
+
+      // ─── Helper: format rentang waktu "HH:mm - HH:mm" ───
+      function formatRentangWaktu(waktuMulai, durasiMenit) {
+        if (!waktuMulai) return '-';
+        var mulai = waktuKeMenit(waktuMulai);
+        var selesai = mulai + (durasiMenit || 60);
+        var jamMulai = String(Math.floor(mulai / 60)).padStart(2, '0');
+        var menitMulai = String(mulai % 60).padStart(2, '0');
+        var jamSelesai = String(Math.floor(selesai / 60)).padStart(2, '0');
+        var menitSelesai = String(selesai % 60).padStart(2, '0');
+        return jamMulai + ':' + menitMulai + ' - ' + jamSelesai + ':' + menitSelesai;
+      }
+
+      // ─── Isi dropdown kelas ───
       var kelasSaya = getAll('kelas').filter(function (k) { return k.instrukturId === user.id; });
       var selKelas = document.getElementById('sel-kelas');
 
@@ -101,24 +248,164 @@
         selKelas.appendChild(opt);
       });
 
+      // ─── Cek bentrok dengan overlap detection ───
+      function cekBentrok(tanggal, waktuMulai, durasiMenit, excludeId) {
+        var semuaJadwal = getAll('jadwal_tatap_muka')
+          .filter(function (j) {
+            return sameUserId(j.instrukturId, user.id) && j.id !== excludeId;
+          });
+
+        var inputMulai = waktuKeMenit(waktuMulai);
+        var inputDurasi = durasiMenit || 60;
+        var inputSelesai = inputMulai + inputDurasi;
+
+        for (var i = 0; i < semuaJadwal.length; i++) {
+          var j = semuaJadwal[i];
+          if (j.tanggal !== tanggal) continue;
+
+          var existingMulai = waktuKeMenit(j.waktu);
+          var existingDurasi = j.durasi || 60;
+          var existingSelesai = existingMulai + existingDurasi;
+
+          // Deteksi overlap: dua interval [A_mulai, A_selesai) dan [B_mulai, B_selesai)
+          // A = jadwal baru, B = jadwal existing
+          // Bentrok jika A_mulai < B_selesai DAN A_selesai > B_mulai
+          if (inputMulai < existingSelesai && inputSelesai > existingMulai) {
+            return {
+              bentrok: true,
+              jadwal: j,
+              pesan: 'Jadwal bentrok dengan sesi "' + j.judul + '" pada ' + formatTanggal(j.tanggal) +
+                     ' pukul ' + formatRentangWaktu(j.waktu, existingDurasi) +
+                     '. Pilih waktu atau tanggal lain.'
+            };
+          }
+        }
+        return { bentrok: false };
+      }
+
+      // ─── Tampilkan jadwal pada tanggal tertentu ───
+      function tampilkanJadwalDiTanggal(tanggal) {
+        var container = document.getElementById('jadwal-hari-ini');
+        if (!tanggal) {
+          container.classList.remove('show');
+          return;
+        }
+
+        var list = getAll('jadwal_tatap_muka')
+          .filter(function (j) { return sameUserId(j.instrukturId, user.id) && j.tanggal === tanggal; })
+          .sort(function (a, b) { return a.waktu.localeCompare(b.waktu); });
+
+        if (list.length === 0) {
+          container.classList.remove('show');
+          return;
+        }
+
+        var html = '<h4>Jadwal Anda pada ' + formatTanggal(tanggal) + ':</h4><ul>';
+        list.forEach(function (j) {
+          var durasi = j.durasi || 60;
+          html += '<li>' +
+            '<strong>' + j.judul + '</strong> — ' +
+            formatRentangWaktu(j.waktu, durasi) +
+            ' (' + formatDurasi(durasi) + ')' +
+            '</li>';
+        });
+        html += '</ul>';
+
+        container.innerHTML = html;
+        container.classList.add('show');
+      }
+
+      // ─── Real-time conflict check ───
+      var conflictState = { bentrok: false };
+
+      function cekBentrokRealtime() {
+        var tanggal = document.getElementById('tgl-sesi').value;
+        var waktu = document.getElementById('waktu-sesi').value;
+        var durasi = parseInt(document.getElementById('durasi-sesi').value) || 60;
+        var warningEl = document.getElementById('conflict-warning');
+        var btnSubmit = document.getElementById('btn-submit');
+
+        // Tampilkan jadwal existing di tanggal itu
+        tampilkanJadwalDiTanggal(tanggal);
+
+        if (!tanggal || !waktu) {
+          warningEl.classList.remove('show', 'danger', 'success');
+          btnSubmit.disabled = false;
+          conflictState.bentrok = false;
+          return;
+        }
+
+        var hasil = cekBentrok(tanggal, waktu, durasi);
+
+        if (hasil.bentrok) {
+          warningEl.className = 'show danger';
+          warningEl.innerHTML = '<span class="icon">&#9888;</span><span><strong>Jadwal Bentrok!</strong><br>' + hasil.pesan + '</span>';
+          btnSubmit.disabled = true;
+          conflictState.bentrok = true;
+        } else {
+          warningEl.className = 'show success';
+          warningEl.innerHTML = '<span class="icon">&#10003;</span><span>Jadwal tersedia. Tidak ada bentrok dengan jadwal lain.</span>';
+          btnSubmit.disabled = false;
+          conflictState.bentrok = false;
+        }
+      }
+
+      // Event listener real-time
+      document.getElementById('tgl-sesi').addEventListener('change', cekBentrokRealtime);
+      document.getElementById('waktu-sesi').addEventListener('change', cekBentrokRealtime);
+      document.getElementById('durasi-sesi').addEventListener('input', cekBentrokRealtime);
+
+      // ─── Tampilkan daftar jadwal ───
       function tampilkanDaftarJadwal() {
         var tbody = document.getElementById('tabel-jadwal-body');
         var list = getAll('jadwal_tatap_muka')
           .filter(function (j) { return sameUserId(j.instrukturId, user.id); })
-          .sort(function (a, b) { return a.tanggal.localeCompare(b.tanggal) || a.waktu.localeCompare(b.waktu); });
+          .sort(function (a, b) {
+            var tglCompare = a.tanggal.localeCompare(b.tanggal);
+            if (tglCompare !== 0) return tglCompare;
+            return a.waktu.localeCompare(b.waktu);
+          });
 
         if (list.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray">Belum ada jadwal.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray">Belum ada jadwal.</td></tr>';
           return;
+        }
+
+        // Cek konflik antar semua jadwal instruktur untuk highlight
+        var bentrokMap = {};
+        for (var i = 0; i < list.length; i++) {
+          for (var j = i + 1; j < list.length; j++) {
+            var a = list[i];
+            var b = list[j];
+            if (a.tanggal !== b.tanggal) continue;
+
+            var aMulai = waktuKeMenit(a.waktu);
+            var aDurasi = a.durasi || 60;
+            var aSelesai = aMulai + aDurasi;
+            var bMulai = waktuKeMenit(b.waktu);
+            var bDurasi = b.durasi || 60;
+            var bSelesai = bMulai + bDurasi;
+
+            if (aMulai < bSelesai && aSelesai > bMulai) {
+              bentrokMap[a.id] = true;
+              bentrokMap[b.id] = true;
+            }
+          }
         }
 
         tbody.innerHTML = list.map(function (j) {
           var kelas = getById('kelas', j.kelasId);
           var namaKelas = kelas ? kelas.judul : '(kelas dihapus)';
-          return '<tr>' +
+          var durasi = j.durasi || 60;
+          var rowClass = bentrokMap[j.id] ? ' class="row-bentrok"' : '';
+          var bentrokLabel = bentrokMap[j.id]
+            ? ' <span class="bentrok-badge">BENTROK</span>'
+            : '';
+          return '<tr' + rowClass + '>' +
             '<td>' + namaKelas + '</td>' +
-            '<td><strong>' + j.judul + '</strong></td>' +
-            '<td>' + formatTanggal(j.tanggal) + ' ' + (j.waktu || '–') + '</td>' +
+            '<td><strong>' + j.judul + '</strong>' + bentrokLabel + '</td>' +
+            '<td>' + formatTanggal(j.tanggal) + ' ' + formatRentangWaktu(j.waktu, durasi) + '</td>' +
+            '<td>' + formatDurasi(durasi) + '</td>' +
             '<td><a href="' + j.linkGmeet + '" target="_blank" rel="noopener">Buka Link</a></td>' +
             '<td><button type="button" class="btn btn-danger btn-sm btn-hapus" data-id="' + j.id + '">Hapus</button></td>' +
             '</tr>';
@@ -131,31 +418,7 @@
         });
       }
 
-      // cek apakah jadwal bentrok dengan jadwal lain milik instruktur
-      function cekBentrok(tanggal, waktu) {
-        var semuaJadwal = getAll('jadwal_tatap_muka')
-          .filter(function (j) { return sameUserId(j.instrukturId, user.id); });
-
-        var menitInput = waktu ? waktu.split(':').reduce(function (h, m) { return parseInt(h) * 60 + parseInt(m); }) : 0;
-
-        for (var i = 0; i < semuaJadwal.length; i++) {
-          var j = semuaJadwal[i];
-          if (j.tanggal !== tanggal) continue;
-          var menitExisting = j.waktu ? j.waktu.split(':').reduce(function (h, m) { return parseInt(h) * 60 + parseInt(m); }) : 0;
-          var selisih = Math.abs(menitInput - menitExisting);
-          // anggap bentrok jika dalam rentang 60 menit (1 jam)
-          if (selisih < 60) {
-            return {
-              bentrok: true,
-              jadwal: j,
-              pesan: 'Jadwal bentrok dengan "' + j.judul + '" pada ' + formatTanggal(j.tanggal) + ' ' + (j.waktu || '') +
-                     ' (selisih ' + selisih + ' menit). Pilih waktu lain.'
-            };
-          }
-        }
-        return { bentrok: false };
-      }
-
+      // ─── Submit form ───
       document.getElementById('form-tambah-jadwal').addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -163,6 +426,7 @@
         var judul = document.getElementById('judul-sesi').value.trim();
         var tanggal = document.getElementById('tgl-sesi').value;
         var waktu = document.getElementById('waktu-sesi').value;
+        var durasi = parseInt(document.getElementById('durasi-sesi').value) || 60;
         var link = document.getElementById('link-gmeet').value.trim();
 
         if (!kelasId || !judul || !tanggal || !waktu || !link) {
@@ -175,8 +439,17 @@
           return;
         }
 
-        // cek bentrok sebelum simpan
-        var hasilCek = cekBentrok(tanggal, waktu);
+        // Validasi tanggal: tidak boleh di masa lalu
+        var hariIni = new Date();
+        hariIni.setHours(0, 0, 0, 0);
+        var tglDipilih = new Date(tanggal + 'T00:00:00');
+        if (tglDipilih < hariIni) {
+          showAlert('alert-box', 'Tanggal tidak boleh di masa lalu.', 'danger');
+          return;
+        }
+
+        // Final conflict check sebelum submit (antisipasi jika JS realtime gagal)
+        var hasilCek = cekBentrok(tanggal, waktu, durasi);
         if (hasilCek.bentrok) {
           showAlert('alert-box', hasilCek.pesan, 'danger');
           return;
@@ -189,21 +462,39 @@
           judul: judul,
           tanggal: tanggal,
           waktu: waktu,
+          durasi: durasi,
           linkGmeet: link,
           dibuatPada: new Date().toISOString()
         });
 
         showAlert('alert-box', 'Jadwal berhasil ditambahkan.', 'success');
         this.reset();
+
+        // Reset ke default durasi
+        document.getElementById('durasi-sesi').value = 60;
+
+        // Reset conflict warning
+        document.getElementById('conflict-warning').classList.remove('show', 'danger', 'success');
+        document.getElementById('jadwal-hari-ini').classList.remove('show');
+        document.getElementById('btn-submit').disabled = false;
+        conflictState.bentrok = false;
+
         tampilkanDaftarJadwal();
       });
 
+      // ─── Hapus jadwal ───
       function hapusJadwal(jadwalId) {
-        if (!confirm('Hapus jadwal ini?')) return;
+        if (!confirm('Hapus jadwal "' + (getById('jadwal_tatap_muka', jadwalId) || {}).judul + '"?')) return;
         deleteItem('jadwal_tatap_muka', jadwalId);
         tampilkanDaftarJadwal();
+
+        // Refresh real-time check jika form masih terisi
+        if (document.getElementById('tgl-sesi').value) {
+          cekBentrokRealtime();
+        }
       }
 
+      // ─── Init ───
       tampilkanDaftarJadwal();
     }
   </script>
