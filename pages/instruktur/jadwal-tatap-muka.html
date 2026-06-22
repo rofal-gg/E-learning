@@ -252,7 +252,8 @@
       function cekBentrok(tanggal, waktuMulai, durasiMenit, excludeId) {
         var semuaJadwal = getAll('jadwal_tatap_muka')
           .filter(function (j) {
-            return sameUserId(j.instrukturId, user.id) && j.id !== excludeId;
+            // Filter: exclude jadwal yang sedang diedit (excludeId)
+            return j.id !== excludeId;
           });
 
         var inputMulai = waktuKeMenit(waktuMulai);
@@ -271,12 +272,19 @@
           // A = jadwal baru, B = jadwal existing
           // Bentrok jika A_mulai < B_selesai DAN A_selesai > B_mulai
           if (inputMulai < existingSelesai && inputSelesai > existingMulai) {
+            // Cari nama instruktur untuk pesan bentrok
+            var instruktur = getById('users', j.instrukturId);
+            var namaInstruktur = instruktur ? instruktur.nama : '(Instruktur tidak dikenal)';
+            var milikSaya = sameUserId(j.instrukturId, user.id);
+
             return {
               bentrok: true,
               jadwal: j,
-              pesan: 'Jadwal bentrok dengan sesi "' + j.judul + '" pada ' + formatTanggal(j.tanggal) +
+              pesan: 'Jadwal bentrok dengan sesi "' + j.judul + '"' +
+                     (milikSaya ? '' : ' oleh <strong>' + namaInstruktur + '</strong>') +
+                     ' pada ' + formatTanggal(j.tanggal) +
                      ' pukul ' + formatRentangWaktu(j.waktu, existingDurasi) +
-                     '. Pilih waktu atau tanggal lain.'
+                     '. Slot waktu ini sudah terisi. Pilih waktu atau tanggal lain.'
             };
           }
         }
@@ -292,7 +300,7 @@
         }
 
         var list = getAll('jadwal_tatap_muka')
-          .filter(function (j) { return sameUserId(j.instrukturId, user.id) && j.tanggal === tanggal; })
+          .filter(function (j) { return j.tanggal === tanggal; })
           .sort(function (a, b) { return a.waktu.localeCompare(b.waktu); });
 
         if (list.length === 0) {
@@ -300,12 +308,16 @@
           return;
         }
 
-        var html = '<h4>Jadwal Anda pada ' + formatTanggal(tanggal) + ':</h4><ul>';
+        var html = '<h4>Semua jadwal pada ' + formatTanggal(tanggal) + ':</h4><ul>';
         list.forEach(function (j) {
           var durasi = j.durasi || 60;
+          var instruktur = getById('users', j.instrukturId);
+          var namaInstruktur = instruktur ? instruktur.nama : '(dihapus)';
+          var milikSaya = sameUserId(j.instrukturId, user.id);
           html += '<li>' +
-            '<strong>' + j.judul + '</strong> — ' +
-            formatRentangWaktu(j.waktu, durasi) +
+            '<strong>' + j.judul + '</strong>' +
+            (milikSaya ? '' : ' — ' + namaInstruktur) +
+            ' — ' + formatRentangWaktu(j.waktu, durasi) +
             ' (' + formatDurasi(durasi) + ')' +
             '</li>';
         });

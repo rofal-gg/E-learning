@@ -58,6 +58,7 @@
 
       <section class="content-section">
         <h2>Jadwal Sesi Tatap Muka</h2>
+        <div id="alert-box" class="alert-box-wrap"></div>
         <div id="jadwal-tatap-muka"></div>
       </section>
 
@@ -206,6 +207,37 @@
       '</div>';
     }
 
+    // ─── Ikuti sesi tatap muka (dengan verifikasi kepemilikan kelas) ───
+    function ikutiSesi(jadwalId) {
+      var jadwal = getById('jadwal_tatap_muka', jadwalId);
+      if (!jadwal) {
+        showAlert('alert-box', 'Jadwal tidak ditemukan.', 'danger');
+        return;
+      }
+
+      var kelasIds = ambilKelasIds();
+      var punyaKelas = kelasIds.indexOf(String(jadwal.kelasId)) !== -1;
+
+      if (!punyaKelas) {
+        showAlert('alert-box', 'Kamu tidak memiliki akses ke kelas ini. Beli kelas terlebih dahulu untuk mengikuti sesi tatap muka.', 'danger');
+        return;
+      }
+
+      // Cek apakah akses masih berlaku (tidak expired)
+      var transaksi = ambilTransaksiKelas(jadwal.kelasId);
+      if (transaksi && transaksi.tanggalBerakhir) {
+        var sekarang = new Date();
+        var tanggalBerakhir = new Date(transaksi.tanggalBerakhir);
+        if (sekarang > tanggalBerakhir) {
+          showAlert('alert-box', 'Akses ke kelas ini sudah berakhir. Perbarui paket untuk mengikuti sesi.', 'danger');
+          return;
+        }
+      }
+
+      // Verifikasi lolos → buka link GMeet
+      window.open(jadwal.linkGmeet, '_blank');
+    }
+
     // tampilkan jadwal tatap muka untuk kelas yang dimiliki
     function tampilkanJadwalTatapMuka() {
       var container = document.getElementById('jadwal-tatap-muka');
@@ -230,6 +262,8 @@
         var tglFormatted = formatTanggal(j.tanggal);
         var kelas = getById('kelas', j.kelasId);
         var namaKelas = kelas ? kelas.judul : 'Kelas';
+        var transaksi = ambilTransaksiKelas(j.kelasId);
+        var aksesExpired = transaksi && transaksi.tanggalBerakhir && new Date() > new Date(transaksi.tanggalBerakhir);
         return `
           <div class="jadwal-box">
             <div class="jadwal-tanggal">
@@ -240,7 +274,9 @@
               <p class="jadwal-judul">${j.judul}</p>
               <p class="jadwal-kelas-nama">${namaKelas}</p>
             </div>
-            <a href="${j.linkGmeet}" target="_blank" rel="noopener" class="btn btn-primary btn-sm jadwal-btn">Ikuti Sesi</a>
+            <button type="button" class="btn btn-primary btn-sm jadwal-btn" onclick="ikutiSesi('${j.id}')">
+              ${aksesExpired ? 'Akses Habis' : 'Ikuti Sesi'}
+            </button>
           </div>
         `;
       }).join('');

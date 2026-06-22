@@ -2,15 +2,18 @@
 
 function ensureSeedUsers() {
   var users = getAll('users');
-  var demoEmails = ['budi@email.com', 'sari@email.com', 'admin@email.com'];
   var changed = false;
 
   SEED_USERS.forEach(function (seed) {
     var idx = users.findIndex(function (u) { return u.email === seed.email; });
     if (idx === -1) {
+      // Seed user belum ada → tambahkan dengan auto-verified
       users.push(Object.assign({ status: 'aktif', email_verified: true }, seed));
       changed = true;
-    } else if (demoEmails.indexOf(seed.email) !== -1) {
+    } else if (!users[idx].email_verified) {
+      // Seed user sudah ada tapi belum terverifikasi → perbaiki
+      users[idx].email_verified = true;
+      // Merge data seed tanpa overwrite data dinamis (poin, saldo, tingkatan)
       var merged = Object.assign({}, users[idx], seed, { status: users[idx].status || 'aktif', email_verified: true });
       merged.poin = users[idx].poin !== undefined ? users[idx].poin : 0;
       merged.tingkatan = users[idx].tingkatan !== undefined ? users[idx].tingkatan : seed.tingkatan;
