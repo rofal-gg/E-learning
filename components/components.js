@@ -142,8 +142,14 @@ function renderSidebarInstruktur(activePage) {
         <a href="tanya-jawab.html" class="sidebar-link" data-page="tanya-jawab">
           <img src="../../assets/icons/QnA.png" width="20" alt=""> Q&amp;A
         </a>
+        <a href="ulasan-masuk.html" class="sidebar-link" data-page="ulasan-masuk">
+          <img src="../../assets/icons/moderasi_ulasan.svg" width="20" alt=""> Ulasan Masuk
+        </a>
         <a href="jadwal-tatap-muka.html" class="sidebar-link" data-page="jadwal-tatap-muka">
           <img src="../../assets/icons/jadwal.png" width="20" alt=""> Jadwal Tatap Muka
+        </a>
+        <a href="diskon-kupon.html" class="sidebar-link" data-page="diskon-kupon">
+          <img src="../../assets/icons/lock.svg" width="20" alt=""> Diskon &amp; Kupon
         </a>
         <a href="laporan-pendapatan.html" class="sidebar-link" data-page="laporan-pendapatan">
           <img src="../../assets/icons/laporan_pendapatan.svg" width="20" alt=""> Laporan Pendapatan

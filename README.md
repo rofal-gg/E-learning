@@ -1,3 +1,6 @@
+# Demo version : 
+link deploy : https://rofal-gg.github.io/E-learning/
+
 # 🎓 EduKita — Platform E-Learning
 
 **EduKita** adalah platform e-learning berbasis web yang dibangun menggunakan **HTML5, CSS3, dan Vanilla JavaScript** murni tanpa framework. Seluruh data disimpan di **localStorage** browser, sehingga tidak memerlukan backend server atau database.
@@ -15,27 +18,6 @@
 | Idham Kholid Alauddin | 250411100025 | Anggota |
 | Risvaldo Iqbal Ardiansyah | 250411100001 | Anggota |
 | Sakhiy Fakhruddiin Majid | 250411100018 | Anggota |
-
----
-
-## 🚀 Cara Menjalankan
-
-### Opsi 1 — Langsung (via File Explorer)
-Buka file `index.html` di browser (double-click).  
-⚠️ Beberapa fitur mungkin tidak berjalan sempurna jika dibuka via `file://` (tergantung browser).
-
-### Opsi 2 — HTTP Server (Rekomendasi)
-Gunakan Python untuk menjalankan server lokal:
-
-```bash
-# Buka terminal di folder project
-python3 -m http.server 3000
-
-# atau
-python -m http.server 3000
-```
-
-Kemudian buka **http://localhost:3000** di browser.
 
 ---
 
